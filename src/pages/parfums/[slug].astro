@@ -1,0 +1,352 @@
+---
+import Base from '../../layouts/Base.astro';
+import data from '../../data/products.json';
+
+export function getStaticPaths() {
+  return data.products.map((p: any) => ({
+    params: { slug: p.slug },
+    props: { product: p, sizes: data.sizes, all: data.products },
+  }));
+}
+
+const { product, sizes, all } = Astro.props;
+const min = Math.min(...sizes.map((s: any) => s.price));
+const max = Math.max(...sizes.map((s: any) => s.price));
+
+const jsonLd = {
+  '@context': 'https://schema.org/',
+  '@type': 'Product',
+  name: `${product.name} — Dadios Fragrance`,
+  description: product.shortDescription,
+  brand: { '@type': 'Brand', name: 'Dadios Fragrance' },
+  category: 'Beauty / Fragrance',
+  offers: sizes.map((s: any) => ({
+    '@type': 'Offer',
+    sku: `${product.slug}-${s.code}`,
+    name: `${product.name} — ${s.label}`,
+    price: s.price,
+    priceCurrency: 'TND',
+    availability: 'https://schema.org/InStock',
+    itemCondition: 'https://schema.org/NewCondition',
+  })),
+};
+
+const related = all.filter((p: any) => p.slug !== product.slug && p.gender === product.gender).slice(0, 3);
+const allNotes = [...product.topNotes, ...product.heartNotes, ...product.baseNotes];
+---
+<Base
+  title={`${product.name} — Parfum ${product.gender} | Dadios Fragrance Tunisie`}
+  description={`${product.shortDescription} À partir de ${min} DT — disponible en 20ML et 50ML. Livraison à Tunis.`}
+  jsonLd={jsonLd}
+>
+
+<div class="crumb-wrap">
+  <nav class="crumbs" aria-label="Fil d'Ariane">
+    <a href="/">Accueil</a> <span>·</span>
+    <a href="/parfums">Parfums</a> <span>·</span>
+    <span>{product.name}</span>
+  </nav>
+</div>
+
+<section class="pd-hero">
+  <div class="pd-grid">
+    <div class="pd-img">
+      <svg viewBox="0 0 320 420" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="160" cy="410" rx="110" ry="6" fill="rgba(0,0,0,0.12)"/>
+        <rect x="100" y="80" width="120" height="320" rx="5" fill="#0E3A1F"/>
+        <rect x="100" y="80" width="120" height="320" rx="5" fill="none" stroke="#D4AF37" stroke-width="1.2"/>
+        <rect x="118" y="170" width="84" height="138" fill="#0E3A1F"/>
+        <rect x="118" y="170" width="84" height="138" fill="none" stroke="#D4AF37" stroke-width="0.8"/>
+        <text x="110" y="186" font-family="Cormorant Garamond, serif" font-size="9" fill="#D4AF37" opacity="0.85">❦</text>
+        <text x="200" y="186" font-family="Cormorant Garamond, serif" font-size="9" fill="#D4AF37" opacity="0.85">❦</text>
+        <text x="110" y="304" font-family="Cormorant Garamond, serif" font-size="9" fill="#D4AF37" opacity="0.85">❦</text>
+        <text x="200" y="304" font-family="Cormorant Garamond, serif" font-size="9" fill="#D4AF37" opacity="0.85">❦</text>
+        <text x="160" y="222" text-anchor="middle" font-family="Allura, cursive" font-size="44" fill="#D4AF37">Dadios</text>
+        <text x="160" y="254" text-anchor="middle" font-family="Cormorant Garamond, serif" font-size="13" letter-spacing="7" fill="#D4AF37">FRAGRANCE</text>
+        <line x1="135" y1="266" x2="185" y2="266" stroke="#D4AF37" stroke-width="0.6"/>
+        <text x="160" y="284" text-anchor="middle" font-family="Cormorant Garamond, serif" font-style="italic" font-size="10" fill="#D4AF37">{product.name}</text>
+        <rect x="128" y="38" width="64" height="42" rx="4" fill="#A87C45"/>
+        <rect x="136" y="24" width="48" height="18" rx="3" fill="#A87C45"/>
+        <ellipse cx="160" cy="80" rx="60" ry="4" fill="rgba(0,0,0,0.18)"/>
+      </svg>
+    </div>
+    <div class="pd-info">
+      <div class="eyebrow">{product.family} · {product.gender}</div>
+      <h1>{product.name}</h1>
+      <p class="pd-inspiration">Inspiré par <em>{product.inspiredBy}</em></p>
+      <p class="pd-desc">{product.shortDescription}</p>
+
+      <div class="pd-pick">
+        <div class="eyebrow" style="margin-bottom:12px">Choisissez votre format</div>
+        <div class="size-row">
+          {sizes.map((s: any, i: number) => (
+            <label class={`size-opt ${i === 1 ? 'active' : ''}`}>
+              <input type="radio" name="size" value={s.code} checked={i === 1}/>
+              <div class="size-label">{s.label}</div>
+              <div class="size-price">{s.price} <small>DT</small></div>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div class="pd-cta">
+        <button class="btn btn-primary" type="button">Ajouter au panier</button>
+        <a href={`https://wa.me/21656731891?text=Je%20veux%20commander%20${encodeURIComponent(product.name)}`} class="btn btn-gold" target="_blank">Commander sur WhatsApp</a>
+      </div>
+
+      <div class="pd-trust">
+        <div><strong>{product.longevity}</strong><span>Tenue</span></div>
+        <div><strong>{product.sillage}</strong><span>Sillage</span></div>
+        <div><strong>{product.seasons.join(' · ')}</strong><span>Saisons</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="pd-notes">
+  <div class="ornament">
+    <svg viewBox="0 0 24 24"><path d="M12 2 L14 10 L22 12 L14 14 L12 22 L10 14 L2 12 L10 10 Z" fill="currentColor"/></svg>
+  </div>
+  <div class="section-head">
+    <div class="eyebrow">Profil olfactif</div>
+    <h2>Une pyramide composée à la main</h2>
+  </div>
+  <div class="pyramid">
+    <div class="pyr-row">
+      <div class="pyr-label">Notes de tête</div>
+      <div class="pyr-notes">{product.topNotes.map((n: string) => <span class="note-pill">{n}</span>)}</div>
+    </div>
+    <div class="pyr-row">
+      <div class="pyr-label">Notes de cœur</div>
+      <div class="pyr-notes">{product.heartNotes.map((n: string) => <span class="note-pill">{n}</span>)}</div>
+    </div>
+    <div class="pyr-row">
+      <div class="pyr-label">Notes de fond</div>
+      <div class="pyr-notes">{product.baseNotes.map((n: string) => <span class="note-pill">{n}</span>)}</div>
+    </div>
+  </div>
+</section>
+
+{related.length > 0 && (
+  <section class="related">
+    <div class="section-head">
+      <div class="eyebrow">Vous aimerez aussi</div>
+      <h2>Dans la même famille</h2>
+    </div>
+    <div class="related-grid">
+      {related.map((r: any) => (
+        <a href={`/parfums/${r.slug}`} class="rel-card">
+          <div class="rel-img">
+            <svg viewBox="0 0 100 130">
+              <rect x="32" y="22" width="36" height="96" rx="2" fill="#0E3A1F"/>
+              <rect x="38" y="58" width="24" height="40" fill="#0E3A1F" stroke="#D4AF37" stroke-width="0.4"/>
+              <text x="50" y="76" text-anchor="middle" font-family="Allura, cursive" font-size="10" fill="#D4AF37">Dadios</text>
+              <rect x="42" y="10" width="16" height="13" rx="1.5" fill="#A87C45"/>
+            </svg>
+          </div>
+          <div class="rel-name">{r.name}</div>
+          <div class="rel-fam">{r.family}</div>
+        </a>
+      ))}
+    </div>
+  </section>
+)}
+
+</Base>
+
+<style>
+  .crumb-wrap { max-width: 1280px; margin: 0 auto; padding: 16px 32px 0; }
+  .crumbs { font-size: 12px; color: var(--ink-mute); letter-spacing: 0.06em; }
+  .crumbs a:hover { color: var(--emerald); }
+  .crumbs span { margin: 0 6px; opacity: 0.5; }
+
+  .pd-hero {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 32px 32px 64px;
+  }
+  .pd-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 56px;
+    align-items: start;
+  }
+  .pd-img {
+    background: var(--cream-warm);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 48px;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .pd-img svg { width: 80%; height: auto; }
+
+  .pd-info .eyebrow { margin-bottom: 16px; display: block; }
+  .pd-info h1 {
+    font-size: clamp(36px, 4vw, 52px);
+    margin-bottom: 8px;
+  }
+  .pd-inspiration {
+    font-style: italic;
+    color: var(--ink-mute);
+    margin-bottom: 24px;
+    font-size: 14px;
+  }
+  .pd-desc {
+    font-size: 16px;
+    color: var(--ink-soft);
+    line-height: 1.75;
+    margin-bottom: 36px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--border);
+  }
+  .pd-pick { margin-bottom: 32px; }
+  .size-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .size-opt {
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    cursor: pointer;
+    transition: all .2s;
+    background: var(--cream-soft);
+  }
+  .size-opt input { display: none; }
+  .size-opt.active {
+    border-color: var(--emerald);
+    background: var(--cream);
+  }
+  .size-opt:hover { border-color: var(--gold-soft); }
+  .size-label {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    margin-bottom: 6px;
+  }
+  .size-price {
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 500;
+    color: var(--emerald);
+  }
+  .size-price small {
+    font-size: 12px;
+    color: var(--ink-mute);
+    margin-left: 4px;
+    font-weight: 400;
+  }
+
+  .pd-cta { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 36px; }
+  .pd-cta .btn { flex: 1; min-width: 200px; }
+
+  .pd-trust {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+  .pd-trust div { display: flex; flex-direction: column; align-items: center; text-align: center; }
+  .pd-trust strong {
+    font-family: var(--font-display);
+    font-size: 18px;
+    color: var(--emerald);
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+  .pd-trust span {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+
+  .pd-notes {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 56px 32px;
+  }
+  .section-head { text-align: center; margin-bottom: 48px; }
+  .section-head .eyebrow { margin-bottom: 14px; display: block; }
+  .section-head h2 { font-size: clamp(28px, 3.5vw, 38px); }
+  .pyramid {
+    max-width: 720px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  .pyr-row {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    align-items: center;
+    gap: 32px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .pyr-row:last-child { border-bottom: none; }
+  .pyr-label {
+    font-family: var(--font-display);
+    font-size: 16px;
+    color: var(--gold-soft);
+    font-style: italic;
+  }
+  .pyr-notes { display: flex; gap: 8px; flex-wrap: wrap; }
+  .note-pill {
+    background: var(--cream-warm);
+    border: 1px solid var(--border);
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    color: var(--ink);
+  }
+
+  .related {
+    max-width: 1280px;
+    margin: 64px auto 0;
+    padding: 0 32px 64px;
+  }
+  .related-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  .rel-card {
+    background: var(--cream-soft);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    transition: all .2s;
+  }
+  .rel-card:hover { transform: translateY(-3px); border-color: var(--border-strong); }
+  .rel-img {
+    background: var(--cream-warm);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .rel-img svg { width: 70%; height: auto; margin: 0 auto; display: block; }
+  .rel-name { font-family: var(--font-display); font-size: 18px; color: var(--ink); }
+  .rel-fam { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-mute); margin-top: 4px; }
+
+  @media (max-width: 880px) {
+    .pd-grid { grid-template-columns: 1fr; gap: 32px; }
+    .pd-img { padding: 28px; }
+    .pyr-row { grid-template-columns: 1fr; gap: 12px; }
+  }
+</style>
+
+<script>
+  document.querySelectorAll('.size-opt').forEach(opt => {
+    opt.addEventListener('click', () => {
+      document.querySelectorAll('.size-opt').forEach(o => o.classList.remove('active'));
+      opt.classList.add('active');
+      (opt.querySelector('input') as HTMLInputElement).checked = true;
+    });
+  });
+</script>

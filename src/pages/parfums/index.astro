@@ -1,0 +1,198 @@
+---
+import Base from '../../layouts/Base.astro';
+import ProductCard from '../../components/ProductCard.astro';
+import data from '../../data/products.json';
+
+const products = data.products;
+const sizes = data.sizes;
+
+// Collect filter options
+const allFamilies = [...new Set(products.map((p: any) => p.family))].sort();
+---
+<Base
+  title="Tous les parfums | Dadios Fragrance Tunisie"
+  description="Découvrez la collection complète : parfums homme, femme et mixtes, en 20ML et 50ML. Élaborés à la main dans notre atelier à Tunis."
+>
+
+<section class="cat-hero">
+  <div class="cat-hero-inner">
+    <div class="eyebrow">La collection</div>
+    <h1>Tous nos parfums</h1>
+    <p>{products.length} signatures, deux formats. Chaque flacon composé à la main dans notre atelier à Tunis.</p>
+  </div>
+</section>
+
+<section class="cat-controls">
+  <div class="cat-controls-inner">
+    <div class="filter-group" data-filter-type="gender">
+      <button class="filter-btn active" data-value="all">Tous</button>
+      <button class="filter-btn" data-value="homme">Homme</button>
+      <button class="filter-btn" data-value="femme">Femme</button>
+      <button class="filter-btn" data-value="mixte">Mixte</button>
+    </div>
+    <input
+      type="search"
+      placeholder="Rechercher un parfum..."
+      class="search-input"
+      id="searchInput"
+    />
+  </div>
+</section>
+
+<section class="cat-grid-wrap">
+  <div class="cat-grid" id="productGrid">
+    {products.map((p: any) => (
+      <div class="grid-item" data-gender={p.gender} data-name={p.name.toLowerCase()} data-family={p.family.toLowerCase()}>
+        <ProductCard product={p} sizes={sizes} />
+      </div>
+    ))}
+  </div>
+  <p class="cat-empty hidden" id="empty">Aucun parfum ne correspond à votre recherche.</p>
+</section>
+
+</Base>
+
+<style>
+  .cat-hero {
+    background: var(--cream-warm);
+    padding: 64px 32px;
+    border-bottom: 1px solid var(--border);
+  }
+  .cat-hero-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    text-align: center;
+  }
+  .cat-hero h1 {
+    font-size: clamp(36px, 5vw, 54px);
+    margin: 14px 0 16px;
+  }
+  .cat-hero p {
+    color: var(--ink-soft);
+    max-width: 540px;
+    margin: 0 auto;
+  }
+
+  .cat-controls {
+    background: var(--cream);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 32px;
+    position: sticky;
+    top: 73px;
+    z-index: 50;
+  }
+  .cat-controls-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .filter-group { display: flex; gap: 8px; flex-wrap: wrap; }
+  .filter-btn {
+    background: var(--cream-soft);
+    border: 1px solid var(--border);
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    color: var(--ink);
+    font-family: var(--font-body);
+    transition: all .2s;
+  }
+  .filter-btn:hover { border-color: var(--gold-soft); }
+  .filter-btn.active { background: var(--emerald); color: var(--cream); border-color: var(--emerald); }
+  .search-input {
+    background: var(--cream-soft);
+    border: 1px solid var(--border-strong);
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    width: 260px;
+    color: var(--ink);
+    outline: none;
+  }
+  .search-input:focus { border-color: var(--emerald); }
+
+  .cat-grid-wrap {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 48px 32px 80px;
+  }
+  .cat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 24px;
+  }
+  .cat-empty {
+    text-align: center;
+    padding: 48px;
+    color: var(--ink-soft);
+    font-style: italic;
+  }
+  .hidden { display: none; }
+  .grid-item.hidden { display: none; }
+
+  @media (max-width: 880px) {
+    .cat-controls { top: 0; padding: 14px 16px; }
+    .search-input { width: 100%; }
+    .cat-grid-wrap { padding: 32px 16px 56px; }
+  }
+</style>
+
+<script>
+  import { syncCatalogFromApi, applyImagesToStaticCards } from '../../scripts/catalogSync.js';
+  syncCatalogFromApi().then((products) => {
+    if (products) applyImagesToStaticCards(products);
+  });
+
+  const items = document.querySelectorAll('.grid-item');
+  const searchInput = document.getElementById('searchInput') as HTMLInputElement;
+  const empty = document.getElementById('empty');
+  let activeGender = 'all';
+  let searchQuery = '';
+
+  function applyFilters() {
+    let visibleCount = 0;
+    items.forEach(item => {
+      const el = item as HTMLElement;
+      const gender = el.dataset.gender;
+      const name = el.dataset.name || '';
+      const family = el.dataset.family || '';
+      const matchesGender = activeGender === 'all' || gender === activeGender;
+      const matchesSearch = !searchQuery ||
+        name.includes(searchQuery) ||
+        family.includes(searchQuery);
+      const visible = matchesGender && matchesSearch;
+      el.classList.toggle('hidden', !visible);
+      if (visible) visibleCount++;
+    });
+    empty?.classList.toggle('hidden', visibleCount > 0);
+  }
+
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeGender = btn.getAttribute('data-value') || 'all';
+      applyFilters();
+    });
+  });
+
+  searchInput?.addEventListener('input', () => {
+    searchQuery = searchInput.value.toLowerCase().trim();
+    applyFilters();
+  });
+
+  // Read ?gender= from URL on load (footer links use this)
+  const params = new URLSearchParams(window.location.search);
+  const initialGender = params.get('gender');
+  if (initialGender && ['homme', 'femme', 'mixte'].includes(initialGender)) {
+    const btn = document.querySelector(`.filter-btn[data-value="${initialGender}"]`);
+    if (btn) (btn as HTMLElement).click();
+  }
+</script>

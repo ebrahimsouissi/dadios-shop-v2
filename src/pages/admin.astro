@@ -1,0 +1,871 @@
+---
+import Base from '../layouts/Base.astro';
+import data from '../data/products.json';
+const seedProducts = data.products;
+const sizes = data.sizes;
+---
+<Base
+  title="Administration — Dadios Fragrance"
+  description="Espace administration"
+>
+
+<!-- ============ LOGIN GATE ============ -->
+<section id="loginGate" class="login-gate">
+  <div class="login-box">
+    <div class="eyebrow">Espace privé</div>
+    <h2>Administration</h2>
+    <p>Entrez le mot de passe administrateur pour continuer.</p>
+    <form id="loginForm">
+      <input
+        type="password"
+        id="loginPwd"
+        placeholder="Mot de passe"
+        required
+        autocomplete="current-password"
+      />
+      <button type="submit" class="btn btn-primary" id="loginBtn">Accéder</button>
+      <p id="loginErr" class="login-err hidden">Mot de passe incorrect.</p>
+    </form>
+  </div>
+</section>
+
+<!-- ============ MAIN ADMIN (hidden until logged in) ============ -->
+<section class="admin hidden" id="adminMain">
+  <div class="admin-head">
+    <div>
+      <div class="eyebrow">Administration</div>
+      <h1>Gestion des parfums</h1>
+      <p id="countLine" style="color:var(--ink-soft);margin-top:8px">Chargement...</p>
+    </div>
+    <div style="display:flex;gap:12px;align-items:center">
+      <button class="btn btn-outline btn-sm" id="logoutBtn">Déconnexion</button>
+      <button class="btn btn-primary" id="newBtn">+ Nouveau parfum</button>
+    </div>
+  </div>
+
+  <div class="admin-tabs">
+    <button class="tab-btn active" data-filter="all">Tous</button>
+    <button class="tab-btn" data-filter="homme">Homme</button>
+    <button class="tab-btn" data-filter="femme">Femme</button>
+    <button class="tab-btn" data-filter="mixte">Mixte</button>
+    <button class="tab-btn" data-filter="featured">Best-sellers</button>
+  </div>
+
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th></th>
+        <th>Nom</th>
+        <th>Inspiré par</th>
+        <th>Famille</th>
+        <th>Genre</th>
+        <th>Best-seller</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="rows">
+      <tr><td colspan="7" style="text-align:center;padding:48px">Chargement des parfums...</td></tr>
+    </tbody>
+  </table>
+
+  <div id="statusMsg" class="status-msg hidden"></div>
+</section>
+
+<!-- ============ MODAL ============ -->
+<div class="modal hidden" id="modal">
+  <div class="modal-overlay" id="overlay"></div>
+  <div class="modal-box">
+    <button class="modal-close" id="closeBtn" aria-label="Fermer">×</button>
+    <div class="eyebrow" id="modalEyebrow">Ajouter un parfum</div>
+    <h2 id="modalTitle">Nouveau parfum</h2>
+
+    <form id="prodForm">
+      <input type="hidden" name="originalSlug" id="originalSlug" />
+
+      <!-- IMAGE UPLOAD -->
+      <div class="card-block">
+        <strong>Photo du produit</strong>
+        <small style="display:block;margin-bottom:12px">JPG, PNG ou WebP. Sera rognée en carré automatiquement.</small>
+        <div class="image-uploader">
+          <div class="image-preview" id="imgPreview">
+            <span class="image-placeholder">Aucune image</span>
+          </div>
+          <div class="image-controls">
+            <input type="file" id="imgFile" accept="image/jpeg,image/jpg,image/png,image/webp" hidden />
+            <button type="button" class="btn btn-outline btn-sm" id="imgPickBtn">📁 Choisir une photo</button>
+            <button type="button" class="btn btn-outline btn-sm hidden" id="imgRemoveBtn">Retirer</button>
+            <p class="image-hint" id="imgStatus"></p>
+          </div>
+        </div>
+        <input type="hidden" name="image" id="imgUrl" value="" />
+      </div>
+
+      <div class="form-row">
+        <label>
+          <span>Nom du parfum *</span>
+          <input type="text" name="name" id="fName" required placeholder="ex. Sauvage Élixir" />
+        </label>
+        <label>
+          <span>Identifiant URL (slug) *</span>
+          <input type="text" name="slug" id="fSlug" required placeholder="ex. sauvage-elixir" pattern="[a-z0-9\-]+" />
+          <small>Lettres minuscules, chiffres, tirets uniquement.</small>
+        </label>
+      </div>
+
+      <label>
+        <span>Inspiré par *</span>
+        <input type="text" name="inspiredBy" id="fInspired" required placeholder="ex. Dior Sauvage Élixir" />
+      </label>
+
+      <div class="form-row">
+        <label>
+          <span>Genre *</span>
+          <select name="gender" id="fGender" required>
+            <option value="homme">Homme</option>
+            <option value="femme">Femme</option>
+            <option value="mixte">Mixte</option>
+          </select>
+        </label>
+        <label>
+          <span>Famille olfactive *</span>
+          <input type="text" name="family" id="fFamily" required placeholder="ex. Boisé · Épicé" />
+        </label>
+      </div>
+
+      <label>
+        <span>Description courte *</span>
+        <textarea name="shortDescription" id="fDesc" rows="3" required placeholder="Une fragrance puissante..." maxlength="240"></textarea>
+        <small>Apparaît dans les résultats Google. Maximum 240 caractères.</small>
+      </label>
+
+      <div class="card-block">
+        <strong>Pyramide olfactive</strong>
+        <small style="display:block;margin-bottom:12px">Séparez les notes par des virgules.</small>
+        <label>
+          <span>Notes de tête</span>
+          <input type="text" name="topNotes" id="fTopN" placeholder="Bergamote, Pamplemousse" />
+        </label>
+        <label>
+          <span>Notes de cœur</span>
+          <input type="text" name="heartNotes" id="fHeartN" placeholder="Iris, Jasmin" />
+        </label>
+        <label>
+          <span>Notes de fond</span>
+          <input type="text" name="baseNotes" id="fBaseN" placeholder="Santal, Vanille, Musc" />
+        </label>
+      </div>
+
+      <div class="form-row">
+        <label>
+          <span>Tenue</span>
+          <input type="text" name="longevity" id="fLong" placeholder="ex. 8 h" />
+        </label>
+        <label>
+          <span>Sillage</span>
+          <select name="sillage" id="fSill">
+            <option>Modéré</option>
+            <option>Fort</option>
+            <option>Énorme</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <span class="lbl">Saisons</span>
+          <div class="check-row" id="seasonsBox">
+            {['Hiver','Printemps','Été','Automne'].map(s => (
+              <label class="check-item"><input type="checkbox" name="seasons" value={s}/> {s}</label>
+            ))}
+          </div>
+        </div>
+        <div>
+          <span class="lbl">Moments</span>
+          <div class="check-row" id="momentsBox">
+            {['Jour','Soir','Événement'].map(m => (
+              <label class="check-item"><input type="checkbox" name="moments" value={m}/> {m}</label>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div class="card-block">
+        <strong>Prix par format</strong>
+        <small style="display:block;margin-bottom:12px">Prix globaux. Pour modifier, éditer les Sizes dans products.json.</small>
+        <div class="price-grid">
+          {sizes.map((s: any) => (
+            <div class="price-cell">
+              <span class="size-label">{s.label}</span>
+              <span class="size-price">{s.price} <small>DT</small></span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <label class="checkbox">
+        <input type="checkbox" name="featured" id="fFeat" />
+        <span>Mettre en avant comme <strong>best-seller</strong> sur la page d'accueil</span>
+      </label>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-outline" id="cancelBtn">Annuler</button>
+        <button type="submit" class="btn btn-primary" id="saveBtn">Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+</Base>
+
+<style>
+  /* ====== LOGIN GATE ====== */
+  .login-gate {
+    min-height: 70vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px;
+  }
+  .login-box {
+    max-width: 420px;
+    width: 100%;
+    background: var(--cream-soft);
+    border: 1px solid var(--border-strong);
+    border-radius: 12px;
+    padding: 40px 36px;
+    text-align: center;
+  }
+  .login-box h2 { font-size: 32px; margin: 8px 0 8px; }
+  .login-box p { color: var(--ink-soft); margin-bottom: 24px; font-size: 14px; }
+  .login-box input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    background: var(--cream);
+    font-family: var(--font-body);
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
+  .login-box input:focus { outline: none; border-color: var(--emerald); }
+  .login-box .btn { width: 100%; }
+  .login-err { color: #B23A1F; font-size: 13px; margin-top: 12px; }
+  .hidden { display: none !important; }
+
+  /* ====== ADMIN ====== */
+  .admin {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 32px;
+  }
+  .admin-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 32px;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .admin h1 { font-size: clamp(28px, 4vw, 40px); margin-top: 8px; }
+  .admin-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 16px;
+  }
+  .tab-btn {
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--cream-soft);
+    color: var(--ink);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    font-family: var(--font-body);
+  }
+  .tab-btn.active { background: var(--emerald); color: var(--cream); border-color: var(--emerald); }
+
+  .admin-table {
+    width: 100%;
+    background: var(--cream-soft);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+  }
+  .admin-table th {
+    background: var(--cream-warm);
+    text-align: left;
+    padding: 12px 16px;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    font-weight: 500;
+    border-bottom: 1px solid var(--border);
+  }
+  .admin-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+  .admin-table tr:last-child td { border-bottom: none; }
+  .admin-table tr:hover { background: var(--cream); }
+  .muted { color: var(--ink-mute); font-style: italic; font-size: 13px; }
+  .cap { text-transform: capitalize; }
+  .tag {
+    background: var(--cream-warm);
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--ink-soft);
+  }
+  .tiny-img {
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    background: var(--cream-warm);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .tiny-img img { width: 100%; height: 100%; object-fit: cover; }
+  .tiny-img svg { width: 70%; height: auto; }
+  .link-btn {
+    background: transparent;
+    border: none;
+    color: var(--emerald);
+    font-size: 13px;
+    cursor: pointer;
+    padding: 4px 8px;
+    font-family: var(--font-body);
+    margin-right: 4px;
+  }
+  .link-btn:hover { text-decoration: underline; }
+  .link-btn.danger { color: #B23A1F; }
+
+  .status-msg {
+    margin-top: 16px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    background: var(--cream-soft);
+    border: 1px solid var(--border-strong);
+  }
+  .status-msg.success { background: rgba(14, 58, 31, 0.08); border-color: var(--emerald); color: var(--emerald); }
+  .status-msg.error { background: rgba(178, 58, 31, 0.08); border-color: #B23A1F; color: #B23A1F; }
+
+  /* ====== MODAL ====== */
+  .modal {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(5, 26, 14, 0.72);
+    backdrop-filter: blur(4px);
+  }
+  .modal-box {
+    position: relative;
+    background: var(--cream);
+    border: 1px solid var(--border-strong);
+    border-radius: 14px;
+    width: 100%;
+    max-width: 760px;
+    max-height: 92vh;
+    overflow-y: auto;
+    padding: 36px 40px 32px;
+  }
+  .modal-close {
+    position: absolute;
+    top: 16px;
+    right: 20px;
+    background: none;
+    border: none;
+    font-size: 28px;
+    cursor: pointer;
+    color: var(--ink-mute);
+    line-height: 1;
+  }
+  .modal-box h2 { font-size: 28px; margin: 6px 0 24px; }
+
+  /* form */
+  #prodForm label { display: block; margin-bottom: 18px; }
+  #prodForm label > span,
+  #prodForm .lbl {
+    display: block;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  #prodForm input[type="text"],
+  #prodForm input[type="password"],
+  #prodForm select,
+  #prodForm textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    background: var(--cream-soft);
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--ink);
+  }
+  #prodForm input:focus, #prodForm select:focus, #prodForm textarea:focus {
+    outline: none; border-color: var(--emerald);
+  }
+  #prodForm small {
+    display: block;
+    font-size: 11px;
+    color: var(--ink-mute);
+    margin-top: 4px;
+    line-height: 1.5;
+  }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .card-block {
+    background: var(--cream-soft);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin: 8px 0 18px;
+  }
+  .card-block strong {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 16px;
+    color: var(--emerald);
+    margin-bottom: 4px;
+  }
+  .check-row { display: flex; gap: 12px; flex-wrap: wrap; padding-top: 6px; }
+  .check-item {
+    margin-bottom: 0 !important;
+    display: inline-flex !important;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .check-item input { width: auto !important; margin: 0 !important; }
+
+  .price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .price-cell {
+    background: var(--cream);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .price-cell .size-label { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-mute); }
+  .price-cell .size-price { font-family: var(--font-display); font-size: 22px; color: var(--emerald); font-weight: 500; }
+  .price-cell .size-price small { font-size: 11px; color: var(--ink-mute); margin-left: 4px; }
+
+  .checkbox {
+    display: flex !important;
+    align-items: center;
+    gap: 10px;
+    padding: 14px;
+    background: var(--cream-soft);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .checkbox input { margin: 0; }
+  .checkbox span {
+    display: inline !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+    font-size: 14px !important;
+    color: var(--ink) !important;
+    margin: 0 !important;
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* IMAGE UPLOAD */
+  .image-uploader { display: grid; grid-template-columns: 140px 1fr; gap: 18px; align-items: start; }
+  .image-preview {
+    width: 140px;
+    height: 140px;
+    border-radius: 10px;
+    background: var(--cream-warm);
+    border: 1.5px dashed var(--border-strong);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-mute);
+    font-size: 12px;
+    text-align: center;
+    padding: 8px;
+  }
+  .image-preview img { width: 100%; height: 100%; object-fit: cover; }
+  .image-controls { display: flex; flex-direction: column; gap: 10px; }
+  .image-hint { font-size: 12px; color: var(--ink-mute); margin: 4px 0 0; min-height: 18px; }
+  .image-hint.success { color: var(--emerald); }
+  .image-hint.error { color: #B23A1F; }
+
+  @media (max-width: 720px) {
+    .modal-box { padding: 24px 20px; }
+    .form-row, .price-grid { grid-template-columns: 1fr; }
+    .image-uploader { grid-template-columns: 1fr; }
+    .admin-table { font-size: 13px; }
+    .admin-table th, .admin-table td { padding: 10px 8px; }
+  }
+</style>
+
+<script>
+  import { checkPassword, setPassword, getPassword, clearPassword, listProducts, upsertProduct, deleteProduct, uploadImage } from '../scripts/adminApi.js';
+  import { processImage } from '../scripts/imageProcessor.js';
+
+  // ============ STATE ============
+  let products = [];
+  let editingSlug = null;
+  let pendingImageBlob = null;
+  let pendingImageUrl = null;
+
+  // ============ DOM ============
+  const loginGate = document.getElementById('loginGate');
+  const adminMain = document.getElementById('adminMain');
+  const loginForm = document.getElementById('loginForm');
+  const loginPwd = document.getElementById('loginPwd') as HTMLInputElement;
+  const loginErr = document.getElementById('loginErr');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const newBtn = document.getElementById('newBtn');
+  const modal = document.getElementById('modal');
+  const overlay = document.getElementById('overlay');
+  const closeBtn = document.getElementById('closeBtn');
+  const cancelBtn = document.getElementById('cancelBtn');
+  const prodForm = document.getElementById('prodForm') as HTMLFormElement;
+  const saveBtn = document.getElementById('saveBtn') as HTMLButtonElement;
+  const rowsTbody = document.getElementById('rows');
+  const countLine = document.getElementById('countLine');
+  const statusMsg = document.getElementById('statusMsg');
+  const imgPickBtn = document.getElementById('imgPickBtn');
+  const imgRemoveBtn = document.getElementById('imgRemoveBtn');
+  const imgFile = document.getElementById('imgFile') as HTMLInputElement;
+  const imgPreview = document.getElementById('imgPreview');
+  const imgStatus = document.getElementById('imgStatus');
+  const imgUrl = document.getElementById('imgUrl') as HTMLInputElement;
+
+  // ============ LOGIN ============
+  async function attemptLogin(pw) {
+    setPassword(pw);
+    const ok = await checkPassword(pw);
+    if (ok) {
+      loginGate?.classList.add('hidden');
+      adminMain?.classList.remove('hidden');
+      loadProducts();
+    } else {
+      clearPassword();
+      loginErr?.classList.remove('hidden');
+    }
+  }
+
+  loginForm?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    loginErr?.classList.add('hidden');
+    attemptLogin(loginPwd.value);
+  });
+
+  logoutBtn?.addEventListener('click', () => {
+    clearPassword();
+    location.reload();
+  });
+
+  // Auto-login if password is in sessionStorage (page refresh during session)
+  if (getPassword()) {
+    attemptLogin(getPassword());
+  }
+
+  // ============ LOAD PRODUCTS ============
+  async function loadProducts() {
+    const res = await listProducts();
+    if (res.ok) {
+      products = res.products || [];
+      // If KV is empty, seed with the JSON file's products on first load
+      if (products.length === 0) {
+        showStatus('Catalogue vide — affichage des produits par défaut. Enregistrez pour les mettre dans la base.', 'info');
+        products = SEED_PRODUCTS;
+      }
+      renderRows();
+    } else {
+      showStatus('Erreur de chargement : ' + (res.error || 'inconnue'), 'error');
+    }
+  }
+
+  function renderRows(filter = 'all') {
+    if (!rowsTbody) return;
+    const filtered = products.filter(p => {
+      if (filter === 'all') return true;
+      if (filter === 'featured') return p.featured;
+      return p.gender === filter;
+    });
+    countLine && (countLine.textContent = `${filtered.length} parfum${filtered.length > 1 ? 's' : ''} affiché${filtered.length > 1 ? 's' : ''}.`);
+
+    if (filtered.length === 0) {
+      rowsTbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;opacity:0.7">Aucun parfum.</td></tr>';
+      return;
+    }
+
+    rowsTbody.innerHTML = filtered.map(p => `
+      <tr data-slug="${escapeHtml(p.slug)}">
+        <td>
+          <div class="tiny-img">
+            ${p.image ? `<img src="${escapeAttr(p.image)}" alt=""/>` :
+              `<svg viewBox="0 0 40 50"><rect x="12" y="10" width="16" height="36" rx="1.5" fill="#0E3A1F"/><rect x="16" y="22" width="8" height="14" fill="#0E3A1F" stroke="#D4AF37" stroke-width="0.3"/><rect x="16" y="4" width="8" height="6" rx="0.8" fill="#A87C45"/></svg>`}
+          </div>
+        </td>
+        <td><strong>${escapeHtml(p.name)}</strong></td>
+        <td class="muted">${escapeHtml(p.inspiredBy || '')}</td>
+        <td><span class="tag">${escapeHtml(p.family || '')}</span></td>
+        <td class="cap">${escapeHtml(p.gender)}</td>
+        <td>${p.featured ? '★ Oui' : '—'}</td>
+        <td>
+          <button class="link-btn edit-btn" data-slug="${escapeAttr(p.slug)}">Modifier</button>
+          <button class="link-btn danger del-btn" data-slug="${escapeAttr(p.slug)}">Supprimer</button>
+        </td>
+      </tr>`).join('');
+
+    rowsTbody.querySelectorAll('.edit-btn').forEach(b => {
+      b.addEventListener('click', () => openEdit(b.getAttribute('data-slug')));
+    });
+    rowsTbody.querySelectorAll('.del-btn').forEach(b => {
+      b.addEventListener('click', () => handleDelete(b.getAttribute('data-slug')));
+    });
+  }
+
+  document.querySelectorAll('.tab-btn').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      renderRows(t.getAttribute('data-filter') || 'all');
+    });
+  });
+
+  // ============ MODAL ============
+  function openNew() {
+    editingSlug = null;
+    pendingImageBlob = null;
+    pendingImageUrl = null;
+    document.getElementById('modalTitle')!.textContent = 'Nouveau parfum';
+    document.getElementById('modalEyebrow')!.textContent = 'Ajouter un parfum';
+    prodForm.reset();
+    (document.getElementById('originalSlug') as HTMLInputElement).value = '';
+    imgUrl.value = '';
+    resetImagePreview();
+    modal?.classList.remove('hidden');
+  }
+  function openEdit(slug) {
+    const p = products.find(x => x.slug === slug);
+    if (!p) return;
+    editingSlug = slug;
+    pendingImageBlob = null;
+    pendingImageUrl = null;
+    document.getElementById('modalTitle')!.textContent = 'Modifier ' + p.name;
+    document.getElementById('modalEyebrow')!.textContent = 'Modification';
+    (document.getElementById('originalSlug') as HTMLInputElement).value = slug;
+    (document.getElementById('fName') as HTMLInputElement).value = p.name || '';
+    (document.getElementById('fSlug') as HTMLInputElement).value = p.slug || '';
+    (document.getElementById('fInspired') as HTMLInputElement).value = p.inspiredBy || '';
+    (document.getElementById('fGender') as HTMLSelectElement).value = p.gender || 'homme';
+    (document.getElementById('fFamily') as HTMLInputElement).value = p.family || '';
+    (document.getElementById('fDesc') as HTMLTextAreaElement).value = p.shortDescription || '';
+    (document.getElementById('fTopN') as HTMLInputElement).value = (p.topNotes || []).join(', ');
+    (document.getElementById('fHeartN') as HTMLInputElement).value = (p.heartNotes || []).join(', ');
+    (document.getElementById('fBaseN') as HTMLInputElement).value = (p.baseNotes || []).join(', ');
+    (document.getElementById('fLong') as HTMLInputElement).value = p.longevity || '';
+    (document.getElementById('fSill') as HTMLSelectElement).value = p.sillage || 'Fort';
+    (document.getElementById('fFeat') as HTMLInputElement).checked = !!p.featured;
+    document.querySelectorAll('input[name="seasons"]').forEach(c => {
+      (c as HTMLInputElement).checked = (p.seasons || []).includes((c as HTMLInputElement).value);
+    });
+    document.querySelectorAll('input[name="moments"]').forEach(c => {
+      (c as HTMLInputElement).checked = (p.moments || []).includes((c as HTMLInputElement).value);
+    });
+    imgUrl.value = p.image || '';
+    if (p.image) {
+      imgPreview!.innerHTML = `<img src="${escapeAttr(p.image)}" alt=""/>`;
+      imgRemoveBtn?.classList.remove('hidden');
+    } else {
+      resetImagePreview();
+    }
+    modal?.classList.remove('hidden');
+  }
+  function closeModal() {
+    modal?.classList.add('hidden');
+    prodForm.reset();
+    editingSlug = null;
+    pendingImageBlob = null;
+    pendingImageUrl = null;
+    resetImagePreview();
+  }
+  newBtn?.addEventListener('click', openNew);
+  closeBtn?.addEventListener('click', closeModal);
+  cancelBtn?.addEventListener('click', closeModal);
+  overlay?.addEventListener('click', closeModal);
+
+  // ============ IMAGE UPLOAD UI ============
+  imgPickBtn?.addEventListener('click', () => imgFile.click());
+  imgRemoveBtn?.addEventListener('click', () => {
+    pendingImageBlob = null;
+    pendingImageUrl = null;
+    imgUrl.value = '';
+    resetImagePreview();
+  });
+  function resetImagePreview() {
+    imgPreview!.innerHTML = '<span class="image-placeholder">Aucune image</span>';
+    imgRemoveBtn?.classList.add('hidden');
+    imgStatus!.textContent = '';
+    imgStatus!.className = 'image-hint';
+    imgFile.value = '';
+  }
+  imgFile?.addEventListener('change', async () => {
+    const f = imgFile.files?.[0];
+    if (!f) return;
+    imgStatus!.textContent = 'Traitement de l\u2019image...';
+    imgStatus!.className = 'image-hint';
+    try {
+      const { blob, dataUrl } = await processImage(f, 1200);
+      pendingImageBlob = blob;
+      imgPreview!.innerHTML = `<img src="${dataUrl}" alt="aperçu"/>`;
+      imgRemoveBtn?.classList.remove('hidden');
+      const sizeKb = Math.round(blob.size / 1024);
+      imgStatus!.textContent = `Prête (${sizeKb} KB). Sera envoyée à l\u2019enregistrement.`;
+      imgStatus!.classList.add('success');
+    } catch (err) {
+      imgStatus!.textContent = (err as Error).message || 'Erreur image';
+      imgStatus!.classList.add('error');
+    }
+  });
+
+  // ============ SAVE ============
+  prodForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Enregistrement...';
+
+    try {
+      // 1. Upload image if there's a pending blob
+      let finalImageUrl = imgUrl.value;
+      if (pendingImageBlob) {
+        const slugHint = (document.getElementById('fSlug') as HTMLInputElement).value;
+        imgStatus!.textContent = 'Envoi de l\u2019image...';
+        imgStatus!.className = 'image-hint';
+        const upRes = await uploadImage(pendingImageBlob, slugHint);
+        if (!upRes.ok) {
+          throw new Error('Upload échoué: ' + (upRes.error || 'inconnue'));
+        }
+        finalImageUrl = upRes.url;
+        imgStatus!.textContent = '✓ Image envoyée.';
+        imgStatus!.classList.add('success');
+      }
+
+      // 2. Build product object
+      const product = {
+        slug: (document.getElementById('fSlug') as HTMLInputElement).value.trim(),
+        name: (document.getElementById('fName') as HTMLInputElement).value.trim(),
+        inspiredBy: (document.getElementById('fInspired') as HTMLInputElement).value.trim(),
+        gender: (document.getElementById('fGender') as HTMLSelectElement).value,
+        family: (document.getElementById('fFamily') as HTMLInputElement).value.trim(),
+        shortDescription: (document.getElementById('fDesc') as HTMLTextAreaElement).value.trim(),
+        topNotes: parseList((document.getElementById('fTopN') as HTMLInputElement).value),
+        heartNotes: parseList((document.getElementById('fHeartN') as HTMLInputElement).value),
+        baseNotes: parseList((document.getElementById('fBaseN') as HTMLInputElement).value),
+        longevity: (document.getElementById('fLong') as HTMLInputElement).value.trim(),
+        sillage: (document.getElementById('fSill') as HTMLSelectElement).value,
+        seasons: getChecked('seasons'),
+        moments: getChecked('moments'),
+        featured: (document.getElementById('fFeat') as HTMLInputElement).checked,
+        image: finalImageUrl,
+      };
+
+      // 3. Save via worker
+      const res = await upsertProduct(product);
+      if (!res.ok) throw new Error(res.error || 'Sauvegarde échouée');
+
+      showStatus(editingSlug ? `✓ "${product.name}" mis à jour.` : `✓ "${product.name}" ajouté.`, 'success');
+      closeModal();
+      await loadProducts();
+    } catch (err) {
+      showStatus('Erreur : ' + ((err as Error).message || err), 'error');
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Enregistrer';
+    }
+  });
+
+  async function handleDelete(slug) {
+    const p = products.find(x => x.slug === slug);
+    if (!p) return;
+    if (!confirm(`Supprimer "${p.name}" ? Action irréversible.`)) return;
+    const res = await deleteProduct(slug);
+    if (res.ok) {
+      showStatus(`✓ "${p.name}" supprimé.`, 'success');
+      await loadProducts();
+    } else {
+      showStatus('Erreur : ' + (res.error || 'inconnue'), 'error');
+    }
+  }
+
+  // ============ HELPERS ============
+  function parseList(str) {
+    return str.split(',').map(s => s.trim()).filter(Boolean);
+  }
+  function getChecked(name) {
+    return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(c => (c as HTMLInputElement).value);
+  }
+  function escapeHtml(s) {
+    return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]!);
+  }
+  function escapeAttr(s) { return escapeHtml(s); }
+
+  function showStatus(text, kind = 'info') {
+    if (!statusMsg) return;
+    statusMsg.textContent = text;
+    statusMsg.className = 'status-msg ' + (kind === 'success' ? 'success' : kind === 'error' ? 'error' : '');
+    statusMsg.classList.remove('hidden');
+    setTimeout(() => statusMsg.classList.add('hidden'), 5000);
+  }
+
+  // ============ SEED DATA (used if KV empty on first load) ============
+  const SEED_PRODUCTS = JSON.parse(document.getElementById('__seed')?.textContent || '[]');
+
+  // Auto-slug as user types name (only for new entries)
+  (document.getElementById('fName') as HTMLInputElement)?.addEventListener('input', (e) => {
+    if (editingSlug) return; // don't auto-overwrite on edit
+    const slugInput = document.getElementById('fSlug') as HTMLInputElement;
+    if (!slugInput) return;
+    const name = (e.target as HTMLInputElement).value;
+    slugInput.value = name.toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 64);
+  });
+</script>
+
+<!-- Seed data for first load when KV is empty -->
+<script id="__seed" type="application/json" set:html={JSON.stringify(seedProducts)}></script>

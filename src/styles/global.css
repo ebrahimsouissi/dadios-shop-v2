@@ -1,0 +1,234 @@
+/* =====================================================
+   DADIOS Fragrance — design system
+   Heritage luxury: deep emerald + yellow gold + warm cream
+   Based on the actual product label and shop photography
+   ===================================================== */
+:root {
+  /* Brand colors - pulled from the actual perfume label */
+  --emerald: #0E3A1F;
+  --emerald-dark: #082817;
+  --emerald-deep: #051A0E;
+  --gold: #D4AF37;
+  --gold-soft: #C9A86B;
+  --gold-light: #E8D08A;
+
+  /* Surfaces - warm cream/wood from the shop photography */
+  --cream: #F5EDDC;
+  --cream-warm: #EFE6D3;
+  --cream-soft: #FAF5E8;
+  --paper: #FFFFFF;
+
+  /* Text */
+  --ink: #1A1410;
+  --ink-soft: #4A3F30;
+  --ink-mute: #786850;
+
+  /* Functional */
+  --border: rgba(212, 175, 55, 0.22);
+  --border-strong: rgba(212, 175, 55, 0.45);
+  --border-emerald: rgba(14, 58, 31, 0.15);
+
+  /* Type */
+  --font-display: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+  --font-script: 'Allura', 'Great Vibes', cursive;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* Spacing rhythm */
+  --r1: 4px; --r2: 8px; --r3: 16px; --r4: 24px; --r5: 32px;
+  --r6: 48px; --r7: 64px; --r8: 96px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--cream);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+a { color: inherit; text-decoration: none; }
+img { max-width: 100%; height: auto; display: block; }
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.005em;
+  color: var(--ink);
+}
+
+.eyebrow {
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--gold-soft);
+}
+
+.script {
+  font-family: var(--font-script);
+  font-weight: 400;
+  color: var(--gold);
+  font-style: italic;
+}
+
+/* ============= NAVBAR ============= */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--cream);
+  border-bottom: 1px solid var(--border);
+}
+.nav-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 20px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+}
+.nav-logo {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.nav-logo .wordmark {
+  font-family: var(--font-script);
+  font-size: 28px;
+  color: var(--gold);
+  line-height: 1;
+}
+.nav-logo .tag {
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.nav-links {
+  display: flex;
+  gap: 36px;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+}
+.nav-links a:hover { color: var(--emerald); }
+.nav-actions { display: flex; gap: 16px; align-items: center; font-size: 13px; }
+.nav-cart {
+  background: var(--emerald);
+  color: var(--cream);
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  transition: background .2s;
+}
+.nav-cart:hover { background: var(--emerald-dark); }
+
+/* ============= BUTTONS ============= */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 28px;
+  border-radius: 999px;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all .25s;
+  font-family: var(--font-body);
+}
+.btn-primary { background: var(--emerald); color: var(--cream); }
+.btn-primary:hover { background: var(--emerald-dark); }
+.btn-outline { border-color: var(--ink); background: transparent; color: var(--ink); }
+.btn-outline:hover { background: var(--ink); color: var(--cream); }
+.btn-gold { background: var(--gold); color: var(--emerald-deep); }
+.btn-gold:hover { background: var(--gold-light); }
+.btn-sm { padding: 10px 18px; font-size: 12px; }
+
+/* ============= FOOTER ============= */
+footer {
+  background: var(--emerald-deep);
+  color: var(--cream-warm);
+  padding: 56px 32px 32px;
+  margin-top: 96px;
+}
+footer .foot-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 48px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+}
+footer h4 {
+  color: var(--gold);
+  font-size: 12px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  font-family: var(--font-body);
+  font-weight: 500;
+}
+footer .wordmark-foot {
+  font-family: var(--font-script);
+  font-size: 36px;
+  color: var(--gold);
+  margin-bottom: 6px;
+}
+footer .tagline-foot {
+  font-family: var(--font-display);
+  font-style: italic;
+  color: var(--cream-warm);
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+footer ul { list-style: none; }
+footer li { margin-bottom: 8px; font-size: 13px; opacity: 0.85; }
+footer li:hover { opacity: 1; }
+footer .copy {
+  max-width: 1280px;
+  margin: 24px auto 0;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(245, 237, 220, 0.5);
+}
+
+/* ============= ORNAMENT - corner flourish from label ============= */
+.ornament {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin: 32px 0;
+  color: var(--gold);
+}
+.ornament::before, .ornament::after {
+  content: '';
+  flex: 1;
+  max-width: 80px;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--gold-soft), transparent);
+}
+.ornament svg { width: 24px; height: 24px; flex-shrink: 0; }
+
+/* ============= RESPONSIVE ============= */
+@media (max-width: 880px) {
+  .nav-inner { padding: 14px 16px; gap: 12px; flex-wrap: wrap; }
+  .nav-links { display: none; }
+  footer .foot-inner { grid-template-columns: 1fr; gap: 32px; }
+}

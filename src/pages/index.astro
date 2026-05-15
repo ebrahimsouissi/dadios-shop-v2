@@ -1,0 +1,265 @@
+---
+import Base from '../layouts/Base.astro';
+import ProductCard from '../components/ProductCard.astro';
+import data from '../data/products.json';
+
+const featured = data.products.filter((p: any) => p.featured);
+const sizes = data.sizes;
+---
+<Base
+  title="Dadios Fragrance — Parfumerie artisanale en Tunisie"
+  description="Des fragrances inspirées des grandes maisons, élaborées à la main dans notre atelier à Tunis. Découvrez la collection signature."
+>
+
+<section class="hero">
+  <div class="hero-grid">
+    <div class="hero-text">
+      <div class="eyebrow">Parfumerie artisanale · Tunisie</div>
+      <h1>
+        L'essence d'une<br />
+        <span class="script">élégance intemporelle.</span>
+      </h1>
+      <p class="hero-lead">
+        Des fragrances inspirées des grandes maisons, élaborées à la main dans notre atelier à Tunis. Chaque flacon porte notre signature : le luxe rendu accessible, sans compromis sur le caractère.
+      </p>
+      <div class="hero-cta">
+        <a href="/parfums" class="btn btn-primary">Découvrir la collection</a>
+        <a href="/quiz" class="btn btn-outline">Trouver mon parfum</a>
+      </div>
+      <div class="hero-trust">
+        <div><strong>9+</strong><span>fragrances signature</span></div>
+        <div><strong>20 & 50ML</strong><span>deux formats au choix</span></div>
+        <div><strong>Tunis</strong><span>fabriqué localement</span></div>
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      <div class="hero-bottle">
+        <svg viewBox="0 0 280 380" xmlns="http://www.w3.org/2000/svg">
+          <ellipse cx="140" cy="368" rx="100" ry="6" fill="rgba(0,0,0,0.12)"/>
+          <rect x="80" y="60" width="120" height="300" rx="6" fill="#0E3A1F"/>
+          <rect x="80" y="60" width="120" height="300" rx="6" fill="none" stroke="#D4AF37" stroke-width="1.2"/>
+          <rect x="100" y="150" width="80" height="130" fill="#0E3A1F"/>
+          <rect x="100" y="150" width="80" height="130" fill="none" stroke="#D4AF37" stroke-width="0.8"/>
+          <text x="92" y="166" font-family="Cormorant Garamond, serif" font-size="9" fill="#D4AF37" opacity="0.85">❦</text>
+          <text x="174" y="166" font-family="Cormorant Garamond, serif" font-size="9" fill="#D4AF37" opacity="0.85">❦</text>
+          <text x="92" y="272" font-family="Cormorant Garamond, serif" font-size="9" fill="#D4AF37" opacity="0.85">❦</text>
+          <text x="174" y="272" font-family="Cormorant Garamond, serif" font-size="9" fill="#D4AF37" opacity="0.85">❦</text>
+          <text x="140" y="200" text-anchor="middle" font-family="Allura, cursive" font-size="44" fill="#D4AF37">Dadios</text>
+          <text x="140" y="232" text-anchor="middle" font-family="Cormorant Garamond, serif" font-size="14" letter-spacing="7" fill="#D4AF37">FRAGRANCE</text>
+          <line x1="115" y1="244" x2="165" y2="244" stroke="#D4AF37" stroke-width="0.6"/>
+          <text x="140" y="262" text-anchor="middle" font-family="Cormorant Garamond, serif" font-style="italic" font-size="9" fill="#D4AF37">Essence of Timeless Elegance</text>
+          <rect x="108" y="20" width="64" height="42" rx="4" fill="#A87C45"/>
+          <rect x="116" y="8" width="48" height="18" rx="3" fill="#A87C45"/>
+          <ellipse cx="140" cy="60" rx="60" ry="4" fill="rgba(0,0,0,0.18)"/>
+        </svg>
+      </div>
+      <div class="hero-caption">
+        <span class="script" style="font-size:22px">Notre signature</span><br />
+        <span class="eyebrow">— Atelier de Tunis</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="ornament">
+  <span class="line"></span>
+  <svg viewBox="0 0 24 24"><path d="M12 2 L14 10 L22 12 L14 14 L12 22 L10 14 L2 12 L10 10 Z" fill="currentColor"/></svg>
+  <span class="line"></span>
+</div>
+
+<section class="featured">
+  <div class="section-head">
+    <div class="eyebrow">Best-sellers</div>
+    <h2>Les fragrances les plus aimées</h2>
+    <p>Quatre signatures qui définissent la maison. Approuvées par notre clientèle, jour après jour.</p>
+  </div>
+  <div class="product-grid">
+    {featured.map((product: any) => (
+      <ProductCard product={product} sizes={sizes} />
+    ))}
+  </div>
+  <div style="text-align:center;margin-top:48px">
+    <a href="/parfums" class="btn btn-outline">Voir toute la collection</a>
+  </div>
+</section>
+
+<section class="story">
+  <div class="story-inner">
+    <div class="story-text">
+      <div class="eyebrow">Notre histoire</div>
+      <h2>Le luxe, recréé à la main.</h2>
+      <p>
+        Dadios Fragrance est né d'une conviction simple : le grand parfum ne devrait pas être un privilège. Dans notre atelier à Tunis, nous recréons les fragrances qui ont marqué la parfumerie moderne — avec la même rigueur, les mêmes matières premières, et un prix juste.
+      </p>
+      <p>
+        Chaque flacon est composé à la main, étiqueté à la main, scellé à la main. Vous tenez le résultat d'une tradition artisanale et d'une passion pour les belles odeurs.
+      </p>
+      <a href="/boutique" class="btn btn-outline btn-sm" style="margin-top:24px">Visiter notre boutique</a>
+    </div>
+    <div class="story-image">
+      <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+        <rect width="400" height="400" fill="#EFE6D3"/>
+        <rect x="40" y="120" width="320" height="240" fill="#D4C3A0"/>
+        <rect x="80" y="160" width="40" height="160" fill="#0E3A1F"/>
+        <rect x="140" y="180" width="40" height="140" fill="#0E3A1F"/>
+        <rect x="200" y="170" width="40" height="150" fill="#0E3A1F"/>
+        <rect x="260" y="190" width="40" height="130" fill="#0E3A1F"/>
+        <rect x="86" y="200" width="28" height="40" fill="#D4AF37" opacity="0.3"/>
+        <rect x="146" y="220" width="28" height="40" fill="#D4AF37" opacity="0.3"/>
+        <rect x="206" y="210" width="28" height="40" fill="#D4AF37" opacity="0.3"/>
+        <rect x="266" y="230" width="28" height="40" fill="#D4AF37" opacity="0.3"/>
+        <line x1="40" y1="155" x2="360" y2="155" stroke="#A87C45" stroke-width="2"/>
+        <text x="200" y="380" text-anchor="middle" font-family="Allura, cursive" font-size="22" fill="rgba(168,124,69,0.6)">l'atelier</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+</Base>
+
+<script>
+  import { syncCatalogFromApi, applyImagesToStaticCards } from '../scripts/catalogSync.js';
+  syncCatalogFromApi().then((products) => {
+    if (products) applyImagesToStaticCards(products);
+  });
+</script>
+
+<style>
+  .hero {
+    background: var(--cream);
+    padding: 56px 32px 80px;
+    border-bottom: 1px solid var(--border);
+  }
+  .hero-grid {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 56px;
+    align-items: center;
+  }
+  .hero-text .eyebrow { margin-bottom: 22px; }
+  .hero h1 {
+    font-size: clamp(40px, 5vw, 64px);
+    margin-bottom: 24px;
+    line-height: 1.05;
+  }
+  .hero h1 .script { font-size: 1.1em; }
+  .hero-lead {
+    font-size: 16px;
+    color: var(--ink-soft);
+    max-width: 480px;
+    margin-bottom: 36px;
+    line-height: 1.75;
+  }
+  .hero-cta { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 56px; }
+  .hero-trust {
+    display: flex;
+    gap: 36px;
+    padding-top: 28px;
+    border-top: 1px solid var(--border);
+  }
+  .hero-trust div { display: flex; flex-direction: column; }
+  .hero-trust strong {
+    font-family: var(--font-display);
+    font-size: 22px;
+    color: var(--emerald);
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+  .hero-trust span {
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+
+  .hero-visual {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .hero-bottle {
+    background: var(--cream-warm);
+    border-radius: 16px;
+    padding: 32px;
+    border: 1px solid var(--border);
+    max-width: 380px;
+  }
+  .hero-bottle svg { width: 100%; height: auto; }
+  .hero-caption {
+    margin-top: 16px;
+    text-align: center;
+  }
+
+  /* ornament */
+  :global(.ornament) { color: var(--gold); padding: 0 32px; }
+
+  .featured {
+    max-width: 1280px;
+    margin: 80px auto 0;
+    padding: 0 32px;
+  }
+  .section-head {
+    text-align: center;
+    margin-bottom: 56px;
+  }
+  .section-head .eyebrow { margin-bottom: 14px; display: block; }
+  .section-head h2 {
+    font-size: clamp(32px, 4vw, 44px);
+    margin-bottom: 16px;
+  }
+  .section-head p {
+    color: var(--ink-soft);
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  .product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 24px;
+  }
+
+  .story {
+    background: var(--cream-warm);
+    margin: 96px 0 0;
+    padding: 96px 32px;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .story-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 64px;
+    align-items: center;
+  }
+  .story-text h2 {
+    font-size: clamp(32px, 4vw, 44px);
+    margin: 14px 0 24px;
+  }
+  .story-text p {
+    color: var(--ink-soft);
+    margin-bottom: 16px;
+    line-height: 1.8;
+    max-width: 460px;
+  }
+  .story-image {
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .story-image svg { width: 100%; height: auto; display: block; }
+
+  @media (max-width: 880px) {
+    .hero { padding: 40px 16px 56px; }
+    .hero-grid { grid-template-columns: 1fr; gap: 40px; }
+    .hero-trust { gap: 20px; flex-wrap: wrap; }
+    .story { padding: 56px 16px; }
+    .story-inner { grid-template-columns: 1fr; gap: 40px; }
+    .featured { padding: 0 16px; }
+  }
+</style>

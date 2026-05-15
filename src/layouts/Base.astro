@@ -1,0 +1,105 @@
+---
+import '../styles/global.css';
+
+export interface Props {
+  title: string;
+  description: string;
+  ogImage?: string;
+  jsonLd?: object;
+}
+const {
+  title,
+  description,
+  ogImage = '/og-default.jpg',
+  jsonLd,
+} = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site).toString();
+---
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title}</title>
+  <meta name="description" content={description} />
+  <link rel="canonical" href={canonical} />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:url" content={canonical} />
+  <meta property="og:image" content={new URL(ogImage, Astro.site).toString()} />
+  <meta property="og:locale" content="fr_TN" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content={title} />
+  <meta name="twitter:description" content={description} />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Allura&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  {jsonLd && (
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+  )}
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="/" class="nav-logo">
+        <span class="wordmark">Dadios</span>
+        <span class="tag">Fragrance</span>
+      </a>
+      <div class="nav-links">
+        <a href="/parfums">Parfums</a>
+        <a href="/journal">Journal</a>
+        <a href="/boutique">Boutique</a>
+        <a href="/contact">Contact</a>
+      </div>
+      <div class="nav-actions">
+        <a href="/compte">Compte</a>
+        <a href="#cart" class="nav-cart">Panier · 0</a>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <slot />
+  </main>
+
+  <footer>
+    <div class="foot-inner">
+      <div>
+        <div class="wordmark-foot">Dadios</div>
+        <div class="tagline-foot">Essence of Timeless Elegance</div>
+        <p style="font-size:13px;opacity:0.75;max-width:340px;line-height:1.7">Parfumerie artisanale à Tunis. Des fragrances inspirées des grandes maisons, élaborées à la main.</p>
+      </div>
+      <div>
+        <h4>Découvrir</h4>
+        <ul>
+          <li><a href="/parfums">Tous les parfums</a></li>
+          <li><a href="/parfums?gender=homme">Pour homme</a></li>
+          <li><a href="/parfums?gender=femme">Pour femme</a></li>
+          <li><a href="/parfums?gender=mixte">Mixtes</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Maison</h4>
+        <ul>
+          <li><a href="/boutique">Notre boutique</a></li>
+          <li><a href="/journal">Journal</a></li>
+          <li><a href="/contact">Contact</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Compte</h4>
+        <ul>
+          <li><a href="/connexion">Se connecter</a></li>
+          <li><a href="/fidelite">Carte de fidélité</a></li>
+        </ul>
+      </div>
+    </div>
+    <p class="copy">© 2026 Dadios Fragrance — Tunis, Tunisie</p>
+  </footer>
+</body>
+</html>
