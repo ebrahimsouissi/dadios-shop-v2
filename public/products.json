@@ -1,0 +1,317 @@
+{
+  "_comment": "Source of truth for all scents. Each scent gets a static SEO page at /parfums/{slug}. Sizes are shared globally below.",
+  "sizes": [
+    {
+      "code": "20ml",
+      "label": "Flacon 20ML",
+      "price": 10
+    },
+    {
+      "code": "50ml",
+      "label": "Flacon 50ML",
+      "price": 20
+    }
+  ],
+  "products": [
+    {
+      "slug": "sauvage-elixir",
+      "name": "Sauvage Élixir",
+      "inspiredBy": "Dior Sauvage Élixir",
+      "gender": "homme",
+      "family": "Boisé · Épicé",
+      "shortDescription": "Une fragrance puissante et envoûtante. Lavande, cannelle et bois précieux composent une signature audacieuse.",
+      "topNotes": [
+        "Lavande",
+        "Réglisse",
+        "Cannelle"
+      ],
+      "heartNotes": [
+        "Noix de muscade",
+        "Cardamome"
+      ],
+      "baseNotes": [
+        "Santal",
+        "Bois de Gaïac",
+        "Patchouli"
+      ],
+      "longevity": "9 h",
+      "sillage": "Énorme",
+      "seasons": [
+        "Hiver",
+        "Automne"
+      ],
+      "moments": [
+        "Soir",
+        "Événement"
+      ],
+      "featured": true,
+      "image": ""
+    },
+    {
+      "slug": "baccarat-rouge-540",
+      "name": "Baccarat Rouge",
+      "inspiredBy": "Maison Francis Kurkdjian Baccarat Rouge 540",
+      "gender": "mixte",
+      "family": "Ambré · Floral",
+      "shortDescription": "Le mythe. Safran lumineux, jasmin abstrait et un sillage de bois ambré qui ne quitte plus la peau.",
+      "topNotes": [
+        "Safran",
+        "Jasmin"
+      ],
+      "heartNotes": [
+        "Amberwood",
+        "Ambre gris"
+      ],
+      "baseNotes": [
+        "Cèdre",
+        "Sapin"
+      ],
+      "longevity": "8 h",
+      "sillage": "Fort",
+      "seasons": [
+        "Hiver",
+        "Automne",
+        "Printemps"
+      ],
+      "moments": [
+        "Jour",
+        "Soir"
+      ],
+      "featured": true,
+      "image": ""
+    },
+    {
+      "slug": "bleu-de-chanel",
+      "name": "Bleu",
+      "inspiredBy": "Chanel Bleu de Chanel EDP",
+      "gender": "homme",
+      "family": "Aromatique · Boisé",
+      "shortDescription": "L'élégance discrète. Pamplemousse vif, encens et cèdre pour un sillage propre, raffiné, intemporel.",
+      "topNotes": [
+        "Pamplemousse",
+        "Citron"
+      ],
+      "heartNotes": [
+        "Encens",
+        "Gingembre"
+      ],
+      "baseNotes": [
+        "Ambre",
+        "Cèdre"
+      ],
+      "longevity": "7 h",
+      "sillage": "Fort",
+      "seasons": [
+        "Printemps",
+        "Été",
+        "Automne"
+      ],
+      "moments": [
+        "Jour",
+        "Soir"
+      ],
+      "featured": true,
+      "image": ""
+    },
+    {
+      "slug": "alien",
+      "name": "Alien",
+      "inspiredBy": "Mugler Alien",
+      "gender": "femme",
+      "family": "Floral · Ambré",
+      "shortDescription": "Mystérieux et magnétique. Jasmin sambac et ambre poudré pour une présence inoubliable.",
+      "topNotes": [
+        "Jasmin Sambac"
+      ],
+      "heartNotes": [
+        "Ambre",
+        "Cashmeran"
+      ],
+      "baseNotes": [
+        "Bois de oud",
+        "Patchouli"
+      ],
+      "longevity": "8 h",
+      "sillage": "Fort",
+      "seasons": [
+        "Hiver",
+        "Automne",
+        "Printemps",
+        "Été"
+      ],
+      "moments": [
+        "Soir",
+        "Événement"
+      ],
+      "featured": true,
+      "image": ""
+    },
+    {
+      "slug": "prada-paradoxe",
+      "name": "Paradoxe",
+      "inspiredBy": "Prada Paradoxe",
+      "gender": "femme",
+      "family": "Floral · Vanillé",
+      "shortDescription": "Fleur d'oranger lumineuse et vanille onctueuse. Un parfum qui change avec la lumière du jour.",
+      "topNotes": [
+        "Bergamote",
+        "Poire"
+      ],
+      "heartNotes": [
+        "Néroli",
+        "Jasmin"
+      ],
+      "baseNotes": [
+        "Vanille",
+        "Ambre",
+        "Musc"
+      ],
+      "longevity": "7 h",
+      "sillage": "Fort",
+      "seasons": [
+        "Printemps",
+        "Été",
+        "Automne"
+      ],
+      "moments": [
+        "Jour",
+        "Soir"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "slug": "armani-code",
+      "name": "Armani Code",
+      "inspiredBy": "Giorgio Armani Armani Code Parfum",
+      "gender": "homme",
+      "family": "Iris · Boisé",
+      "shortDescription": "L'iris poudré rencontre la fève tonka. Élégance racée, parfaite pour les hommes au goût sûr.",
+      "topNotes": [
+        "Bergamote",
+        "Aldéhydes"
+      ],
+      "heartNotes": [
+        "Iris",
+        "Sauge sclarée"
+      ],
+      "baseNotes": [
+        "Fève Tonka",
+        "Cèdre"
+      ],
+      "longevity": "7 h",
+      "sillage": "Fort",
+      "seasons": [
+        "Hiver",
+        "Automne",
+        "Printemps",
+        "Été"
+      ],
+      "moments": [
+        "Jour",
+        "Soir"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "slug": "chloe-edp",
+      "name": "Chloé",
+      "inspiredBy": "Chloé Eau de Parfum",
+      "gender": "femme",
+      "family": "Floral · Frais",
+      "shortDescription": "La rose moderne. Pivoine, freesia et magnolia composent un bouquet délicat et sûr de lui.",
+      "topNotes": [
+        "Pivoine",
+        "Litchi",
+        "Freesia"
+      ],
+      "heartNotes": [
+        "Rose",
+        "Magnolia",
+        "Muguet"
+      ],
+      "baseNotes": [
+        "Cèdre",
+        "Ambre"
+      ],
+      "longevity": "7 h",
+      "sillage": "Fort",
+      "seasons": [
+        "Printemps",
+        "Été"
+      ],
+      "moments": [
+        "Jour",
+        "Soir"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "slug": "terre-hermes",
+      "name": "Terre",
+      "inspiredBy": "Hermès Terre d'Hermès",
+      "gender": "homme",
+      "family": "Boisé · Terreux",
+      "shortDescription": "L'orange et le vétiver, le minéral et le végétal. Un parfum qui sent la terre après la pluie.",
+      "topNotes": [
+        "Orange",
+        "Pamplemousse"
+      ],
+      "heartNotes": [
+        "Poivre"
+      ],
+      "baseNotes": [
+        "Vétiver",
+        "Cèdre",
+        "Patchouli"
+      ],
+      "longevity": "7 h",
+      "sillage": "Fort",
+      "seasons": [
+        "Printemps",
+        "Été",
+        "Automne"
+      ],
+      "moments": [
+        "Jour"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "slug": "libre-le-parfum",
+      "name": "Libre",
+      "inspiredBy": "Yves Saint Laurent Libre Le Parfum",
+      "gender": "femme",
+      "family": "Vanillé · Floral",
+      "shortDescription": "Vanille de Madagascar, fleur d'oranger et miel. Sensuel, addictif, profondément féminin.",
+      "topNotes": [
+        "Fleur d'Oranger",
+        "Gingembre"
+      ],
+      "heartNotes": [
+        "Lavande",
+        "Jasmin"
+      ],
+      "baseNotes": [
+        "Vanille",
+        "Miel",
+        "Fève Tonka"
+      ],
+      "longevity": "8 h",
+      "sillage": "Fort",
+      "seasons": [
+        "Hiver",
+        "Automne"
+      ],
+      "moments": [
+        "Soir",
+        "Événement"
+      ],
+      "featured": false,
+      "image": ""
+    }
+  ]
+}
