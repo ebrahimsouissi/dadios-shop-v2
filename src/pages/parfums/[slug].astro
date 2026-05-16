@@ -90,7 +90,13 @@ const allNotes = [...product.topNotes, ...product.heartNotes, ...product.baseNot
       </div>
 
       <div class="pd-cta">
-        <button class="btn btn-primary" type="button">Ajouter au panier</button>
+        <button
+          class="btn btn-primary"
+          type="button"
+          id="addToCartBtn"
+          data-slug={product.slug}
+          data-name={product.name}
+        >Ajouter au panier</button>
         <a href={`https://wa.me/21656731891?text=Je%20veux%20commander%20${encodeURIComponent(product.name)}`} class="btn btn-gold" target="_blank">Commander sur WhatsApp</a>
       </div>
 
@@ -342,11 +348,36 @@ const allNotes = [...product.topNotes, ...product.heartNotes, ...product.baseNot
 </style>
 
 <script>
+  import { addItem, showAddedToast } from '../../scripts/cart.js';
+
   document.querySelectorAll('.size-opt').forEach(opt => {
     opt.addEventListener('click', () => {
       document.querySelectorAll('.size-opt').forEach(o => o.classList.remove('active'));
       opt.classList.add('active');
       (opt.querySelector('input') as HTMLInputElement).checked = true;
     });
+  });
+
+  // The product page bakes sizes into the DOM via the radio inputs; read the
+  // selected one when adding so the cart line knows which format.
+  const addBtn = document.getElementById('addToCartBtn');
+  addBtn?.addEventListener('click', () => {
+    const selected = document.querySelector('input[name="size"]:checked') as HTMLInputElement | null;
+    const sizeCode = selected?.value || '';
+    const sizeLabel = selected
+      ? (selected.closest('.size-opt')?.querySelector('.size-label')?.textContent || sizeCode).trim()
+      : '';
+    const priceText = selected
+      ? (selected.closest('.size-opt')?.querySelector('.size-price')?.textContent || '').replace(/[^\d]/g, '')
+      : '';
+    const price = priceText ? Number(priceText) : 0;
+    addItem({
+      slug: addBtn.getAttribute('data-slug') || '',
+      name: addBtn.getAttribute('data-name') || '',
+      size: sizeLabel || sizeCode,
+      price,
+      qty: 1,
+    });
+    showAddedToast(`Ajouté · ${addBtn.getAttribute('data-name')} (${sizeLabel || sizeCode})`);
   });
 </script>
