@@ -13,9 +13,11 @@
  * Used on: homepage, catalog, product page.
  */
 
+import { apiUrl } from './apiBase.js';
+
 export async function syncCatalogFromApi() {
   try {
-    const res = await fetch('/api/products', { cache: 'no-cache' });
+    const res = await fetch(apiUrl('/api/products'), { cache: 'no-cache' });
     if (!res.ok) return null;
     const data = await res.json();
     if (data.ok && Array.isArray(data.products) && data.products.length > 0) {
