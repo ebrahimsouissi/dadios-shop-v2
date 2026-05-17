@@ -1,0 +1,313 @@
+---
+import Base from '../layouts/Base.astro';
+
+const STORE = {
+  name: 'Dadios Fragrances',
+  street: '45 Rue De La Cité Sportive',
+  city: 'Ariana',
+  country: 'Tunisia',
+  phoneDisplay: '+216 56 731 891',
+  phoneTel: '+21656731891',
+  hours: [
+    { day: 'Lundi – Samedi', value: '9h – 19h' },
+    { day: 'Dimanche', value: 'Fermé' },
+  ],
+  instagramHandle: '@dadios.fragrances',
+  instagramUrl: 'https://www.instagram.com/dadios.fragrances/',
+  lat: 36.877667,
+  lng: 10.205129,
+};
+
+const mapDirectionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${STORE.lat},${STORE.lng}`;
+const mapEmbedUrl = `https://maps.google.com/maps?q=${STORE.lat},${STORE.lng}&z=16&output=embed`;
+---
+<Base
+  title="Notre Boutique — Dadios Fragrance, Ariana"
+  description="Venez découvrir notre atelier-boutique au 45 Rue De La Cité Sportive, Ariana. Parfums artisanaux, conseil personnalisé."
+>
+
+<section class="boutique-hero">
+  <div class="boutique-hero-inner">
+    <div class="eyebrow">Atelier · Boutique</div>
+    <h1>Notre Boutique</h1>
+    <p class="boutique-tagline">
+      <span class="script">Un écrin pour vos sens</span>
+    </p>
+
+    <div class="boutique-illustration" id="illustrationWrap">
+      <img
+        src="/images/boutique-illustration.jpg"
+        alt="L'intérieur de la boutique Dadios Fragrance à Ariana"
+        loading="lazy"
+        onerror="this.parentElement.classList.add('img-missing');this.remove();"
+      />
+      <div class="illustration-fallback" aria-hidden="true">
+        <svg viewBox="0 0 600 360" xmlns="http://www.w3.org/2000/svg">
+          <rect width="600" height="360" fill="#EFE6D3"/>
+          <rect x="40" y="110" width="520" height="210" fill="#D4C3A0"/>
+          <rect x="90" y="150" width="60" height="160" fill="#0E3A1F"/>
+          <rect x="180" y="170" width="60" height="140" fill="#0E3A1F"/>
+          <rect x="270" y="160" width="60" height="150" fill="#0E3A1F"/>
+          <rect x="360" y="180" width="60" height="130" fill="#0E3A1F"/>
+          <rect x="450" y="170" width="60" height="140" fill="#0E3A1F"/>
+          <rect x="100" y="200" width="40" height="40" fill="#D4AF37" opacity="0.25"/>
+          <rect x="190" y="220" width="40" height="40" fill="#D4AF37" opacity="0.25"/>
+          <rect x="280" y="210" width="40" height="40" fill="#D4AF37" opacity="0.25"/>
+          <rect x="370" y="230" width="40" height="40" fill="#D4AF37" opacity="0.25"/>
+          <rect x="460" y="220" width="40" height="40" fill="#D4AF37" opacity="0.25"/>
+          <line x1="40" y1="145" x2="560" y2="145" stroke="#A87C45" stroke-width="2"/>
+          <text x="300" y="340" text-anchor="middle" font-family="Allura, cursive" font-size="26" fill="rgba(168,124,69,0.65)">l'atelier</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="visit">
+  <div class="visit-inner">
+    <div class="visit-info">
+      <div class="eyebrow">Venez nous rendre visite</div>
+      <h2>Trouvez votre signature, en personne.</h2>
+      <p class="visit-lead">
+        Poussez la porte de notre boutique à Ariana. Conseil personnalisé,
+        essais sur peau, prises de commande sur place.
+      </p>
+
+      <dl class="visit-list">
+        <div>
+          <dt>Adresse</dt>
+          <dd>{STORE.street}<br/>{STORE.city}, {STORE.country}</dd>
+        </div>
+        <div>
+          <dt>Horaires</dt>
+          <dd>
+            {STORE.hours.map(h => (
+              <span class="hour-line"><span class="day">{h.day}</span><span class="val">{h.value}</span></span>
+            ))}
+          </dd>
+        </div>
+        <div>
+          <dt>Téléphone</dt>
+          <dd><a href={`tel:${STORE.phoneTel}`}>{STORE.phoneDisplay}</a></dd>
+        </div>
+        <div>
+          <dt>Instagram</dt>
+          <dd><a href={STORE.instagramUrl} target="_blank" rel="noopener">{STORE.instagramHandle}</a></dd>
+        </div>
+      </dl>
+
+      <a class="btn btn-primary" href={mapDirectionsUrl} target="_blank" rel="noopener">
+        Itinéraire Google Maps →
+      </a>
+    </div>
+
+    <div class="visit-map">
+      <iframe
+        src={mapEmbedUrl}
+        title={`Carte de ${STORE.name} à ${STORE.city}`}
+        loading="lazy"
+        referrerpolicy="no-referrer-when-downgrade"
+      ></iframe>
+    </div>
+  </div>
+</section>
+
+<section class="story">
+  <div class="story-inner">
+    <div class="ornament">
+      <span class="line"></span>
+      <svg viewBox="0 0 24 24"><path d="M12 2 L14 10 L22 12 L14 14 L12 22 L10 14 L2 12 L10 10 Z" fill="currentColor"/></svg>
+      <span class="line"></span>
+    </div>
+    <div class="eyebrow">L'expérience Dadios</div>
+    <h2>L'art du parfum, à Tunis.</h2>
+    <p>
+      Chaque flacon Dadios est composé à la main dans notre atelier d'Ariana.
+      Nous retrouvons les accords des grandes signatures de la parfumerie
+      moderne — Dior, Chanel, Hermès, Maison Francis Kurkdjian — et les
+      recréons avec la même rigueur, les mêmes matières premières, à un prix
+      juste.
+    </p>
+    <p>
+      Pousser la porte de la boutique, c'est entrer dans un univers où la
+      fragrance est un art. Nous prenons le temps : comprendre ce que vous
+      aimez, vous faire essayer, partager. Un parfum n'est jamais une vente —
+      c'est une rencontre.
+    </p>
+    <p class="story-sign">
+      Tunisien dans l'âme, intemporel dans l'expression.
+    </p>
+  </div>
+</section>
+
+</Base>
+
+<style>
+  /* ===== HERO ===== */
+  .boutique-hero {
+    background: var(--cream);
+    padding: 64px 32px 56px;
+    border-bottom: 1px solid var(--border);
+  }
+  .boutique-hero-inner {
+    max-width: 960px;
+    margin: 0 auto;
+    text-align: center;
+  }
+  .boutique-hero h1 {
+    font-size: clamp(40px, 5vw, 60px);
+    margin: 14px 0 14px;
+    line-height: 1.05;
+  }
+  .boutique-tagline {
+    margin-bottom: 40px;
+    font-size: 22px;
+  }
+  .boutique-tagline .script { font-size: 32px; }
+  .boutique-illustration {
+    position: relative;
+    max-width: 720px;
+    margin: 0 auto;
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--cream-warm);
+    border: 1px solid var(--border);
+    box-shadow: 0 20px 48px rgba(5, 26, 14, 0.10);
+    aspect-ratio: 5 / 3;
+  }
+  .boutique-illustration img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .boutique-illustration .illustration-fallback {
+    display: none;
+    width: 100%;
+    height: 100%;
+  }
+  .boutique-illustration.img-missing .illustration-fallback {
+    display: block;
+  }
+  .boutique-illustration .illustration-fallback svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  /* ===== VISIT (two columns) ===== */
+  .visit {
+    background: var(--cream-warm);
+    padding: 80px 32px;
+    border-bottom: 1px solid var(--border);
+  }
+  .visit-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1.1fr;
+    gap: 56px;
+    align-items: start;
+  }
+  .visit-info .eyebrow { display: block; margin-bottom: 14px; }
+  .visit-info h2 {
+    font-size: clamp(28px, 3.5vw, 38px);
+    margin-bottom: 16px;
+    line-height: 1.15;
+  }
+  .visit-lead {
+    color: var(--ink-soft);
+    margin-bottom: 32px;
+    max-width: 460px;
+    line-height: 1.7;
+  }
+  .visit-list {
+    margin: 0 0 28px;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px 32px;
+  }
+  .visit-list > div { display: flex; flex-direction: column; gap: 6px; }
+  .visit-list dt {
+    font-size: 10px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--gold-soft);
+    font-weight: 500;
+  }
+  .visit-list dd {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 17px;
+    color: var(--ink);
+    line-height: 1.45;
+  }
+  .visit-list dd a:hover { color: var(--emerald); text-decoration: underline; }
+  .hour-line {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 15px;
+  }
+  .hour-line .day { color: var(--ink-soft); }
+  .hour-line .val { color: var(--emerald); }
+
+  .visit-map {
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid var(--border-strong);
+    background: var(--cream-soft);
+    aspect-ratio: 4 / 3;
+    box-shadow: 0 16px 36px rgba(5, 26, 14, 0.08);
+  }
+  .visit-map iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+  }
+
+  /* ===== STORY ===== */
+  .story {
+    padding: 80px 32px 96px;
+    background: var(--cream);
+  }
+  .story-inner {
+    max-width: 720px;
+    margin: 0 auto;
+    text-align: center;
+  }
+  .story-inner .eyebrow { display: block; margin-bottom: 14px; }
+  .story-inner h2 {
+    font-size: clamp(28px, 3.5vw, 40px);
+    margin-bottom: 24px;
+  }
+  .story-inner p {
+    color: var(--ink-soft);
+    line-height: 1.85;
+    margin-bottom: 18px;
+    font-size: 16px;
+  }
+  .story-sign {
+    font-family: var(--font-display);
+    font-style: italic;
+    color: var(--gold-soft);
+    margin-top: 24px;
+    font-size: 18px;
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 880px) {
+    .boutique-hero { padding: 40px 16px 40px; }
+    .visit { padding: 56px 16px; }
+    .visit-inner { grid-template-columns: 1fr; gap: 36px; }
+    .visit-list { grid-template-columns: 1fr; gap: 18px; }
+    .story { padding: 56px 16px 72px; }
+    .visit-map { aspect-ratio: 4 / 3; }
+  }
+  @media (max-width: 480px) {
+    .boutique-tagline .script { font-size: 26px; }
+    .boutique-illustration { aspect-ratio: 4 / 3; }
+  }
+</style>

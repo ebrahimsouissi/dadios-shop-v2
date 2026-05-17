@@ -1,0 +1,475 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base
+  title="Votre Panier — Dadios Fragrance"
+  description="Finalisez votre commande de parfumerie artisanale Dadios. Livraison à Tunis."
+>
+
+<div class="crumb-wrap">
+  <nav class="crumbs" aria-label="Fil d'Ariane">
+    <a href="/">Accueil</a> <span>·</span>
+    <span>Panier</span>
+  </nav>
+</div>
+
+<section class="panier-hero">
+  <div class="panier-hero-inner">
+    <div class="eyebrow">Votre commande</div>
+    <h1>Votre Panier</h1>
+  </div>
+</section>
+
+<section class="panier-wrap">
+  <!-- Empty state -->
+  <div id="cartEmpty" class="cart-empty" hidden>
+    <div class="empty-bottle" aria-hidden="true">
+      <svg viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg">
+        <rect x="22" y="22" width="36" height="68" rx="2" fill="#0E3A1F"/>
+        <rect x="22" y="22" width="36" height="68" rx="2" fill="none" stroke="#D4AF37" stroke-width="0.8"/>
+        <rect x="28" y="46" width="24" height="32" fill="#0E3A1F" stroke="#D4AF37" stroke-width="0.4"/>
+        <text x="40" y="60" text-anchor="middle" font-family="Allura, cursive" font-size="14" fill="#D4AF37">Dadios</text>
+        <rect x="30" y="10" width="20" height="14" rx="1.5" fill="#A87C45"/>
+      </svg>
+    </div>
+    <h2>Votre panier est vide.</h2>
+    <p>Découvrez nos signatures et composez votre commande.</p>
+    <a href="/parfums" class="btn btn-primary">Découvrir nos parfums</a>
+  </div>
+
+  <!-- Body shown when cart has items -->
+  <div id="cartBody" class="cart-body" hidden>
+    <ul id="cartItems" class="cart-items" role="list"></ul>
+
+    <aside class="cart-summary" aria-label="Récapitulatif">
+      <div class="summary-rows">
+        <div class="summary-row">
+          <span>Sous-total</span>
+          <span id="cartSubtotal">0 DT</span>
+        </div>
+        <div class="summary-row delivery">
+          <span>Livraison</span>
+          <span id="cartDelivery">—</span>
+        </div>
+        <p class="delivery-note" id="deliveryNote"></p>
+        <div class="summary-row total">
+          <span>Total</span>
+          <span id="cartTotal">0 DT</span>
+        </div>
+      </div>
+
+      <div class="cart-actions">
+        <a id="whatsappBtn" href="#" target="_blank" rel="noopener" class="btn btn-primary cta-wa">
+          Commander sur WhatsApp
+        </a>
+        <button type="button" id="clearBtn" class="btn btn-outline btn-sm">Vider le panier</button>
+      </div>
+
+      <p class="summary-fine">
+        La commande est finalisée par message WhatsApp avec notre équipe.
+        Paiement à la livraison ou par virement.
+      </p>
+    </aside>
+  </div>
+</section>
+
+</Base>
+
+<style>
+  .crumb-wrap { max-width: 1280px; margin: 0 auto; padding: 16px 32px 0; }
+  .crumbs { font-size: 12px; color: var(--ink-mute); letter-spacing: 0.06em; }
+  .crumbs a:hover { color: var(--emerald); }
+  .crumbs span { margin: 0 6px; opacity: 0.5; }
+
+  .panier-hero {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 24px 32px 32px;
+  }
+  .panier-hero h1 {
+    font-size: clamp(36px, 5vw, 54px);
+    margin-top: 12px;
+  }
+  .panier-hero .eyebrow { display: block; }
+
+  .panier-wrap {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 32px 96px;
+  }
+
+  /* ===== empty ===== */
+  .cart-empty {
+    background: var(--cream-soft);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 64px 32px;
+    text-align: center;
+    max-width: 560px;
+    margin: 32px auto 0;
+  }
+  .empty-bottle {
+    background: var(--cream-warm);
+    border-radius: 999px;
+    width: 96px;
+    height: 96px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px;
+  }
+  .empty-bottle svg { width: 56px; height: 70px; }
+  .cart-empty h2 { font-size: clamp(24px, 3vw, 30px); margin-bottom: 10px; }
+  .cart-empty p { color: var(--ink-soft); margin-bottom: 24px; }
+
+  /* ===== body grid ===== */
+  .cart-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1.8fr) minmax(280px, 1fr);
+    gap: 32px;
+    align-items: start;
+  }
+
+  /* ===== items list ===== */
+  .cart-items {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    background: var(--cream-soft);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .cart-row {
+    display: grid;
+    grid-template-columns: 88px 1fr auto auto auto;
+    gap: 18px;
+    align-items: center;
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .cart-row:last-child { border-bottom: none; }
+
+  .row-img {
+    width: 88px;
+    height: 88px;
+    background: var(--cream-warm);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .row-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .row-img svg { width: 65%; height: auto; }
+
+  .row-info { min-width: 0; }
+  .row-name {
+    font-family: var(--font-display);
+    font-size: 19px;
+    color: var(--ink);
+    margin-bottom: 4px;
+    line-height: 1.2;
+  }
+  .row-size {
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    margin-bottom: 4px;
+  }
+  .row-unit { font-size: 12px; color: var(--ink-mute); }
+
+  .row-qty {
+    display: inline-flex;
+    align-items: center;
+    background: var(--cream);
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .qty-btn {
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-body);
+    font-size: 16px;
+    color: var(--ink);
+    transition: background .15s;
+  }
+  .qty-btn:hover { background: var(--cream-warm); }
+  .qty-val {
+    min-width: 28px;
+    text-align: center;
+    font-family: var(--font-display);
+    font-size: 16px;
+    color: var(--emerald);
+  }
+
+  .row-sub {
+    font-family: var(--font-display);
+    font-size: 18px;
+    color: var(--emerald);
+    font-weight: 500;
+    min-width: 70px;
+    text-align: right;
+  }
+
+  .row-remove {
+    background: transparent;
+    border: 1px solid var(--border);
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    cursor: pointer;
+    color: var(--ink-mute);
+    font-size: 16px;
+    line-height: 1;
+    transition: all .2s;
+  }
+  .row-remove:hover {
+    border-color: #B23A1F;
+    color: #B23A1F;
+  }
+
+  /* ===== summary ===== */
+  .cart-summary {
+    position: sticky;
+    top: 96px;
+    background: var(--cream-soft);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 26px 22px;
+  }
+  .summary-rows { padding-bottom: 16px; }
+  .summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 8px 0;
+    font-size: 14px;
+    color: var(--ink-soft);
+  }
+  .summary-row.delivery.free { color: var(--emerald); }
+  .summary-row.total {
+    border-top: 1px solid var(--border);
+    margin-top: 6px;
+    padding-top: 14px;
+    font-family: var(--font-display);
+    font-size: 22px;
+    color: var(--emerald);
+  }
+  .delivery-note {
+    font-size: 12px;
+    color: var(--ink-mute);
+    margin: 4px 0 8px;
+    line-height: 1.5;
+  }
+  .delivery-note.success { color: var(--emerald); }
+
+  .cart-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 8px;
+  }
+  .cta-wa { width: 100%; }
+  .summary-fine {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    line-height: 1.6;
+    color: var(--ink-mute);
+  }
+
+  /* ===== responsive ===== */
+  @media (max-width: 980px) {
+    .cart-body { grid-template-columns: 1fr; }
+    .cart-summary { position: static; }
+  }
+  @media (max-width: 720px) {
+    .panier-hero, .panier-wrap { padding-left: 16px; padding-right: 16px; }
+    .crumb-wrap { padding: 12px 16px 0; }
+    .cart-row {
+      grid-template-columns: 64px 1fr auto;
+      grid-template-areas:
+        "img info remove"
+        "img qty  sub";
+      gap: 10px 14px;
+      padding: 14px 14px;
+    }
+    .row-img { width: 64px; height: 64px; grid-area: img; }
+    .row-info { grid-area: info; }
+    .row-qty { grid-area: qty; justify-self: start; }
+    .row-sub { grid-area: sub; justify-self: end; min-width: 0; }
+    .row-remove { grid-area: remove; justify-self: end; }
+    .row-name { font-size: 16px; }
+  }
+</style>
+
+<script>
+  import { getCart, addItem, removeItem, clear, onChange } from '../scripts/cart.js';
+  import { syncCatalogFromApi } from '../scripts/catalogSync.js';
+
+  const WA_NUMBER = '21656731891';
+  const FREE_DELIVERY_THRESHOLD = 100;
+
+  const cartBody = document.getElementById('cartBody') as HTMLElement;
+  const cartEmpty = document.getElementById('cartEmpty') as HTMLElement;
+  const cartItems = document.getElementById('cartItems') as HTMLElement;
+  const subtotalEl = document.getElementById('cartSubtotal') as HTMLElement;
+  const deliveryEl = document.getElementById('cartDelivery') as HTMLElement;
+  const totalEl = document.getElementById('cartTotal') as HTMLElement;
+  const deliveryNote = document.getElementById('deliveryNote') as HTMLElement;
+  const deliveryRow = deliveryEl.parentElement as HTMLElement;
+  const whatsappBtn = document.getElementById('whatsappBtn') as HTMLAnchorElement;
+  const clearBtn = document.getElementById('clearBtn') as HTMLElement;
+
+  // Cart items only store slug/name/size/price/qty. To show product images
+  // we look them up from the live KV catalog (with /products.json fallback).
+  let productMap: Record<string, any> = {};
+
+  function escHtml(s: any) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    })[c]);
+  }
+
+  function bottleSvg() {
+    return `<svg viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect x="22" y="22" width="36" height="68" rx="2" fill="#0E3A1F"/>
+      <rect x="22" y="22" width="36" height="68" rx="2" fill="none" stroke="#D4AF37" stroke-width="0.6"/>
+      <rect x="28" y="46" width="24" height="32" fill="#0E3A1F" stroke="#D4AF37" stroke-width="0.4"/>
+      <text x="40" y="60" text-anchor="middle" font-family="Allura, cursive" font-size="13" fill="#D4AF37">Dadios</text>
+      <rect x="30" y="10" width="20" height="14" rx="1.5" fill="#A87C45"/>
+    </svg>`;
+  }
+
+  function rowHtml(item: any) {
+    const product = productMap[item.slug];
+    const image = product?.image;
+    const subtotal = (Number(item.price) || 0) * (Number(item.qty) || 1);
+    return `<li class="cart-row" data-slug="${escHtml(item.slug)}" data-size="${escHtml(item.size || '')}">
+      <div class="row-img">
+        ${image ? `<img src="${escHtml(image)}" alt="${escHtml(item.name)}" loading="lazy"/>` : bottleSvg()}
+      </div>
+      <div class="row-info">
+        <div class="row-name">${escHtml(item.name)}</div>
+        <div class="row-size">${escHtml(item.size || '')}</div>
+        <div class="row-unit">${escHtml(item.price || 0)} DT / unité</div>
+      </div>
+      <div class="row-qty" role="group" aria-label="Quantité">
+        <button type="button" class="qty-btn dec" aria-label="Diminuer">−</button>
+        <span class="qty-val">${item.qty}</span>
+        <button type="button" class="qty-btn inc" aria-label="Augmenter">+</button>
+      </div>
+      <div class="row-sub">${subtotal} DT</div>
+      <button type="button" class="row-remove" aria-label="Retirer">×</button>
+    </li>`;
+  }
+
+  function computeTotals(cart: any) {
+    let subtotal = 0;
+    cart.items.forEach((i: any) => {
+      subtotal += (Number(i.price) || 0) * (Number(i.qty) || 1);
+    });
+    return { subtotal };
+  }
+
+  function buildWhatsAppMessage(cart: any) {
+    const lines = ['Bonjour Dadios, je souhaite commander :', ''];
+    let total = 0;
+    cart.items.forEach((item: any) => {
+      const sub = (Number(item.price) || 0) * (Number(item.qty) || 1);
+      total += sub;
+      const sizeStr = item.size ? ` (${item.size})` : '';
+      lines.push(`• ${item.name}${sizeStr} × ${item.qty} — ${sub} DT`);
+    });
+    lines.push('');
+    lines.push(`Total : ${total} DT`);
+    lines.push('');
+    lines.push('Merci !');
+    return lines.join('\n');
+  }
+
+  function render() {
+    const cart = getCart();
+    if (!cart.items.length) {
+      cartBody.hidden = true;
+      cartEmpty.hidden = false;
+      return;
+    }
+    cartEmpty.hidden = true;
+    cartBody.hidden = false;
+    cartItems.innerHTML = cart.items.map(rowHtml).join('');
+
+    const { subtotal } = computeTotals(cart);
+    const freeDelivery = subtotal >= FREE_DELIVERY_THRESHOLD;
+    subtotalEl.textContent = `${subtotal} DT`;
+    deliveryEl.textContent = freeDelivery ? 'Offerte' : 'Calculée à la commande';
+    deliveryRow.classList.toggle('free', freeDelivery);
+    if (freeDelivery) {
+      deliveryNote.textContent = '✓ Livraison offerte (commande > 100 DT)';
+      deliveryNote.classList.add('success');
+    } else {
+      const remaining = FREE_DELIVERY_THRESHOLD - subtotal;
+      deliveryNote.textContent = `Plus que ${remaining} DT pour la livraison offerte.`;
+      deliveryNote.classList.remove('success');
+    }
+    totalEl.textContent = `${subtotal} DT`;
+    whatsappBtn.href = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(buildWhatsAppMessage(cart))}`;
+  }
+
+  // Event delegation: + / − / × per row
+  cartItems.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    const row = target.closest('.cart-row') as HTMLElement | null;
+    if (!row) return;
+    const slug = row.dataset.slug!;
+    const size = row.dataset.size || '';
+    const cart = getCart();
+    const item = cart.items.find((i: any) => i.slug === slug && (i.size || '') === size);
+    if (!item) return;
+    if (target.classList.contains('inc')) {
+      addItem({ slug, name: item.name, size, price: item.price, qty: 1 });
+    } else if (target.classList.contains('dec')) {
+      if ((item.qty || 1) <= 1) {
+        removeItem(slug, size);
+      } else {
+        addItem({ slug, name: item.name, size, price: item.price, qty: -1 });
+      }
+    } else if (target.classList.contains('row-remove')) {
+      removeItem(slug, size);
+    }
+  });
+
+  clearBtn.addEventListener('click', () => {
+    if (!getCart().items.length) return;
+    if (!confirm('Vider tout le panier ?')) return;
+    clear();
+  });
+
+  onChange(render);
+
+  // Initial: load product map for images, then render.
+  (async () => {
+    try {
+      const products = await syncCatalogFromApi();
+      if (products && products.length) {
+        productMap = Object.fromEntries(products.map((p: any) => [p.slug, p]));
+      } else {
+        // KV empty — fall back to the static catalog shipped with the site.
+        const res = await fetch('/products.json');
+        if (res.ok) {
+          const data = await res.json();
+          productMap = Object.fromEntries((data.products || []).map((p: any) => [p.slug, p]));
+        }
+      }
+    } catch {}
+    render();
+  })();
+</script>
