@@ -144,21 +144,43 @@ const allFamilies = [...new Set(products.map((p: any) => p.family))].sort();
   }
 </style>
 
+<script id="__sizes" type="application/json" set:html={JSON.stringify(sizes)}></script>
 <script>
-  import { syncCatalogFromApi, applyImagesToStaticCards } from '../../scripts/catalogSync.js';
-  syncCatalogFromApi().then((products) => {
-    if (products) applyImagesToStaticCards(products);
-  });
+  import { syncCatalogFromApi, getCardScopeAttr, getScopeAttr, renderProductCardHtml } from '../../scripts/catalogSync.js';
 
-  const items = document.querySelectorAll('.grid-item');
+  const SIZES = JSON.parse(document.getElementById('__sizes')?.textContent || '[]');
+  const grid = document.getElementById('productGrid');
   const searchInput = document.getElementById('searchInput') as HTMLInputElement;
   const empty = document.getElementById('empty');
+
   let activeGender = 'all';
   let searchQuery = '';
 
+  function escAttr(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    })[c]);
+  }
+
+  function renderProducts(products) {
+    if (!grid) return;
+    // ProductCard scope (card + descendants) and the parfums-page scope
+    // (grid-item wrapper, so the scoped .grid-item.hidden rule still matches).
+    const cardScope = getCardScopeAttr(grid);
+    const pageScope = getScopeAttr(grid);
+    grid.innerHTML = products
+      .map((p) => {
+        const gender = escAttr(p.gender);
+        const name = escAttr((p.name || '').toLowerCase());
+        const family = escAttr((p.family || '').toLowerCase());
+        return `<div class="grid-item" data-gender="${gender}" data-name="${name}" data-family="${family}"${pageScope}>${renderProductCardHtml(p, SIZES, cardScope)}</div>`;
+      })
+      .join('');
+  }
+
   function applyFilters() {
     let visibleCount = 0;
-    items.forEach(item => {
+    document.querySelectorAll('#productGrid .grid-item').forEach((item) => {
       const el = item as HTMLElement;
       const gender = el.dataset.gender;
       const name = el.dataset.name || '';
@@ -174,9 +196,9 @@ const allFamilies = [...new Set(products.map((p: any) => p.family))].sort();
     empty?.classList.toggle('hidden', visibleCount > 0);
   }
 
-  document.querySelectorAll('.filter-btn').forEach(btn => {
+  document.querySelectorAll('.filter-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.filter-btn').forEach((b) => b.classList.remove('active'));
       btn.classList.add('active');
       activeGender = btn.getAttribute('data-value') || 'all';
       applyFilters();
@@ -195,4 +217,14 @@ const allFamilies = [...new Set(products.map((p: any) => p.family))].sort();
     const btn = document.querySelector(`.filter-btn[data-value="${initialGender}"]`);
     if (btn) (btn as HTMLElement).click();
   }
+
+  // After initial paint, refresh from KV; if products are returned, re-render
+  // the grid (which fully overrides the static products.json baked at build)
+  // and re-apply whatever filter the user already set.
+  syncCatalogFromApi().then((products) => {
+    if (products && products.length) {
+      renderProducts(products);
+      applyFilters();
+    }
+  });
 </script>

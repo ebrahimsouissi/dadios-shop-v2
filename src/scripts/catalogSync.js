@@ -5,12 +5,14 @@
  * products in the admin (which saves to KV), those changes show up only after the
  * site rebuilds — UNLESS we ask the worker on page load.
  *
- * This script:
- *   1. Fetches /api/products on load.
- *   2. If KV returns products, swaps the static cards for the fresh data.
- *   3. If KV is empty or fails, the static cards stay (no broken state).
+ * This module:
+ *   - Fetches /api/products on load (syncCatalogFromApi).
+ *   - Re-renders the catalog grid from KV when products are returned
+ *     (renderProductCardHtml + getScopeAttr helpers).
+ *   - applyImagesToStaticCards remains for back-compat but is no longer used
+ *     by the pages, which now do a full re-render.
  *
- * Used on: homepage, catalog, product page.
+ * Used on: homepage (featured grid), catalog (/parfums grid).
  */
 
 import { apiUrl } from './apiBase.js';
@@ -27,7 +29,9 @@ export async function syncCatalogFromApi() {
   return null;
 }
 
-// Helper: replace image src on an existing card by slug
+// Back-compat: replace SVG fallback with real image on an existing card by slug.
+// No longer called by the pages (they full-re-render via renderProductCardHtml),
+// but kept as an exported API in case external scripts import it.
 export function applyImagesToStaticCards(products) {
   if (!Array.isArray(products)) return;
   document.querySelectorAll('[data-card-slug]').forEach((card) => {
@@ -36,7 +40,6 @@ export function applyImagesToStaticCards(products) {
     if (!fresh || !fresh.image) return;
     const imgWrap = card.querySelector('.card-img');
     if (!imgWrap) return;
-    // Replace SVG fallback with real image
     const svg = imgWrap.querySelector('svg');
     if (svg) {
       const img = document.createElement('img');
@@ -49,4 +52,96 @@ export function applyImagesToStaticCards(products) {
       if (img && img.src !== fresh.image) img.src = fresh.image;
     }
   });
+}
+
+/**
+ * Returns the first `data-astro-cid-*` attribute found on `el`, formatted as a
+ * pre-spaced attribute string ready to inject into a template literal:
+ *   " data-astro-cid-tjdfhdqb"
+ *
+ * Astro's scoped CSS works by tagging every styled element with this attribute
+ * at build time. Re-rendering cards client-side means we must replay the same
+ * attribute so the scoped CSS rules apply. The hash is stable for a given
+ * source file (it changes only when ProductCard.astro changes).
+ */
+export function getScopeAttr(el) {
+  if (!el) return '';
+  for (const attr of el.attributes) {
+    if (attr.name.startsWith('data-astro-cid-')) {
+      return ` ${attr.name}`;
+    }
+  }
+  return '';
+}
+
+/**
+ * Reads the ProductCard scope attribute from an existing card inside `rootEl`.
+ * Falls back to '' if no card exists yet (static products.json empty).
+ */
+export function getCardScopeAttr(rootEl) {
+  if (!rootEl) return '';
+  const card = rootEl.querySelector?.('.card') || null;
+  return getScopeAttr(card);
+}
+
+function escHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  })[c]);
+}
+
+/**
+ * Build the HTML string for a single product card, mirroring the markup of
+ * src/components/ProductCard.astro exactly. `scope` is the pre-spaced scope
+ * attribute returned by getCardScopeAttr (e.g. " data-astro-cid-tjdfhdqb"),
+ * applied to every element so scoped CSS hits.
+ */
+export function renderProductCardHtml(product, sizes, scope = '') {
+  const slug = escHtml(product.slug);
+  const name = escHtml(product.name);
+  const gender = escHtml(product.gender);
+  const family = escHtml(product.family);
+  const altText = escHtml(`${product.name} - Dadios Fragrance`);
+  const hasImage = !!(product.image && product.image.length > 0);
+
+  const sizeChips = (Array.isArray(sizes) ? sizes : [])
+    .map((s) => `<span class="size-chip"${scope}>${escHtml(s.code)} · ${escHtml(s.price)} DT</span>`)
+    .join('');
+
+  const imageBlock = hasImage
+    ? `<img src="${escHtml(product.image)}" alt="${altText}" loading="lazy"${scope}/>`
+    : `<svg viewBox="0 0 200 220" xmlns="http://www.w3.org/2000/svg" aria-label="${name}"${scope}>
+         <rect x="68" y="34" width="64" height="160" rx="3" fill="#0E3A1F"${scope}></rect>
+         <rect x="68" y="34" width="64" height="160" rx="3" fill="none" stroke="rgba(212,175,55,0.5)" stroke-width="0.8"${scope}></rect>
+         <rect x="78" y="84" width="44" height="68" fill="#0E3A1F"${scope}></rect>
+         <rect x="78" y="84" width="44" height="68" fill="none" stroke="#D4AF37" stroke-width="0.6"${scope}></rect>
+         <text x="100" y="108" text-anchor="middle" font-family="Allura, cursive" font-size="20" fill="#D4AF37"${scope}>Dadios</text>
+         <text x="100" y="124" text-anchor="middle" font-family="Cormorant Garamond, serif" font-size="6" letter-spacing="3" fill="#D4AF37"${scope}>FRAGRANCE</text>
+         <line x1="86" y1="132" x2="114" y2="132" stroke="#D4AF37" stroke-width="0.4"${scope}></line>
+         <text x="100" y="144" text-anchor="middle" font-family="Cormorant Garamond, serif" font-style="italic" font-size="5" fill="#D4AF37"${scope}>${name}</text>
+         <rect x="84" y="14" width="32" height="22" rx="2" fill="#A87C45"${scope}></rect>
+         <rect x="88" y="8" width="24" height="10" rx="1.5" fill="#A87C45"${scope}></rect>
+       </svg>`;
+
+  const featuredBadge = product.featured
+    ? `<span class="card-badge"${scope}>Bestseller</span>`
+    : '';
+
+  return `<a href="/parfums/${slug}" class="card" data-card-slug="${slug}"${scope}>
+  <div class="card-img"${scope}>
+    ${imageBlock}
+    <span class="card-gender"${scope}>${gender}</span>
+    ${featuredBadge}
+  </div>
+  <div class="card-body"${scope}>
+    <div class="eyebrow card-family"${scope}>${family}</div>
+    <h3 class="card-name"${scope}>${name}</h3>
+    <div class="card-sizes"${scope}>${sizeChips}</div>
+    <div class="card-cta"${scope}>Voir le parfum →</div>
+  </div>
+</a>`;
 }

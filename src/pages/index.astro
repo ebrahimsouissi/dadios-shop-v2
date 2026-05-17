@@ -118,10 +118,22 @@ const sizes = data.sizes;
 
 </Base>
 
+<script id="__sizes" type="application/json" set:html={JSON.stringify(sizes)}></script>
 <script>
-  import { syncCatalogFromApi, applyImagesToStaticCards } from '../scripts/catalogSync.js';
+  import { syncCatalogFromApi, getCardScopeAttr, renderProductCardHtml } from '../scripts/catalogSync.js';
+
+  const SIZES = JSON.parse(document.getElementById('__sizes')?.textContent || '[]');
+
   syncCatalogFromApi().then((products) => {
-    if (products) applyImagesToStaticCards(products);
+    if (!products || !products.length) return;
+    const featured = products.filter((p) => p && p.featured);
+    if (!featured.length) return;
+    const grid = document.querySelector('.product-grid');
+    if (!grid) return;
+    const scope = getCardScopeAttr(grid);
+    grid.innerHTML = featured
+      .map((p) => renderProductCardHtml(p, SIZES, scope))
+      .join('');
   });
 </script>
 
