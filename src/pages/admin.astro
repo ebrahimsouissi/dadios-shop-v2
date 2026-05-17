@@ -69,7 +69,82 @@ const sizes = data.sizes;
   </table>
 
   <div id="statusMsg" class="status-msg hidden"></div>
+
+  <!-- ============ CUSTOMER MANAGEMENT ============ -->
+  <div class="customers-block">
+    <div class="customers-head">
+      <div class="eyebrow">Gestion des comptes clients</div>
+      <h2>Recherche &amp; mot de passe</h2>
+      <p class="customers-help">
+        Cherchez un client par numéro de téléphone. Vous pouvez réinitialiser
+        son mot de passe — le client recevra le nouveau par WhatsApp.
+      </p>
+    </div>
+
+    <form id="customerSearchForm" class="customer-search">
+      <input
+        type="tel"
+        id="customerSearchPhone"
+        placeholder="Téléphone (ex. +216 56 731 891)"
+        autocomplete="off"
+        inputmode="tel"
+      />
+      <button type="submit" class="btn btn-primary btn-sm">Rechercher</button>
+    </form>
+
+    <div id="customerResult" class="customer-result hidden">
+      <div class="customer-row">
+        <div>
+          <div class="eyebrow">Nom</div>
+          <div class="customer-val" id="custName"></div>
+        </div>
+        <div>
+          <div class="eyebrow">Téléphone</div>
+          <div class="customer-val" id="custPhone"></div>
+        </div>
+        <div>
+          <div class="eyebrow">Adresse</div>
+          <div class="customer-val" id="custAddress"></div>
+        </div>
+        <div>
+          <div class="eyebrow">Carte fidélité</div>
+          <div class="customer-val" id="custLoyalty"></div>
+        </div>
+      </div>
+      <div class="customer-actions">
+        <button type="button" class="btn btn-outline btn-sm" id="custResetBtn">Réinitialiser mot de passe</button>
+      </div>
+    </div>
+
+    <p id="customerStatus" class="status-msg hidden"></p>
+  </div>
 </section>
+
+<!-- ============ CUSTOMER PASSWORD RESET MODAL ============ -->
+<div class="modal hidden" id="custPwModal">
+  <div class="modal-overlay" id="custPwOverlay"></div>
+  <div class="modal-box small">
+    <button type="button" class="modal-close" id="custPwClose" aria-label="Fermer">×</button>
+    <div class="eyebrow">Compte client</div>
+    <h2 id="custPwTitle">Nouveau mot de passe</h2>
+    <p style="color:var(--ink-soft);margin-bottom:16px">
+      Le client utilisera ce mot de passe lors de sa prochaine connexion.
+      Communiquez-le par WhatsApp.
+    </p>
+    <form id="custPwForm">
+      <label>
+        <span>Nouveau mot de passe *</span>
+        <input type="text" id="custPwInput" required minlength="6" placeholder="6 caractères minimum" />
+        <small>Visible ici pour pouvoir le communiquer au client.</small>
+      </label>
+      <p id="custPwErr" class="status-msg error hidden" style="margin-top:12px"></p>
+      <div class="form-actions">
+        <button type="button" class="btn btn-outline" id="custPwCancel">Annuler</button>
+        <button type="submit" class="btn btn-primary" id="custPwSave">Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <!-- ============ MODAL ============ -->
 <div class="modal hidden" id="modal">
@@ -536,10 +611,79 @@ const sizes = data.sizes;
     .admin-table { font-size: 13px; }
     .admin-table th, .admin-table td { padding: 10px 8px; }
   }
+
+  /* ====== CUSTOMERS BLOCK ====== */
+  .customers-block {
+    margin-top: 48px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border);
+  }
+  .customers-head { margin-bottom: 20px; }
+  .customers-head h2 {
+    font-size: clamp(22px, 3vw, 28px);
+    margin-top: 6px;
+  }
+  .customers-help {
+    color: var(--ink-soft);
+    margin-top: 8px;
+    max-width: 540px;
+    font-size: 14px;
+  }
+  .customer-search {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    max-width: 520px;
+  }
+  .customer-search input {
+    flex: 1;
+    padding: 12px 14px;
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    background: var(--cream-soft);
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .customer-search input:focus { outline: none; border-color: var(--emerald); }
+
+  .customer-result {
+    background: var(--cream-soft);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 22px 24px;
+  }
+  .customer-result.hidden { display: none; }
+  .customer-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px 32px;
+    margin-bottom: 22px;
+  }
+  .customer-val {
+    margin-top: 6px;
+    font-family: var(--font-display);
+    font-size: 17px;
+    color: var(--ink);
+    line-height: 1.4;
+  }
+  .customer-val.muted { color: var(--ink-mute); font-style: italic; font-size: 14px; }
+  .customer-actions {
+    display: flex;
+    gap: 10px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+  .modal-box.small { max-width: 440px; }
+
+  @media (max-width: 720px) {
+    .customer-row { grid-template-columns: 1fr; gap: 14px; }
+    .customer-search { flex-direction: column; }
+  }
 </style>
 
 <script>
-  import { checkPassword, setPassword, getPassword, clearPassword, listProducts, upsertProduct, deleteProduct, uploadImage } from '../scripts/adminApi.js';
+  import { checkPassword, setPassword, getPassword, clearPassword, listProducts, upsertProduct, deleteProduct, uploadImage, adminGetCustomer, adminResetCustomerPassword } from '../scripts/adminApi.js';
   import { processImage } from '../scripts/imageProcessor.js';
 
   // ============ STATE ============
@@ -864,6 +1008,118 @@ const sizes = data.sizes;
     slugInput.value = name.toLowerCase()
       .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 64);
+  });
+
+  // ============ CUSTOMER MANAGEMENT ============
+  const customerSearchForm = document.getElementById('customerSearchForm') as HTMLFormElement;
+  const customerSearchPhone = document.getElementById('customerSearchPhone') as HTMLInputElement;
+  const customerResult = document.getElementById('customerResult') as HTMLElement;
+  const customerStatus = document.getElementById('customerStatus') as HTMLElement;
+  const custName = document.getElementById('custName') as HTMLElement;
+  const custPhone = document.getElementById('custPhone') as HTMLElement;
+  const custAddress = document.getElementById('custAddress') as HTMLElement;
+  const custLoyalty = document.getElementById('custLoyalty') as HTMLElement;
+  const custResetBtn = document.getElementById('custResetBtn') as HTMLButtonElement;
+  const custPwModal = document.getElementById('custPwModal') as HTMLElement;
+  const custPwOverlay = document.getElementById('custPwOverlay') as HTMLElement;
+  const custPwClose = document.getElementById('custPwClose') as HTMLButtonElement;
+  const custPwCancel = document.getElementById('custPwCancel') as HTMLButtonElement;
+  const custPwForm = document.getElementById('custPwForm') as HTMLFormElement;
+  const custPwInput = document.getElementById('custPwInput') as HTMLInputElement;
+  const custPwTitle = document.getElementById('custPwTitle') as HTMLElement;
+  const custPwErr = document.getElementById('custPwErr') as HTMLElement;
+  const custPwSave = document.getElementById('custPwSave') as HTMLButtonElement;
+
+  // Track which customer is currently loaded in the result panel; used by
+  // the reset modal so a stale search result can't accidentally target the
+  // wrong account.
+  let loadedCustomerPhone: string | null = null;
+
+  function showCustomerStatus(msg: string, kind: 'success' | 'error' | '' = '') {
+    customerStatus.textContent = msg;
+    customerStatus.className = 'status-msg ' + (kind || '');
+    customerStatus.classList.remove('hidden');
+  }
+  function hideCustomerStatus() {
+    customerStatus.classList.add('hidden');
+    customerStatus.textContent = '';
+  }
+
+  function renderCustomer(c: any) {
+    loadedCustomerPhone = c.phone;
+    custName.textContent = c.name || '\u2014';
+    custName.classList.toggle('muted', !c.name);
+    custPhone.textContent = c.phone || '\u2014';
+    custAddress.textContent = c.address || '\u2014';
+    custAddress.classList.toggle('muted', !c.address);
+    if (c.loyalty && c.loyalty.code) {
+      custLoyalty.textContent = `${c.loyalty.code} \u2014 ${c.loyalty.stamps}/8 tampons, ${c.loyalty.rewards} cadeau${c.loyalty.rewards > 1 ? 'x' : ''}`;
+      custLoyalty.classList.remove('muted');
+    } else {
+      custLoyalty.textContent = 'Pas de carte li\u00e9e';
+      custLoyalty.classList.add('muted');
+    }
+    customerResult.classList.remove('hidden');
+  }
+
+  customerSearchForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideCustomerStatus();
+    customerResult.classList.add('hidden');
+    loadedCustomerPhone = null;
+    const phone = customerSearchPhone.value.trim();
+    if (!phone) return;
+    const res = await adminGetCustomer(phone);
+    if (res.ok && res.customer) {
+      renderCustomer(res.customer);
+    } else {
+      showCustomerStatus(res.error || 'Compte introuvable.', 'error');
+    }
+  });
+
+  // ===== Reset password modal =====
+  function openCustPwModal() {
+    if (!loadedCustomerPhone) return;
+    custPwTitle.textContent = `Mot de passe pour ${loadedCustomerPhone}`;
+    custPwInput.value = '';
+    custPwErr.classList.add('hidden');
+    custPwModal.classList.remove('hidden');
+    setTimeout(() => custPwInput.focus(), 50);
+  }
+  function closeCustPwModal() {
+    custPwModal.classList.add('hidden');
+  }
+  custResetBtn.addEventListener('click', openCustPwModal);
+  custPwClose.addEventListener('click', closeCustPwModal);
+  custPwCancel.addEventListener('click', closeCustPwModal);
+  custPwOverlay.addEventListener('click', closeCustPwModal);
+
+  custPwForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!loadedCustomerPhone) return;
+    custPwErr.classList.add('hidden');
+    const newPassword = custPwInput.value;
+    if (!newPassword || newPassword.length < 6) {
+      custPwErr.textContent = 'Mot de passe : 6 caract\u00e8res minimum.';
+      custPwErr.classList.remove('hidden');
+      return;
+    }
+    custPwSave.disabled = true;
+    custPwSave.textContent = 'Enregistrement\u2026';
+    try {
+      const res = await adminResetCustomerPassword(loadedCustomerPhone, newPassword);
+      if (res.ok) {
+        closeCustPwModal();
+        showCustomerStatus(`\u2713 Mot de passe r\u00e9initialis\u00e9 pour ${loadedCustomerPhone}.`, 'success');
+        setTimeout(hideCustomerStatus, 4000);
+      } else {
+        custPwErr.textContent = res.error || 'R\u00e9initialisation impossible.';
+        custPwErr.classList.remove('hidden');
+      }
+    } finally {
+      custPwSave.disabled = false;
+      custPwSave.textContent = 'Enregistrer';
+    }
   });
 </script>
 

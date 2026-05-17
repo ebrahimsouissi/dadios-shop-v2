@@ -57,7 +57,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site).toString();
         <a href="/contact">Contact</a>
       </div>
       <div class="nav-actions">
-        <a href="/compte">Compte</a>
+        <a href="/compte" data-account-link>Se connecter</a>
         <a href="/panier" class="nav-cart" data-cart-count>Panier · 0</a>
       </div>
     </div>
@@ -104,7 +104,21 @@ const canonical = new URL(Astro.url.pathname, Astro.site).toString();
 
   <script>
     import { bindCartBadge } from '../scripts/cart.js';
+    import { isLoggedIn } from '../scripts/customerApi.js';
+
     bindCartBadge();
+
+    // Server-rendered HTML always says "Se connecter" → /compte.
+    // If a customer session token is present, swap to "Mon compte" → /compte/dashboard.
+    // (We don't validate the token here to avoid a network call on every page load;
+    // /compte/dashboard re-validates via /me and bounces back if the session is stale.)
+    if (isLoggedIn()) {
+      document.querySelectorAll('[data-account-link]').forEach((a) => {
+        const el = a as HTMLAnchorElement;
+        el.textContent = 'Mon compte';
+        el.setAttribute('href', '/compte/dashboard');
+      });
+    }
   </script>
 </body>
 </html>

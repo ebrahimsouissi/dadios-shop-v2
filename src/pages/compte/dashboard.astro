@@ -1,0 +1,528 @@
+---
+import Base from '../../layouts/Base.astro';
+---
+<Base
+  title="Mon compte — Dadios Fragrance"
+  description="Votre profil et votre fidélité Dadios."
+>
+
+<div class="crumb-wrap">
+  <nav class="crumbs" aria-label="Fil d'Ariane">
+    <a href="/">Accueil</a> <span>·</span>
+    <span>Mon compte</span>
+  </nav>
+</div>
+
+<!-- Loading state shown while we hit /me — body is rendered only after auth -->
+<div id="dashLoading" class="dash-loading">
+  <p>Chargement…</p>
+</div>
+
+<main id="dashMain" class="dash-main" hidden>
+
+  <section class="dash-hero">
+    <div class="dash-hero-inner">
+      <div class="eyebrow">Espace client</div>
+      <h1 id="greeting">Bonjour</h1>
+      <p id="welcomeNote" class="dash-welcome" hidden></p>
+    </div>
+  </section>
+
+  <section class="dash-grid">
+    <!-- ===== Profile card ===== -->
+    <article class="dash-card profile-card">
+      <header class="card-head">
+        <div>
+          <div class="eyebrow">Profil</div>
+          <h2>Vos coordonnées</h2>
+        </div>
+        <button type="button" id="editBtn" class="btn btn-outline btn-sm">Modifier</button>
+      </header>
+
+      <dl id="profileView" class="profile-view">
+        <div>
+          <dt>Nom</dt>
+          <dd id="viewName"></dd>
+        </div>
+        <div>
+          <dt>Téléphone</dt>
+          <dd id="viewPhone"></dd>
+        </div>
+        <div>
+          <dt>Adresse</dt>
+          <dd id="viewAddress"></dd>
+        </div>
+      </dl>
+
+      <form id="profileEdit" class="profile-edit" hidden>
+        <label>
+          <span>Nom</span>
+          <input type="text" id="editName" autocomplete="name" />
+        </label>
+        <label>
+          <span>Téléphone</span>
+          <input type="tel" id="editPhone" readonly />
+          <small>Le téléphone ne peut pas être modifié. Contactez-nous pour un changement.</small>
+        </label>
+        <label>
+          <span>Adresse</span>
+          <textarea id="editAddress" rows="3" autocomplete="street-address"></textarea>
+        </label>
+        <p id="editErr" class="form-err" hidden></p>
+        <p id="editOk" class="form-ok" hidden>Profil enregistré ✓</p>
+        <div class="edit-actions">
+          <button type="button" id="cancelEdit" class="btn btn-outline btn-sm">Annuler</button>
+          <button type="submit" id="saveEdit" class="btn btn-primary btn-sm">Enregistrer</button>
+        </div>
+      </form>
+    </article>
+
+    <!-- ===== Loyalty card ===== -->
+    <article class="dash-card loyalty-card">
+      <header class="card-head">
+        <div>
+          <div class="eyebrow">Fidélité</div>
+          <h2>Carte Dadios</h2>
+        </div>
+      </header>
+
+      <div id="loyaltyHas" class="loyalty-state" hidden>
+        <p class="loyalty-code">
+          Code de la carte : <strong id="loyaltyCode"></strong>
+        </p>
+        <div class="stamps-row" id="stampsRow" aria-label="Progression des tampons"></div>
+        <p class="loyalty-progress" id="stampsLabel"></p>
+        <p class="loyalty-rewards" id="rewardsLabel"></p>
+        <p class="loyalty-fine">
+          Présentez votre code en boutique pour gagner un tampon à chaque
+          achat. À 8 tampons, votre cadeau est offert.
+        </p>
+      </div>
+
+      <div id="loyaltyNone" class="loyalty-state" hidden>
+        <p>
+          Vous n'avez pas encore de carte fidélité.
+        </p>
+        <p class="muted">
+          Demandez-en une lors de votre prochaine visite en boutique — votre
+          numéro de téléphone sera lié automatiquement.
+        </p>
+      </div>
+    </article>
+  </section>
+
+  <!-- ===== Future placeholders ===== -->
+  <section class="dash-soon">
+    <div class="eyebrow">Bientôt</div>
+    <p>Historique de commandes · Liste d'envies · Programme VIP</p>
+  </section>
+
+  <div class="dash-footer">
+    <button type="button" id="logoutBtn" class="btn btn-outline btn-sm">Se déconnecter</button>
+  </div>
+
+</main>
+
+</Base>
+
+<style>
+  .crumb-wrap { max-width: 1280px; margin: 0 auto; padding: 16px 32px 0; }
+  .crumbs { font-size: 12px; color: var(--ink-mute); letter-spacing: 0.06em; }
+  .crumbs a:hover { color: var(--emerald); }
+  .crumbs span { margin: 0 6px; opacity: 0.5; }
+
+  .dash-loading {
+    padding: 96px 32px;
+    text-align: center;
+    color: var(--ink-mute);
+    font-style: italic;
+  }
+
+  .dash-hero {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 24px 32px 12px;
+  }
+  .dash-hero h1 {
+    font-size: clamp(32px, 4vw, 44px);
+    margin-top: 8px;
+  }
+  .dash-welcome {
+    margin-top: 14px;
+    padding: 10px 14px;
+    background: rgba(14, 58, 31, 0.06);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--emerald);
+    display: inline-block;
+  }
+
+  .dash-grid {
+    max-width: 1280px;
+    margin: 24px auto 0;
+    padding: 0 32px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  .dash-card {
+    background: var(--cream-soft);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px 28px 26px;
+  }
+  .card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+  }
+  .card-head h2 {
+    font-size: 22px;
+    margin-top: 8px;
+  }
+
+  /* ===== profile ===== */
+  .profile-view {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .profile-view > div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .profile-view > div:last-child { border-bottom: none; padding-bottom: 0; }
+  .profile-view dt {
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--gold-soft);
+    font-weight: 500;
+  }
+  .profile-view dd {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 18px;
+    color: var(--ink);
+    line-height: 1.4;
+  }
+  .profile-view dd.muted { color: var(--ink-mute); font-style: italic; font-size: 15px; }
+
+  .profile-edit { display: flex; flex-direction: column; gap: 14px; }
+  .profile-edit label { display: block; }
+  .profile-edit label > span {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  .profile-edit input,
+  .profile-edit textarea {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    background: var(--cream);
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--ink);
+    box-sizing: border-box;
+  }
+  .profile-edit input:focus,
+  .profile-edit textarea:focus { outline: none; border-color: var(--emerald); }
+  .profile-edit input[readonly] {
+    background: var(--cream-warm);
+    color: var(--ink-mute);
+    cursor: not-allowed;
+  }
+  .profile-edit small {
+    display: block;
+    margin-top: 4px;
+    font-size: 11px;
+    color: var(--ink-mute);
+  }
+  .edit-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 4px;
+  }
+
+  .form-err {
+    background: rgba(178, 58, 31, 0.08);
+    border: 1px solid #B23A1F;
+    color: #8a2a14;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin: 0;
+  }
+  .form-ok {
+    background: rgba(14, 58, 31, 0.06);
+    border: 1px solid var(--emerald);
+    color: var(--emerald);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin: 0;
+  }
+
+  /* ===== loyalty ===== */
+  .loyalty-code {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-bottom: 18px;
+  }
+  .loyalty-code strong {
+    font-family: var(--font-display);
+    font-size: 22px;
+    color: var(--emerald);
+    letter-spacing: 0.16em;
+    margin-left: 6px;
+  }
+  .stamps-row {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .stamp {
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: var(--cream);
+    border: 1.5px solid var(--border-strong);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: transparent;
+    font-size: 16px;
+    transition: all .2s;
+  }
+  .stamp.filled {
+    background: var(--emerald);
+    border-color: var(--emerald);
+    color: var(--gold);
+  }
+  .loyalty-progress {
+    font-family: var(--font-display);
+    font-size: 17px;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+  .loyalty-rewards {
+    font-size: 13px;
+    color: var(--gold-soft);
+    letter-spacing: 0.06em;
+    margin-bottom: 16px;
+  }
+  .loyalty-fine {
+    font-size: 12px;
+    color: var(--ink-mute);
+    line-height: 1.6;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+  .loyalty-state p { margin-bottom: 12px; line-height: 1.6; }
+  .loyalty-state p.muted { color: var(--ink-mute); font-size: 14px; }
+
+  /* ===== footer / soon ===== */
+  .dash-soon {
+    max-width: 1280px;
+    margin: 32px auto 0;
+    padding: 24px 32px;
+    text-align: center;
+    color: var(--ink-mute);
+    font-size: 14px;
+    font-style: italic;
+    border-top: 1px solid var(--border);
+  }
+  .dash-soon .eyebrow {
+    font-style: normal;
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  .dash-footer {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 16px 32px 96px;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  @media (max-width: 880px) {
+    .dash-grid { grid-template-columns: 1fr; }
+    .dash-grid, .dash-hero, .dash-soon, .dash-footer { padding-left: 16px; padding-right: 16px; }
+    .crumb-wrap { padding: 12px 16px 0; }
+  }
+  @media (max-width: 480px) {
+    .dash-card { padding: 24px 20px 20px; }
+    .stamps-row { gap: 6px; }
+  }
+</style>
+
+<script>
+  import { me, updateProfile, logout, isLoggedIn } from '../../scripts/customerApi.js';
+
+  const loading = document.getElementById('dashLoading') as HTMLElement;
+  const main = document.getElementById('dashMain') as HTMLElement;
+  const greeting = document.getElementById('greeting') as HTMLElement;
+  const welcomeNote = document.getElementById('welcomeNote') as HTMLElement;
+  const viewName = document.getElementById('viewName') as HTMLElement;
+  const viewPhone = document.getElementById('viewPhone') as HTMLElement;
+  const viewAddress = document.getElementById('viewAddress') as HTMLElement;
+  const profileView = document.getElementById('profileView') as HTMLElement;
+  const profileEdit = document.getElementById('profileEdit') as HTMLFormElement;
+  const editBtn = document.getElementById('editBtn') as HTMLButtonElement;
+  const cancelEdit = document.getElementById('cancelEdit') as HTMLButtonElement;
+  const saveEdit = document.getElementById('saveEdit') as HTMLButtonElement;
+  const editName = document.getElementById('editName') as HTMLInputElement;
+  const editPhone = document.getElementById('editPhone') as HTMLInputElement;
+  const editAddress = document.getElementById('editAddress') as HTMLTextAreaElement;
+  const editErr = document.getElementById('editErr') as HTMLElement;
+  const editOk = document.getElementById('editOk') as HTMLElement;
+  const loyaltyHas = document.getElementById('loyaltyHas') as HTMLElement;
+  const loyaltyNone = document.getElementById('loyaltyNone') as HTMLElement;
+  const loyaltyCodeEl = document.getElementById('loyaltyCode') as HTMLElement;
+  const stampsRow = document.getElementById('stampsRow') as HTMLElement;
+  const stampsLabel = document.getElementById('stampsLabel') as HTMLElement;
+  const rewardsLabel = document.getElementById('rewardsLabel') as HTMLElement;
+  const logoutBtn = document.getElementById('logoutBtn') as HTMLButtonElement;
+
+  function bounceToLogin() {
+    window.location.replace('/compte');
+  }
+
+  function renderProfile(c: any) {
+    greeting.textContent = c.name ? `Bonjour, ${c.name}` : 'Bonjour, cher client';
+    viewName.textContent = c.name || '—';
+    viewName.classList.toggle('muted', !c.name);
+    viewPhone.textContent = c.phone || '—';
+    viewAddress.textContent = c.address || '—';
+    viewAddress.classList.toggle('muted', !c.address);
+
+    editName.value = c.name || '';
+    editPhone.value = c.phone || '';
+    editAddress.value = c.address || '';
+  }
+
+  function renderLoyalty(loyalty: any) {
+    if (!loyalty || !loyalty.code) {
+      loyaltyHas.hidden = true;
+      loyaltyNone.hidden = false;
+      return;
+    }
+    loyaltyNone.hidden = true;
+    loyaltyHas.hidden = false;
+    loyaltyCodeEl.textContent = loyalty.code;
+    const stamps = Math.max(0, Math.min(8, Number(loyalty.stamps) || 0));
+    stampsRow.innerHTML = '';
+    for (let i = 0; i < 8; i++) {
+      const dot = document.createElement('span');
+      dot.className = 'stamp' + (i < stamps ? ' filled' : '');
+      dot.textContent = '✦';
+      stampsRow.appendChild(dot);
+    }
+    stampsLabel.textContent = `${stamps} / 8 tampons sur cette carte`;
+    const rewards = Number(loyalty.rewards) || 0;
+    rewardsLabel.textContent = rewards === 0
+      ? 'Aucun cadeau pour le moment'
+      : rewards === 1
+        ? '1 cadeau gagné'
+        : `${rewards} cadeaux gagnés`;
+  }
+
+  function applyWelcomeFlag() {
+    const qp = new URLSearchParams(window.location.search);
+    const w = qp.get('welcome');
+    if (w === 'loyalty') {
+      welcomeNote.textContent = '✓ Bienvenue ! Nous avons reconnu votre carte fidélité existante.';
+      welcomeNote.hidden = false;
+    } else if (w === '1') {
+      welcomeNote.textContent = '✓ Bienvenue ! Votre compte est actif.';
+      welcomeNote.hidden = false;
+    }
+    if (w) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('welcome');
+      window.history.replaceState({}, '', url.toString());
+    }
+  }
+
+  function showErr(el: HTMLElement, msg: string) { el.textContent = msg; el.hidden = false; }
+  function hideErr(el: HTMLElement) { el.hidden = true; el.textContent = ''; }
+
+  // ===== Edit toggling =====
+  editBtn.addEventListener('click', () => {
+    hideErr(editErr); editOk.hidden = true;
+    profileView.hidden = true;
+    profileEdit.hidden = false;
+    editBtn.hidden = true;
+  });
+  cancelEdit.addEventListener('click', () => {
+    hideErr(editErr); editOk.hidden = true;
+    profileEdit.hidden = true;
+    profileView.hidden = false;
+    editBtn.hidden = false;
+  });
+  profileEdit.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideErr(editErr); editOk.hidden = true;
+    saveEdit.disabled = true;
+    saveEdit.textContent = 'Enregistrement…';
+    try {
+      const res = await updateProfile({
+        name: editName.value.trim(),
+        address: editAddress.value.trim(),
+      });
+      if (!res.ok) {
+        if (res.error === 'Session invalide') return bounceToLogin();
+        showErr(editErr, res.error || 'Enregistrement impossible.');
+        return;
+      }
+      renderProfile(res.customer);
+      editOk.hidden = false;
+      setTimeout(() => {
+        editOk.hidden = true;
+        profileEdit.hidden = true;
+        profileView.hidden = false;
+        editBtn.hidden = false;
+      }, 900);
+    } finally {
+      saveEdit.disabled = false;
+      saveEdit.textContent = 'Enregistrer';
+    }
+  });
+
+  // ===== Logout =====
+  logoutBtn.addEventListener('click', async () => {
+    logoutBtn.disabled = true;
+    logoutBtn.textContent = 'Déconnexion…';
+    await logout();
+    window.location.replace('/');
+  });
+
+  // ===== Initial load — verify session via /me =====
+  (async () => {
+    if (!isLoggedIn()) return bounceToLogin();
+    const res = await me();
+    if (!res.ok || !res.customer) return bounceToLogin();
+    renderProfile(res.customer);
+    renderLoyalty(res.customer.loyalty);
+    applyWelcomeFlag();
+    loading.hidden = true;
+    main.hidden = false;
+  })();
+</script>

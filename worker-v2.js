@@ -4,16 +4,25 @@
  * Endpoints:
  *   POST /api/loyalty      — existing loyalty card system (preserved as-is)
  *   GET  /api/products     — public, returns all products (the new shop catalog reads this)
- *   POST /api/admin        — admin-only: product CRUD, image upload
+ *   POST /api/admin        — admin-only: product CRUD, image upload, customer mgmt
+ *   POST /api/customer     — customer auth & profile: signup, login, me, update, logout
  *
  * Required bindings (set in Cloudflare dashboard → Worker → Settings):
- *   LOYALTY_KV  (KV namespace) — already configured
- *   PRODUCTS_KV (KV namespace) — NEW, create one called "dadios-products"
- *   IMAGES      (R2 bucket)    — NEW, create one called "dadios-images"
+ *   LOYALTY_KV   (KV namespace) — already configured
+ *   PRODUCTS_KV  (KV namespace) — KV namespace "dadios-products"
+ *   CUSTOMERS_KV (KV namespace) — *** NEW for Phase 6a ***
+ *                                  Steps:
+ *                                    1. Cloudflare dashboard → Workers KV → Create namespace
+ *                                       Name: "dadios-customers"
+ *                                    2. Worker → Settings → Variables → KV Namespace Bindings
+ *                                       Variable name: CUSTOMERS_KV
+ *                                       Bind to: dadios-customers
+ *                                    3. Save & deploy the Worker
+ *   IMAGES       (R2 bucket)    — R2 bucket "dadios-images"
  *
  * Required env variables:
  *   ADMIN_PASSWORD              — already configured
- *   PUBLIC_IMAGES_BASE_URL      — NEW, e.g. "https://images.thedadios.com" (R2 public domain)
+ *   PUBLIC_IMAGES_BASE_URL      — e.g. "https://images.thedadios.com" (R2 public domain)
  */
 
 // ============================================================
@@ -22,7 +31,7 @@
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, x-admin-password, x-slug-hint",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
 function json(data, status = 200, extraHeaders = {}) {
@@ -315,6 +324,246 @@ async function handleLoyalty(body, env) {
 }
 
 // ============================================================
+// CUSTOMERS (signup / login / sessions / profile)
+//   KV namespace binding: CUSTOMERS_KV
+//   Keys:
+//     customer:${phone}            — { phone, name, address, passwordHash,
+//                                       salt, loyaltyCode?, createdAt, updatedAt }
+//     session:${uuid}              — { phone, createdAt }  (30-day TTL)
+//     ratelimit:login:${phone}     — { count, windowStart } (1-hour TTL)
+// ============================================================
+
+const SESSION_TTL_SECONDS = 30 * 24 * 60 * 60; // 30 days
+const LOGIN_RATE_LIMIT_MAX = 5;
+const LOGIN_RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
+const MIN_PASSWORD_LENGTH = 6;
+
+function normalizePhone(raw) {
+  // Strip spaces, dashes, dots, parens. Do NOT auto-add country code.
+  return String(raw || "").replace(/[\s\-\.\(\)]/g, "");
+}
+
+function bytesToHex(bytes) {
+  let out = "";
+  for (let i = 0; i < bytes.length; i++) out += bytes[i].toString(16).padStart(2, "0");
+  return out;
+}
+
+async function sha256Hex(input) {
+  const data = new TextEncoder().encode(input);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return bytesToHex(new Uint8Array(digest));
+}
+
+function generateSalt() {
+  const buf = new Uint8Array(16);
+  crypto.getRandomValues(buf);
+  return bytesToHex(buf);
+}
+
+async function hashPassword(password, salt) {
+  return sha256Hex(salt + ":" + password);
+}
+
+// Constant-time string compare — avoids leaking password hashes via timing.
+function safeEqual(a, b) {
+  if (typeof a !== "string" || typeof b !== "string") return false;
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
+function sanitizeCustomer(customer) {
+  if (!customer) return null;
+  const { passwordHash, salt, ...rest } = customer;
+  return rest;
+}
+
+async function getLoyaltyCardByCode(env, code) {
+  if (!env.LOYALTY_KV || !code) return null;
+  const raw = await env.LOYALTY_KV.get(`card:${code}`);
+  if (!raw) return null;
+  try { return normalizeCard(JSON.parse(raw)); } catch { return null; }
+}
+
+// Scan all loyalty cards looking for one whose normalized phone equals
+// the new customer's normalized phone. O(N) on the loyalty card set, but
+// only runs once per signup. Used by signup to auto-link an existing card.
+async function findLoyaltyCardByPhone(env, normalizedPhone) {
+  if (!env.LOYALTY_KV || !normalizedPhone) return null;
+  const list = await env.LOYALTY_KV.list({ prefix: "card:" });
+  for (const key of list.keys) {
+    const raw = await env.LOYALTY_KV.get(key.name);
+    if (!raw) continue;
+    try {
+      const card = JSON.parse(raw);
+      if (card.phone && normalizePhone(card.phone) === normalizedPhone) {
+        return normalizeCard(card);
+      }
+    } catch {}
+  }
+  return null;
+}
+
+async function buildCustomerPayload(env, customer) {
+  const safe = sanitizeCustomer(customer);
+  let loyalty = null;
+  if (customer.loyaltyCode) {
+    const card = await getLoyaltyCardByCode(env, customer.loyaltyCode);
+    if (card) {
+      loyalty = { code: card.code, stamps: card.stamps, rewards: card.rewards };
+    }
+  }
+  return { ...safe, loyalty };
+}
+
+async function getSession(env, token) {
+  if (!env.CUSTOMERS_KV || !token) return null;
+  const raw = await env.CUSTOMERS_KV.get(`session:${token}`);
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch { return null; }
+}
+
+async function createSession(env, phone) {
+  const token = crypto.randomUUID();
+  const sess = { phone, createdAt: new Date().toISOString() };
+  await env.CUSTOMERS_KV.put(`session:${token}`, JSON.stringify(sess), {
+    expirationTtl: SESSION_TTL_SECONDS,
+  });
+  return token;
+}
+
+async function handleCustomer(body, env) {
+  const kv = env.CUSTOMERS_KV;
+  if (!kv) return json({ ok: false, error: "KV not bound (CUSTOMERS_KV)" }, 500);
+
+  const action = body?.action;
+  if (!action) return json({ ok: false, error: "Missing action" }, 400);
+
+  // ===== signup =====
+  if (action === "signup") {
+    const phone = normalizePhone(body.phone);
+    const password = String(body.password || "");
+    const name = String(body.name || "").trim();
+    const address = String(body.address || "").trim();
+    if (!phone) return json({ ok: false, error: "Numéro de téléphone requis" }, 400);
+    if (!password || password.length < MIN_PASSWORD_LENGTH) {
+      return json({ ok: false, error: `Mot de passe : ${MIN_PASSWORD_LENGTH} caractères minimum` }, 400);
+    }
+    const existing = await kv.get(`customer:${phone}`);
+    if (existing) {
+      return json({ ok: false, error: "Un compte existe déjà avec ce numéro" }, 409);
+    }
+
+    const salt = generateSalt();
+    const passwordHash = await hashPassword(password, salt);
+    const linkedCard = await findLoyaltyCardByPhone(env, phone);
+
+    const customer = {
+      phone,
+      name,
+      address,
+      passwordHash,
+      salt,
+      loyaltyCode: linkedCard ? linkedCard.code : null,
+      createdAt: new Date().toISOString(),
+    };
+    await kv.put(`customer:${phone}`, JSON.stringify(customer));
+
+    const sessionToken = await createSession(env, phone);
+    return json({
+      ok: true,
+      sessionToken,
+      customer: await buildCustomerPayload(env, customer),
+      loyaltyLinked: !!linkedCard,
+    });
+  }
+
+  // ===== login =====
+  if (action === "login") {
+    const phone = normalizePhone(body.phone);
+    const password = String(body.password || "");
+    if (!phone || !password) {
+      return json({ ok: false, error: "Identifiants incorrects" }, 401);
+    }
+
+    // Throttle by phone — same key shape used elsewhere in the worker.
+    const rateKey = `ratelimit:login:${phone}`;
+    const nowMs = Date.now();
+    let rateData = { count: 0, windowStart: nowMs };
+    const rawRate = await kv.get(rateKey);
+    if (rawRate) {
+      try {
+        const parsed = JSON.parse(rawRate);
+        if (nowMs - parsed.windowStart < LOGIN_RATE_LIMIT_WINDOW_MS) rateData = parsed;
+      } catch {}
+    }
+    if (rateData.count >= LOGIN_RATE_LIMIT_MAX) {
+      return json({ ok: false, error: "Trop de tentatives. Réessayez dans une heure." }, 429);
+    }
+
+    const raw = await kv.get(`customer:${phone}`);
+    if (raw) {
+      try {
+        const customer = JSON.parse(raw);
+        const candidate = await hashPassword(password, customer.salt);
+        if (safeEqual(candidate, customer.passwordHash)) {
+          // Success — do NOT bump the rate limiter.
+          const sessionToken = await createSession(env, phone);
+          return json({
+            ok: true,
+            sessionToken,
+            customer: await buildCustomerPayload(env, customer),
+          });
+        }
+      } catch {}
+    }
+
+    // Failure — bump rate limiter, return generic error (don't reveal whether
+    // the phone exists). Always returns the same 401 + message.
+    rateData.count += 1;
+    await kv.put(rateKey, JSON.stringify(rateData), { expirationTtl: 3600 });
+    return json({ ok: false, error: "Identifiants incorrects" }, 401);
+  }
+
+  // ===== me ===== identity comes from sessionToken, never from a client-supplied phone
+  if (action === "me") {
+    const sess = await getSession(env, body.sessionToken);
+    if (!sess) return json({ ok: false, error: "Session invalide" }, 401);
+    const raw = await kv.get(`customer:${sess.phone}`);
+    if (!raw) return json({ ok: false, error: "Compte introuvable" }, 404);
+    const customer = JSON.parse(raw);
+    return json({ ok: true, customer: await buildCustomerPayload(env, customer) });
+  }
+
+  // ===== update profile (name, address only) =====
+  if (action === "update") {
+    const sess = await getSession(env, body.sessionToken);
+    if (!sess) return json({ ok: false, error: "Session invalide" }, 401);
+    const raw = await kv.get(`customer:${sess.phone}`);
+    if (!raw) return json({ ok: false, error: "Compte introuvable" }, 404);
+    const customer = JSON.parse(raw);
+    customer.name = String(body.name || "").trim();
+    customer.address = String(body.address || "").trim();
+    customer.updatedAt = new Date().toISOString();
+    await kv.put(`customer:${sess.phone}`, JSON.stringify(customer));
+    return json({ ok: true, customer: await buildCustomerPayload(env, customer) });
+  }
+
+  // ===== logout =====
+  if (action === "logout") {
+    const token = body.sessionToken;
+    if (token) await kv.delete(`session:${token}`);
+    return json({ ok: true });
+  }
+
+  return json({ ok: false, error: "Unknown customer action: " + action }, 400);
+}
+
+// ============================================================
 // Admin handler (product CRUD)
 // ============================================================
 async function handleAdmin(body, env) {
@@ -338,6 +587,39 @@ async function handleAdmin(body, env) {
 
   if (action === "check_password") {
     // Lets the admin login page verify the password without doing anything else
+    return json({ ok: true });
+  }
+
+  // ===== Customer management (admin-only) =====
+  if (action === "admin_get_customer") {
+    if (!env.CUSTOMERS_KV) {
+      return json({ ok: false, error: "KV not bound (CUSTOMERS_KV)" }, 500);
+    }
+    const phone = normalizePhone(body.customerPhone);
+    if (!phone) return json({ ok: false, error: "Missing customerPhone" }, 400);
+    const raw = await env.CUSTOMERS_KV.get(`customer:${phone}`);
+    if (!raw) return json({ ok: false, error: "Compte introuvable" }, 404);
+    const customer = JSON.parse(raw);
+    return json({ ok: true, customer: await buildCustomerPayload(env, customer) });
+  }
+
+  if (action === "admin_reset_customer_password") {
+    if (!env.CUSTOMERS_KV) {
+      return json({ ok: false, error: "KV not bound (CUSTOMERS_KV)" }, 500);
+    }
+    const phone = normalizePhone(body.customerPhone);
+    const newPassword = String(body.newPassword || "");
+    if (!phone) return json({ ok: false, error: "Missing customerPhone" }, 400);
+    if (!newPassword || newPassword.length < MIN_PASSWORD_LENGTH) {
+      return json({ ok: false, error: `Mot de passe : ${MIN_PASSWORD_LENGTH} caractères minimum` }, 400);
+    }
+    const raw = await env.CUSTOMERS_KV.get(`customer:${phone}`);
+    if (!raw) return json({ ok: false, error: "Compte introuvable" }, 404);
+    const customer = JSON.parse(raw);
+    customer.salt = generateSalt();
+    customer.passwordHash = await hashPassword(newPassword, customer.salt);
+    customer.updatedAt = new Date().toISOString();
+    await env.CUSTOMERS_KV.put(`customer:${phone}`, JSON.stringify(customer));
     return json({ ok: true });
   }
 
@@ -375,12 +657,20 @@ export default {
       }
     }
 
-    // ===== Admin (product CRUD) =====
+    // ===== Admin (product CRUD + customer mgmt) =====
     if (url.pathname === "/api/admin" && request.method === "POST") {
       let body;
       try { body = await request.json(); }
       catch { return json({ ok: false, error: "Invalid JSON" }, 400); }
       return handleAdmin(body, env);
+    }
+
+    // ===== Customer auth & profile =====
+    if (url.pathname === "/api/customer" && request.method === "POST") {
+      let body;
+      try { body = await request.json(); }
+      catch { return json({ ok: false, error: "Invalid JSON" }, 400); }
+      return handleCustomer(body, env);
     }
 
     // ===== Image upload =====

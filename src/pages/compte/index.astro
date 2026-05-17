@@ -1,0 +1,377 @@
+---
+import Base from '../../layouts/Base.astro';
+---
+<Base
+  title="Mon compte — Dadios Fragrance"
+  description="Connectez-vous à votre compte Dadios ou créez-en un pour suivre votre fidélité."
+>
+
+<section class="acc-hero">
+  <div class="acc-hero-inner">
+    <div class="eyebrow">Espace client</div>
+    <h1>Mon compte</h1>
+    <p class="acc-lead">
+      <span class="script">Retrouvez votre fidélité et votre profil.</span>
+    </p>
+  </div>
+</section>
+
+<section class="acc-wrap">
+  <div class="acc-card" role="region" aria-label="Authentification">
+    <div class="acc-tabs" role="tablist">
+      <button type="button" id="tabLogin" class="acc-tab active" role="tab" aria-selected="true">Se connecter</button>
+      <button type="button" id="tabSignup" class="acc-tab" role="tab" aria-selected="false">Créer un compte</button>
+    </div>
+
+    <!-- ===== LOGIN PANEL ===== -->
+    <form id="loginForm" class="acc-form" novalidate>
+      <label>
+        <span>Téléphone</span>
+        <input type="tel" name="phone" id="loginPhone" required autocomplete="tel" placeholder="+216 56 731 891" inputmode="tel" />
+      </label>
+      <label>
+        <span>Mot de passe</span>
+        <input type="password" name="password" id="loginPwd" required autocomplete="current-password" minlength="6" />
+      </label>
+      <p id="loginErr" class="form-err" hidden></p>
+      <button type="submit" id="loginBtn" class="btn btn-primary acc-submit">Se connecter</button>
+      <button type="button" id="forgotBtn" class="acc-link">Mot de passe oublié ?</button>
+    </form>
+
+    <!-- ===== SIGNUP PANEL ===== -->
+    <form id="signupForm" class="acc-form" hidden novalidate>
+      <label>
+        <span>Téléphone *</span>
+        <input type="tel" name="phone" id="signupPhone" required autocomplete="tel" placeholder="+216 56 731 891" inputmode="tel" />
+        <small>Numéro WhatsApp recommandé.</small>
+      </label>
+      <label>
+        <span>Mot de passe *</span>
+        <input type="password" name="password" id="signupPwd" required autocomplete="new-password" minlength="6" />
+        <small>6 caractères minimum.</small>
+      </label>
+      <label>
+        <span>Nom (facultatif)</span>
+        <input type="text" name="name" id="signupName" autocomplete="name" />
+      </label>
+      <label>
+        <span>Adresse (facultatif)</span>
+        <textarea name="address" id="signupAddress" rows="2" autocomplete="street-address"></textarea>
+      </label>
+      <p id="signupErr" class="form-err" hidden></p>
+      <button type="submit" id="signupBtn" class="btn btn-primary acc-submit">Créer mon compte</button>
+    </form>
+  </div>
+
+  <p class="acc-fineprint">
+    Vos informations restent privées. Votre numéro est utilisé uniquement pour
+    votre programme fidélité et le suivi de commande.
+  </p>
+</section>
+
+<!-- ===== FORGOT PASSWORD MODAL ===== -->
+<div id="forgotModal" class="modal" hidden>
+  <div class="modal-overlay" id="forgotOverlay"></div>
+  <div class="modal-box">
+    <button type="button" class="modal-close" id="forgotClose" aria-label="Fermer">×</button>
+    <div class="eyebrow">Réinitialisation</div>
+    <h2>Mot de passe oublié</h2>
+    <p>
+      Pour des raisons de sécurité, la réinitialisation du mot de passe se fait
+      avec notre équipe.
+    </p>
+    <p class="muted">
+      Contactez-nous par WhatsApp au <strong>+216 56 731 891</strong>. Indiquez
+      votre numéro de téléphone — nous vous enverrons un nouveau mot de passe
+      temporaire que vous pourrez ensuite modifier.
+    </p>
+    <a
+      class="btn btn-primary forgot-cta"
+      href="https://wa.me/21656731891?text=Bonjour%20Dadios%2C%20je%20souhaite%20r%C3%A9initialiser%20le%20mot%20de%20passe%20de%20mon%20compte%20client."
+      target="_blank"
+      rel="noopener"
+    >Ouvrir WhatsApp →</a>
+  </div>
+</div>
+
+</Base>
+
+<style>
+  .acc-hero {
+    background: var(--cream);
+    padding: 56px 32px 32px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .acc-hero h1 { font-size: clamp(36px, 5vw, 52px); margin: 12px 0 10px; }
+  .acc-lead .script { font-size: 26px; }
+
+  .acc-wrap {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 40px 16px 96px;
+  }
+  .acc-card {
+    background: var(--cream-soft);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  .acc-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    background: var(--cream-warm);
+  }
+  .acc-tab {
+    flex: 1;
+    padding: 16px 12px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-body);
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    border-bottom: 2px solid transparent;
+    transition: color .2s, border-color .2s, background .2s;
+  }
+  .acc-tab:hover { color: var(--ink); }
+  .acc-tab.active {
+    color: var(--emerald);
+    border-bottom-color: var(--emerald);
+    background: var(--cream-soft);
+  }
+
+  .acc-form { padding: 32px 28px; display: flex; flex-direction: column; gap: 18px; }
+  .acc-form label { display: block; }
+  .acc-form label > span {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  .acc-form input,
+  .acc-form textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    background: var(--cream);
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--ink);
+    box-sizing: border-box;
+  }
+  .acc-form textarea { resize: vertical; min-height: 60px; }
+  .acc-form input:focus,
+  .acc-form textarea:focus { outline: none; border-color: var(--emerald); }
+  .acc-form small {
+    display: block;
+    margin-top: 4px;
+    font-size: 11px;
+    color: var(--ink-mute);
+  }
+
+  .acc-submit { width: 100%; margin-top: 4px; }
+  .form-err {
+    background: rgba(178, 58, 31, 0.08);
+    border: 1px solid #B23A1F;
+    color: #8a2a14;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin: 4px 0 0;
+  }
+
+  .acc-link {
+    background: none;
+    border: none;
+    color: var(--emerald);
+    font-size: 13px;
+    text-align: center;
+    cursor: pointer;
+    padding: 8px;
+    font-family: var(--font-body);
+    text-decoration: underline;
+  }
+  .acc-link:hover { color: var(--emerald-dark); }
+
+  .acc-fineprint {
+    text-align: center;
+    font-size: 12px;
+    color: var(--ink-mute);
+    margin-top: 20px;
+    line-height: 1.6;
+    padding: 0 8px;
+  }
+
+  /* ===== MODAL ===== */
+  .modal {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .modal[hidden] { display: none !important; }
+  .modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(5, 26, 14, 0.72);
+    backdrop-filter: blur(4px);
+  }
+  .modal-box {
+    position: relative;
+    background: var(--cream);
+    border: 1px solid var(--border-strong);
+    border-radius: 14px;
+    width: 100%;
+    max-width: 480px;
+    padding: 36px 32px 32px;
+  }
+  .modal-close {
+    position: absolute;
+    top: 14px;
+    right: 18px;
+    background: none;
+    border: none;
+    font-size: 26px;
+    cursor: pointer;
+    color: var(--ink-mute);
+    line-height: 1;
+  }
+  .modal-box h2 { font-size: 26px; margin: 6px 0 16px; }
+  .modal-box p { color: var(--ink-soft); line-height: 1.65; margin-bottom: 14px; }
+  .modal-box p.muted { color: var(--ink-mute); font-size: 14px; }
+  .forgot-cta { margin-top: 12px; width: 100%; }
+
+  @media (max-width: 480px) {
+    .acc-hero { padding: 40px 16px 24px; }
+    .acc-form { padding: 24px 18px; }
+    .modal-box { padding: 28px 22px 24px; }
+  }
+</style>
+
+<script>
+  import { signup, login, me, isLoggedIn } from '../../scripts/customerApi.js';
+
+  const tabLogin = document.getElementById('tabLogin') as HTMLButtonElement;
+  const tabSignup = document.getElementById('tabSignup') as HTMLButtonElement;
+  const loginForm = document.getElementById('loginForm') as HTMLFormElement;
+  const signupForm = document.getElementById('signupForm') as HTMLFormElement;
+  const loginErr = document.getElementById('loginErr') as HTMLElement;
+  const signupErr = document.getElementById('signupErr') as HTMLElement;
+  const loginBtn = document.getElementById('loginBtn') as HTMLButtonElement;
+  const signupBtn = document.getElementById('signupBtn') as HTMLButtonElement;
+  const forgotBtn = document.getElementById('forgotBtn') as HTMLButtonElement;
+  const forgotModal = document.getElementById('forgotModal') as HTMLElement;
+  const forgotClose = document.getElementById('forgotClose') as HTMLButtonElement;
+  const forgotOverlay = document.getElementById('forgotOverlay') as HTMLElement;
+
+  // ===== If already logged in, skip the form entirely =====
+  (async () => {
+    if (!isLoggedIn()) return;
+    const res = await me();
+    if (res.ok) {
+      window.location.replace('/compte/dashboard');
+    }
+    // If me() fails, the helper already cleared the stale token, so we
+    // stay on this page with a fresh state.
+  })();
+
+  // ===== Tab switching =====
+  function selectTab(which: 'login' | 'signup') {
+    const isLogin = which === 'login';
+    tabLogin.classList.toggle('active', isLogin);
+    tabLogin.setAttribute('aria-selected', isLogin ? 'true' : 'false');
+    tabSignup.classList.toggle('active', !isLogin);
+    tabSignup.setAttribute('aria-selected', isLogin ? 'false' : 'true');
+    loginForm.hidden = !isLogin;
+    signupForm.hidden = isLogin;
+    loginErr.hidden = true;
+    signupErr.hidden = true;
+  }
+  tabLogin.addEventListener('click', () => selectTab('login'));
+  tabSignup.addEventListener('click', () => selectTab('signup'));
+
+  function showErr(el: HTMLElement, msg: string) {
+    el.textContent = msg;
+    el.hidden = false;
+  }
+  function hideErr(el: HTMLElement) {
+    el.hidden = true;
+    el.textContent = '';
+  }
+
+  // ===== Login submit =====
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideErr(loginErr);
+    const phone = (document.getElementById('loginPhone') as HTMLInputElement).value.trim();
+    const password = (document.getElementById('loginPwd') as HTMLInputElement).value;
+    if (!phone || !password) {
+      showErr(loginErr, 'Téléphone et mot de passe requis.');
+      return;
+    }
+    loginBtn.disabled = true;
+    loginBtn.textContent = 'Connexion...';
+    try {
+      const res = await login({ phone, password });
+      if (res.ok) {
+        window.location.assign('/compte/dashboard');
+      } else {
+        showErr(loginErr, res.error || 'Identifiants incorrects.');
+      }
+    } finally {
+      loginBtn.disabled = false;
+      loginBtn.textContent = 'Se connecter';
+    }
+  });
+
+  // ===== Signup submit =====
+  signupForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideErr(signupErr);
+    const phone = (document.getElementById('signupPhone') as HTMLInputElement).value.trim();
+    const password = (document.getElementById('signupPwd') as HTMLInputElement).value;
+    const name = (document.getElementById('signupName') as HTMLInputElement).value.trim();
+    const address = (document.getElementById('signupAddress') as HTMLTextAreaElement).value.trim();
+    if (!phone) { showErr(signupErr, 'Numéro de téléphone requis.'); return; }
+    if (!password || password.length < 6) {
+      showErr(signupErr, 'Mot de passe : 6 caractères minimum.');
+      return;
+    }
+    signupBtn.disabled = true;
+    signupBtn.textContent = 'Création...';
+    try {
+      const res = await signup({ phone, password, name, address });
+      if (res.ok) {
+        // Surface the loyalty-link bonus via the URL so the dashboard can
+        // greet the user appropriately without coupling pages tightly.
+        const qs = res.loyaltyLinked ? '?welcome=loyalty' : '?welcome=1';
+        window.location.assign('/compte/dashboard' + qs);
+      } else {
+        showErr(signupErr, res.error || 'Création impossible.');
+      }
+    } finally {
+      signupBtn.disabled = false;
+      signupBtn.textContent = 'Créer mon compte';
+    }
+  });
+
+  // ===== Forgot password modal =====
+  function openForgot() { forgotModal.hidden = false; }
+  function closeForgot() { forgotModal.hidden = true; }
+  forgotBtn.addEventListener('click', openForgot);
+  forgotClose.addEventListener('click', closeForgot);
+  forgotOverlay.addEventListener('click', closeForgot);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !forgotModal.hidden) closeForgot();
+  });
+</script>

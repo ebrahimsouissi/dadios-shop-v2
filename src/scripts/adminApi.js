@@ -52,6 +52,25 @@ export async function deleteProduct(slug) {
 }
 
 /**
+ * Admin: look up a customer record by (normalized) phone. Returns the same
+ * payload shape as /api/customer me — { ok, customer: {phone, name, address,
+ * loyalty?} } — minus the password hash/salt.
+ */
+export async function adminGetCustomer(customerPhone) {
+  return adminPost('admin_get_customer', { customerPhone });
+}
+
+/**
+ * Admin: overwrite a customer's password. Worker generates a fresh salt and
+ * stores the new SHA-256 hash. The new plaintext is sent in the body — this
+ * call should be made from an already-authenticated admin form, never
+ * surfaced publicly.
+ */
+export async function adminResetCustomerPassword(customerPhone, newPassword) {
+  return adminPost('admin_reset_customer_password', { customerPhone, newPassword });
+}
+
+/**
  * Uploads a Blob (cropped image) to the worker, returns public URL.
  * Sends the password in a header since the body is binary.
  */
