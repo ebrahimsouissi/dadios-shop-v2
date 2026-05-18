@@ -105,8 +105,10 @@ const canonical = new URL(Astro.url.pathname, Astro.site).toString();
   <script>
     import { bindCartBadge } from '../scripts/cart.js';
     import { isLoggedIn } from '../scripts/customerApi.js';
+    import { bindWishlistHearts } from '../scripts/wishlist.js';
 
     bindCartBadge();
+    bindWishlistHearts();
 
     // Server-rendered HTML always says "Se connecter" → /compte.
     // If a customer session token is present, swap to "Mon compte" → /compte/dashboard.

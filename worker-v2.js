@@ -4,19 +4,23 @@
  * Endpoints:
  *   POST /api/loyalty      — existing loyalty card system (preserved as-is)
  *   GET  /api/products     — public, returns all products (the new shop catalog reads this)
- *   POST /api/admin        — admin-only: product CRUD, image upload, customer mgmt
+ *   POST /api/admin        — admin-only: product CRUD, image upload, customer mgmt, orders mgmt
  *   POST /api/customer     — customer auth & profile: signup, login, me, update, logout
+ *   POST /api/orders       — orders: create, list (own), get (own), admin_list, admin_update
+ *   POST /api/wishlist     — wishlist: list, add, remove, sync (all session-gated)
  *
  * Required bindings (set in Cloudflare dashboard → Worker → Settings):
  *   LOYALTY_KV   (KV namespace) — already configured
  *   PRODUCTS_KV  (KV namespace) — KV namespace "dadios-products"
- *   CUSTOMERS_KV (KV namespace) — *** NEW for Phase 6a ***
+ *   CUSTOMERS_KV (KV namespace) — KV namespace "dadios-customers"
+ *                                 (also stores wishlist:${phone} → [slugs])
+ *   ORDERS_KV    (KV namespace) — *** NEW for Phase 6b ***
  *                                  Steps:
  *                                    1. Cloudflare dashboard → Workers KV → Create namespace
- *                                       Name: "dadios-customers"
+ *                                       Name: "dadios-orders"
  *                                    2. Worker → Settings → Variables → KV Namespace Bindings
- *                                       Variable name: CUSTOMERS_KV
- *                                       Bind to: dadios-customers
+ *                                       Variable name: ORDERS_KV
+ *                                       Bind to: dadios-orders
  *                                    3. Save & deploy the Worker
  *   IMAGES       (R2 bucket)    — R2 bucket "dadios-images"
  *
@@ -564,6 +568,277 @@ async function handleCustomer(body, env) {
 }
 
 // ============================================================
+// ORDERS (per-customer history + admin status tracking)
+//   KV namespace binding: ORDERS_KV
+//   Keys:
+//     order:${id}                          — full order JSON
+//     phone:${normalizedPhone}:order:${id} — marker for fast per-phone listing
+// ============================================================
+
+const ALLOWED_ORDER_STATUSES = ["pending", "confirmed", "delivered", "cancelled"];
+// pending → confirmed → delivered (happy path)
+// pending → cancelled (changed mind)
+// confirmed → cancelled (refund)
+// delivered and cancelled are terminal.
+const ORDER_STATUS_TRANSITIONS = {
+  pending: ["confirmed", "cancelled"],
+  confirmed: ["delivered", "cancelled"],
+  delivered: [],
+  cancelled: [],
+};
+
+function sanitizeOrderItems(items) {
+  if (!Array.isArray(items)) return [];
+  return items
+    .map((i) => ({
+      slug: String(i?.slug || ""),
+      name: String(i?.name || ""),
+      size: String(i?.size || ""),
+      price: Number(i?.price) || 0,
+      qty: Math.max(1, Number(i?.qty) || 1),
+      image: i?.image ? String(i.image) : null,
+    }))
+    .filter((i) => i.slug && i.name);
+}
+
+async function handleOrders(body, env) {
+  const kv = env.ORDERS_KV;
+  if (!kv) return json({ ok: false, error: "KV not bound (ORDERS_KV)" }, 500);
+
+  const action = body?.action;
+  if (!action) return json({ ok: false, error: "Missing action" }, 400);
+
+  // ===== create =====
+  if (action === "create") {
+    const phoneInput = normalizePhone(body.phone);
+    const items = sanitizeOrderItems(body.items);
+    const total = Number(body.total);
+
+    // sessionToken is optional but, if valid, overrides client-supplied phone.
+    let sessionPhone = null;
+    if (body.sessionToken) {
+      const sess = await getSession(env, body.sessionToken);
+      if (sess) sessionPhone = sess.phone;
+    }
+    const finalPhone = sessionPhone || phoneInput;
+
+    if (!finalPhone) return json({ ok: false, error: "Champ requis: phone" }, 400);
+    if (!items.length) return json({ ok: false, error: "Champ requis: items" }, 400);
+    if (!isFinite(total) || total <= 0) {
+      return json({ ok: false, error: "Champ requis: total" }, 400);
+    }
+
+    // Resolve customer name: authenticated record > existing-account-by-phone > client-provided
+    let customerName = null;
+    if (env.CUSTOMERS_KV) {
+      const rawCust = await env.CUSTOMERS_KV.get(`customer:${finalPhone}`);
+      if (rawCust) {
+        try {
+          const c = JSON.parse(rawCust);
+          if (c.name) customerName = c.name;
+        } catch {}
+      }
+    }
+    if (!customerName) {
+      const fallback = String(body.customerName || "").trim();
+      if (fallback) customerName = fallback;
+    }
+
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
+    const order = {
+      id,
+      phone: finalPhone,
+      customerName: customerName || null,
+      items,
+      total,
+      currency: String(body.currency || "DT"),
+      status: "pending",
+      source: "whatsapp_checkout",
+      notes: "",
+      createdAt: now,
+      updatedAt: now,
+    };
+    await Promise.all([
+      kv.put(`order:${id}`, JSON.stringify(order)),
+      kv.put(`phone:${finalPhone}:order:${id}`, "1"),
+    ]);
+    return json({ ok: true, orderId: id, order });
+  }
+
+  // ===== list (own orders) =====
+  if (action === "list") {
+    const sess = await getSession(env, body.sessionToken);
+    if (!sess) return json({ ok: false, error: "Session expirée. Veuillez vous reconnecter." }, 401);
+    const phone = sess.phone;
+    const list = await kv.list({ prefix: `phone:${phone}:order:` });
+    const orders = [];
+    await Promise.all(
+      list.keys.map(async (k) => {
+        const id = k.name.substring(k.name.lastIndexOf(":") + 1);
+        if (!id) return;
+        const raw = await kv.get(`order:${id}`);
+        if (!raw) return;
+        try {
+          orders.push(JSON.parse(raw));
+        } catch {}
+      })
+    );
+    orders.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+    return json({ ok: true, orders });
+  }
+
+  // ===== get (own single order) =====
+  if (action === "get") {
+    const sess = await getSession(env, body.sessionToken);
+    if (!sess) return json({ ok: false, error: "Session expirée. Veuillez vous reconnecter." }, 401);
+    const orderId = String(body.orderId || "");
+    if (!orderId) return json({ ok: false, error: "Champ requis: orderId" }, 400);
+    const raw = await kv.get(`order:${orderId}`);
+    if (!raw) return json({ ok: false, error: "Commande introuvable" }, 404);
+    let order;
+    try { order = JSON.parse(raw); }
+    catch { return json({ ok: false, error: "Commande corrompue" }, 500); }
+    if (order.phone !== sess.phone) {
+      return json({ ok: false, error: "Unauthorized" }, 403);
+    }
+    return json({ ok: true, order });
+  }
+
+  // ===== admin_list (with optional status filter) =====
+  if (action === "admin_list") {
+    if (!requireAdmin(body, env)) return json({ ok: false, error: "Unauthorized" }, 401);
+    const status = body.status;
+    if (status && !ALLOWED_ORDER_STATUSES.includes(status)) {
+      return json({ ok: false, error: "Statut invalide" }, 400);
+    }
+    const list = await kv.list({ prefix: "order:" });
+    const orders = [];
+    await Promise.all(
+      list.keys.map(async (k) => {
+        const raw = await kv.get(k.name);
+        if (!raw) return;
+        try {
+          const o = JSON.parse(raw);
+          if (!status || o.status === status) orders.push(o);
+        } catch {}
+      })
+    );
+    orders.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+    return json({ ok: true, orders });
+  }
+
+  // ===== admin_update (status and/or notes) =====
+  if (action === "admin_update") {
+    if (!requireAdmin(body, env)) return json({ ok: false, error: "Unauthorized" }, 401);
+    const orderId = String(body.orderId || "");
+    if (!orderId) return json({ ok: false, error: "Champ requis: orderId" }, 400);
+    const raw = await kv.get(`order:${orderId}`);
+    if (!raw) return json({ ok: false, error: "Commande introuvable" }, 404);
+    let order;
+    try { order = JSON.parse(raw); }
+    catch { return json({ ok: false, error: "Commande corrompue" }, 500); }
+
+    if (body.status !== undefined && body.status !== null) {
+      const newStatus = String(body.status);
+      if (!ALLOWED_ORDER_STATUSES.includes(newStatus)) {
+        return json({ ok: false, error: "Statut invalide" }, 400);
+      }
+      if (newStatus !== order.status) {
+        const allowed = ORDER_STATUS_TRANSITIONS[order.status] || [];
+        if (!allowed.includes(newStatus)) {
+          return json(
+            { ok: false, error: `Transition interdite: ${order.status} → ${newStatus}` },
+            400
+          );
+        }
+        order.status = newStatus;
+      }
+    }
+    if (body.notes !== undefined && body.notes !== null) {
+      order.notes = String(body.notes || "").slice(0, 2000);
+    }
+    order.updatedAt = new Date().toISOString();
+    await kv.put(`order:${orderId}`, JSON.stringify(order));
+    return json({ ok: true, order });
+  }
+
+  return json({ ok: false, error: "Unknown orders action: " + action }, 400);
+}
+
+// ============================================================
+// WISHLIST (per-customer favourite slugs)
+//   KV namespace binding: CUSTOMERS_KV (shared with customer records)
+//   Key: wishlist:${normalizedPhone} → JSON array of slugs
+// All actions require a valid session.
+// ============================================================
+
+async function handleWishlist(body, env) {
+  const kv = env.CUSTOMERS_KV;
+  if (!kv) return json({ ok: false, error: "KV not bound (CUSTOMERS_KV)" }, 500);
+
+  const action = body?.action;
+  if (!action) return json({ ok: false, error: "Missing action" }, 400);
+
+  const sess = await getSession(env, body.sessionToken);
+  if (!sess) return json({ ok: false, error: "Session expirée. Veuillez vous reconnecter." }, 401);
+  const phone = sess.phone;
+  const key = `wishlist:${phone}`;
+
+  async function load() {
+    const raw = await kv.get(key);
+    if (!raw) return [];
+    try {
+      const arr = JSON.parse(raw);
+      return Array.isArray(arr) ? arr.filter((s) => typeof s === "string") : [];
+    } catch {
+      return [];
+    }
+  }
+
+  if (action === "list") {
+    return json({ ok: true, wishlist: await load() });
+  }
+
+  if (action === "add") {
+    const slug = String(body.slug || "").trim();
+    if (!slug) return json({ ok: false, error: "Champ requis: slug" }, 400);
+    const list = await load();
+    if (!list.includes(slug)) list.push(slug);
+    await kv.put(key, JSON.stringify(list));
+    return json({ ok: true, wishlist: list });
+  }
+
+  if (action === "remove") {
+    const slug = String(body.slug || "").trim();
+    if (!slug) return json({ ok: false, error: "Champ requis: slug" }, 400);
+    const next = (await load()).filter((s) => s !== slug);
+    await kv.put(key, JSON.stringify(next));
+    return json({ ok: true, wishlist: next });
+  }
+
+  if (action === "sync") {
+    const incoming = Array.isArray(body.slugs)
+      ? body.slugs.filter((s) => typeof s === "string")
+      : [];
+    const existing = await load();
+    // Union; preserve existing order then append unseen.
+    const seen = new Set(existing);
+    const merged = existing.slice();
+    for (const s of incoming) {
+      if (!seen.has(s)) {
+        merged.push(s);
+        seen.add(s);
+      }
+    }
+    await kv.put(key, JSON.stringify(merged));
+    return json({ ok: true, wishlist: merged });
+  }
+
+  return json({ ok: false, error: "Unknown wishlist action: " + action }, 400);
+}
+
+// ============================================================
 // Admin handler (product CRUD)
 // ============================================================
 async function handleAdmin(body, env) {
@@ -671,6 +946,22 @@ export default {
       try { body = await request.json(); }
       catch { return json({ ok: false, error: "Invalid JSON" }, 400); }
       return handleCustomer(body, env);
+    }
+
+    // ===== Orders =====
+    if (url.pathname === "/api/orders" && request.method === "POST") {
+      let body;
+      try { body = await request.json(); }
+      catch { return json({ ok: false, error: "Invalid JSON" }, 400); }
+      return handleOrders(body, env);
+    }
+
+    // ===== Wishlist =====
+    if (url.pathname === "/api/wishlist" && request.method === "POST") {
+      let body;
+      try { body = await request.json(); }
+      catch { return json({ ok: false, error: "Invalid JSON" }, 400); }
+      return handleWishlist(body, env);
     }
 
     // ===== Image upload =====

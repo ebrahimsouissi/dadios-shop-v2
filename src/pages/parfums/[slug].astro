@@ -97,6 +97,19 @@ const allNotes = [...product.topNotes, ...product.heartNotes, ...product.baseNot
           data-slug={product.slug}
           data-name={product.name}
         >Ajouter au panier</button>
+        <button
+          class="btn btn-outline pd-fav-btn"
+          type="button"
+          data-wishlist-toggle
+          data-slug={product.slug}
+          aria-pressed="false"
+        >
+          <svg class="heart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+          <span class="pd-fav-add">Ajouter aux favoris</span>
+          <span class="pd-fav-remove">Retirer des favoris</span>
+        </button>
         <a href={`https://wa.me/21656731891?text=Je%20veux%20commander%20${encodeURIComponent(product.name)}`} class="btn btn-gold" target="_blank">Commander sur WhatsApp</a>
       </div>
 
@@ -246,6 +259,25 @@ const allNotes = [...product.topNotes, ...product.heartNotes, ...product.baseNot
 
   .pd-cta { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 36px; }
   .pd-cta .btn { flex: 1; min-width: 200px; }
+  .pd-fav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all .2s;
+  }
+  .pd-fav-btn .heart-icon { width: 18px; height: 18px; pointer-events: none; }
+  .pd-fav-btn .pd-fav-remove { display: none; }
+  .pd-fav-btn.filled { background: var(--emerald); color: var(--gold); border-color: var(--emerald); }
+  .pd-fav-btn.filled .heart-icon { fill: var(--gold); stroke: var(--gold); }
+  .pd-fav-btn.filled .pd-fav-add { display: none; }
+  .pd-fav-btn.filled .pd-fav-remove { display: inline; }
+  .pd-fav-btn.bump { animation: dadiosHeartBump 180ms ease-out; }
+  @keyframes dadiosHeartBump {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
 
   .pd-trust {
     display: grid;

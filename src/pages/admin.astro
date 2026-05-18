@@ -118,7 +118,84 @@ const sizes = data.sizes;
 
     <p id="customerStatus" class="status-msg hidden"></p>
   </div>
+
+  <!-- ============ ORDERS MANAGEMENT ============ -->
+  <div class="orders-block">
+    <div class="orders-head">
+      <div>
+        <div class="eyebrow">Commandes</div>
+        <h2>Gestion des commandes</h2>
+        <p class="orders-help">
+          Suivez l'avancement de chaque commande WhatsApp et notez les détails de livraison.
+        </p>
+      </div>
+      <button type="button" id="ordersRefresh" class="btn btn-outline btn-sm">↻ Rafraîchir</button>
+    </div>
+
+    <div class="orders-filters" id="ordersFilters" role="tablist">
+      <button type="button" class="filter-pill active" data-status="" role="tab">Toutes <span class="count">0</span></button>
+      <button type="button" class="filter-pill" data-status="pending" role="tab">En attente <span class="count">0</span></button>
+      <button type="button" class="filter-pill" data-status="confirmed" role="tab">Confirmées <span class="count">0</span></button>
+      <button type="button" class="filter-pill" data-status="delivered" role="tab">Livrées <span class="count">0</span></button>
+      <button type="button" class="filter-pill" data-status="cancelled" role="tab">Annulées <span class="count">0</span></button>
+    </div>
+
+    <div class="orders-tablewrap">
+      <table class="admin-table orders-admin-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Réf.</th>
+            <th>Client</th>
+            <th>Articles</th>
+            <th>Total</th>
+            <th>Statut</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="ordersRows">
+          <tr><td colspan="7" style="text-align:center;padding:32px">Chargement des commandes…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p id="ordersStatus" class="status-msg hidden"></p>
+  </div>
 </section>
+
+<!-- ============ ORDER DETAILS MODAL ============ -->
+<div class="modal hidden" id="orderModal">
+  <div class="modal-overlay" id="orderOverlay"></div>
+  <div class="modal-box order-modal-box">
+    <button type="button" class="modal-close" id="orderClose" aria-label="Fermer">×</button>
+    <div class="eyebrow">Commande</div>
+    <h2 id="orderTitle">Détails</h2>
+    <p id="orderMeta" class="order-meta-line"></p>
+
+    <div class="order-modal-grid">
+      <div>
+        <div class="eyebrow" style="margin-bottom:10px">Articles</div>
+        <ul class="order-modal-items" id="orderModalItems"></ul>
+        <div class="order-modal-total" id="orderModalTotal"></div>
+      </div>
+      <div>
+        <div class="eyebrow" style="margin-bottom:10px">Client</div>
+        <p class="order-customer-line" id="orderCustomerName"></p>
+        <p class="order-customer-line" id="orderCustomerPhone"></p>
+        <div class="order-customer-actions" id="orderCustomerActions"></div>
+
+        <div class="eyebrow" style="margin:18px 0 10px">Notes (interne)</div>
+        <textarea id="orderNotes" rows="4" placeholder="Notes de livraison, observations…"></textarea>
+        <div class="order-notes-actions">
+          <button type="button" class="btn btn-primary btn-sm" id="orderSaveNotes">Enregistrer les notes</button>
+          <span id="orderNotesStatus" class="order-notes-status"></span>
+        </div>
+      </div>
+    </div>
+
+    <p class="order-modal-stamps" id="orderStamps"></p>
+  </div>
+</div>
 
 <!-- ============ CUSTOMER PASSWORD RESET MODAL ============ -->
 <div class="modal hidden" id="custPwModal">
@@ -680,11 +757,239 @@ const sizes = data.sizes;
     .customer-row { grid-template-columns: 1fr; gap: 14px; }
     .customer-search { flex-direction: column; }
   }
+
+  /* ====== ORDERS BLOCK ====== */
+  .orders-block {
+    margin-top: 48px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border);
+  }
+  .orders-block .orders-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .orders-block .orders-head h2 {
+    font-size: clamp(22px, 3vw, 28px);
+    margin-top: 6px;
+  }
+  .orders-help {
+    color: var(--ink-soft);
+    margin-top: 8px;
+    font-size: 14px;
+    max-width: 560px;
+  }
+  .orders-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 18px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .filter-pill {
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--cream-soft);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all .2s;
+  }
+  .filter-pill:hover { border-color: var(--gold-soft); }
+  .filter-pill.active {
+    background: var(--emerald);
+    color: var(--cream);
+    border-color: var(--emerald);
+  }
+  .filter-pill .count {
+    background: rgba(0, 0, 0, 0.12);
+    color: inherit;
+    padding: 1px 7px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+  }
+  .filter-pill.active .count {
+    background: rgba(212, 175, 55, 0.3);
+    color: var(--gold);
+  }
+
+  .orders-tablewrap {
+    overflow-x: auto;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+  .orders-admin-table {
+    width: 100%;
+    border-radius: 0;
+    border: none;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  .orders-admin-table th,
+  .orders-admin-table td {
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+  .orders-admin-table td.notes-col,
+  .orders-admin-table th.notes-col { white-space: normal; }
+  .orders-admin-table .cust-name { font-weight: 500; }
+  .orders-admin-table .cust-phone {
+    display: block;
+    color: var(--ink-mute);
+    font-size: 12px;
+  }
+  .orders-admin-table .ref-mono {
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    color: var(--gold-soft);
+  }
+  .orders-admin-table .total-cell {
+    font-family: var(--font-display);
+    font-size: 16px;
+    color: var(--emerald);
+  }
+  .orders-admin-table .status-cell select {
+    padding: 6px 10px;
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    background: var(--cream-soft);
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--ink);
+    min-width: 130px;
+  }
+  .orders-admin-table .status-cell select:disabled {
+    background: var(--cream-warm);
+    color: var(--ink-mute);
+    cursor: not-allowed;
+  }
+  .orders-empty-row td {
+    text-align: center;
+    padding: 32px;
+    color: var(--ink-mute);
+    font-style: italic;
+  }
+
+  /* Order details modal */
+  .order-modal-box { max-width: 760px; }
+  .order-meta-line {
+    color: var(--ink-mute);
+    font-size: 13px;
+    margin-bottom: 18px;
+  }
+  .order-modal-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 28px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+  }
+  .order-modal-items {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .order-modal-items li {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 14px;
+  }
+  .order-modal-items .li-name { color: var(--ink); }
+  .order-modal-items .li-sub { color: var(--emerald); font-family: var(--font-display); }
+  .order-modal-total {
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-family: var(--font-display);
+    font-size: 18px;
+    color: var(--emerald);
+  }
+  .order-modal-total .lbl {
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+  .order-customer-line {
+    font-family: var(--font-display);
+    font-size: 16px;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+  .order-customer-line a {
+    color: var(--emerald);
+    text-decoration: underline;
+  }
+  .order-customer-line.muted { color: var(--ink-mute); font-style: italic; font-size: 14px; }
+  .order-customer-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+  #orderNotes {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    background: var(--cream-soft);
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--ink);
+    box-sizing: border-box;
+    resize: vertical;
+  }
+  #orderNotes:focus { outline: none; border-color: var(--emerald); }
+  .order-notes-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+  }
+  .order-notes-status {
+    font-size: 12px;
+    color: var(--emerald);
+    opacity: 0;
+    transition: opacity .2s;
+  }
+  .order-notes-status.visible { opacity: 1; }
+  .order-modal-stamps {
+    margin-top: 22px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--ink-mute);
+    letter-spacing: 0.06em;
+  }
+
+  @media (max-width: 880px) {
+    .order-modal-grid { grid-template-columns: 1fr; gap: 18px; }
+  }
 </style>
 
 <script>
   import { checkPassword, setPassword, getPassword, clearPassword, listProducts, upsertProduct, deleteProduct, uploadImage, adminGetCustomer, adminResetCustomerPassword } from '../scripts/adminApi.js';
   import { processImage } from '../scripts/imageProcessor.js';
+  import { adminListOrders, adminUpdateOrder, shortOrderId } from '../scripts/ordersApi.js';
 
   // ============ STATE ============
   let products = [];
@@ -1121,6 +1426,262 @@ const sizes = data.sizes;
       custPwSave.textContent = 'Enregistrer';
     }
   });
+
+  // ============ ORDERS MANAGEMENT ============
+  const ordersFiltersEl = document.getElementById('ordersFilters') as HTMLElement;
+  const ordersRowsEl = document.getElementById('ordersRows') as HTMLElement;
+  const ordersStatusEl = document.getElementById('ordersStatus') as HTMLElement;
+  const ordersRefreshBtn = document.getElementById('ordersRefresh') as HTMLButtonElement;
+
+  const orderModal = document.getElementById('orderModal') as HTMLElement;
+  const orderOverlay = document.getElementById('orderOverlay') as HTMLElement;
+  const orderClose = document.getElementById('orderClose') as HTMLButtonElement;
+  const orderTitleEl = document.getElementById('orderTitle') as HTMLElement;
+  const orderMetaEl = document.getElementById('orderMeta') as HTMLElement;
+  const orderModalItems = document.getElementById('orderModalItems') as HTMLElement;
+  const orderModalTotal = document.getElementById('orderModalTotal') as HTMLElement;
+  const orderCustomerName = document.getElementById('orderCustomerName') as HTMLElement;
+  const orderCustomerPhone = document.getElementById('orderCustomerPhone') as HTMLElement;
+  const orderCustomerActions = document.getElementById('orderCustomerActions') as HTMLElement;
+  const orderNotes = document.getElementById('orderNotes') as HTMLTextAreaElement;
+  const orderSaveNotes = document.getElementById('orderSaveNotes') as HTMLButtonElement;
+  const orderNotesStatus = document.getElementById('orderNotesStatus') as HTMLElement;
+  const orderStamps = document.getElementById('orderStamps') as HTMLElement;
+
+  const ORDER_STATUS_LABEL: Record<string, string> = {
+    pending: 'En attente',
+    confirmed: 'Confirmée',
+    delivered: 'Livrée',
+    cancelled: 'Annulée',
+  };
+  const ORDER_TRANSITIONS: Record<string, string[]> = {
+    pending: ['confirmed', 'cancelled'],
+    confirmed: ['delivered', 'cancelled'],
+    delivered: [],
+    cancelled: [],
+  };
+
+  let allOrders: any[] = [];
+  let currentOrderFilter = '';
+  let modalOrderId = '';
+
+  function escH(s: any) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    })[c]!);
+  }
+  function fmtOrderDate(iso: string) {
+    if (!iso) return '';
+    try {
+      return new Date(iso).toLocaleString('fr-FR', {
+        day: '2-digit', month: 'short', year: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+      });
+    } catch { return iso; }
+  }
+
+  function showOrdersStatus(msg: string, kind: 'success' | 'error' | '' = '') {
+    ordersStatusEl.textContent = msg;
+    ordersStatusEl.className = 'status-msg ' + (kind || '');
+    ordersStatusEl.classList.remove('hidden');
+    setTimeout(() => ordersStatusEl.classList.add('hidden'), 4000);
+  }
+
+  function statusSelectHtml(orderId: string, currentStatus: string) {
+    const allowed = ORDER_TRANSITIONS[currentStatus] || [];
+    const terminal = allowed.length === 0;
+    // The current status is always present and selected; allowed transitions follow.
+    const visible = [currentStatus, ...allowed];
+    const opts = visible
+      .map((s) => `<option value="${escH(s)}" ${s === currentStatus ? 'selected' : ''}>${escH(ORDER_STATUS_LABEL[s] || s)}</option>`)
+      .join('');
+    return `<select data-order-id="${escH(orderId)}" data-current="${escH(currentStatus)}" ${terminal ? 'disabled' : ''}>${opts}</select>`;
+  }
+
+  function renderOrderRow(o: any) {
+    const itemCount = (o.items || []).reduce((n: number, i: any) => n + (Number(i.qty) || 1), 0);
+    const customerCell = `
+      <span class="cust-name">${escH(o.customerName || '—')}</span>
+      <span class="cust-phone">${escH(o.phone || '')}</span>
+    `;
+    return `<tr data-order-id="${escH(o.id)}">
+      <td>${escH(fmtOrderDate(o.createdAt))}</td>
+      <td><span class="ref-mono">#${escH(shortOrderId(o.id))}</span></td>
+      <td>${customerCell}</td>
+      <td>${itemCount} article${itemCount > 1 ? 's' : ''}</td>
+      <td class="total-cell">${Number(o.total) || 0} DT</td>
+      <td class="status-cell">${statusSelectHtml(o.id, o.status || 'pending')}</td>
+      <td><button type="button" class="link-btn order-details-btn" data-order-id="${escH(o.id)}">Détails</button></td>
+    </tr>`;
+  }
+
+  function updateFilterCounts() {
+    const counts: Record<string, number> = {
+      '': allOrders.length,
+      pending: 0, confirmed: 0, delivered: 0, cancelled: 0,
+    };
+    allOrders.forEach((o) => {
+      const s = String(o.status || 'pending');
+      counts[s] = (counts[s] || 0) + 1;
+    });
+    ordersFiltersEl.querySelectorAll('.filter-pill').forEach((p) => {
+      const status = (p as HTMLElement).dataset.status || '';
+      const c = p.querySelector('.count');
+      if (c) c.textContent = String(counts[status] ?? 0);
+    });
+  }
+
+  function renderOrdersTable() {
+    const filtered = currentOrderFilter
+      ? allOrders.filter((o) => o.status === currentOrderFilter)
+      : allOrders;
+    if (!filtered.length) {
+      ordersRowsEl.innerHTML = `<tr class="orders-empty-row"><td colspan="7">Aucune commande${currentOrderFilter ? ' dans cette catégorie' : ''}.</td></tr>`;
+      return;
+    }
+    ordersRowsEl.innerHTML = filtered.map(renderOrderRow).join('');
+  }
+
+  async function loadAdminOrders() {
+    ordersRowsEl.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px">Chargement des commandes…</td></tr>`;
+    const res = await adminListOrders(getPassword());
+    if (!res.ok) {
+      ordersRowsEl.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:#B23A1F">Erreur : ${escH(res.error || 'chargement impossible')}</td></tr>`;
+      return;
+    }
+    allOrders = (res.orders || []) as any[];
+    updateFilterCounts();
+    renderOrdersTable();
+  }
+
+  // ===== Filter pill switching =====
+  ordersFiltersEl.addEventListener('click', (e) => {
+    const pill = (e.target as HTMLElement).closest('.filter-pill') as HTMLElement | null;
+    if (!pill) return;
+    ordersFiltersEl.querySelectorAll('.filter-pill').forEach((p) => p.classList.remove('active'));
+    pill.classList.add('active');
+    currentOrderFilter = pill.dataset.status || '';
+    renderOrdersTable();
+  });
+
+  ordersRefreshBtn?.addEventListener('click', () => loadAdminOrders());
+
+  // ===== Inline status change =====
+  ordersRowsEl.addEventListener('change', async (e) => {
+    const sel = (e.target as HTMLElement).closest('select[data-order-id]') as HTMLSelectElement | null;
+    if (!sel) return;
+    const orderId = sel.dataset.orderId!;
+    const current = sel.dataset.current || '';
+    const newStatus = sel.value;
+    if (newStatus === current) return;
+    sel.disabled = true;
+    const res = await adminUpdateOrder(getPassword(), orderId, { status: newStatus });
+    sel.disabled = false;
+    if (!res.ok || !res.order) {
+      sel.value = current;
+      showOrdersStatus(res.error || 'Mise à jour impossible', 'error');
+      return;
+    }
+    // Patch the local cache and re-render so counts and the row reflect the new state.
+    const idx = allOrders.findIndex((o) => o.id === orderId);
+    if (idx >= 0) allOrders[idx] = res.order;
+    updateFilterCounts();
+    renderOrdersTable();
+    showOrdersStatus(`Statut → ${ORDER_STATUS_LABEL[newStatus] || newStatus}`, 'success');
+  });
+
+  // ===== Details modal =====
+  ordersRowsEl.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest('.order-details-btn') as HTMLElement | null;
+    if (!btn) return;
+    const orderId = btn.dataset.orderId!;
+    const order = allOrders.find((o) => o.id === orderId);
+    if (!order) return;
+    openOrderModal(order);
+  });
+
+  function openOrderModal(o: any) {
+    modalOrderId = o.id;
+    orderTitleEl.textContent = `Commande #${shortOrderId(o.id)}`;
+    orderMetaEl.textContent = `Statut : ${ORDER_STATUS_LABEL[o.status] || o.status} · ${fmtOrderDate(o.createdAt)}`;
+
+    const itemsHtml = (o.items || [])
+      .map((i: any) => {
+        const sub = (Number(i.price) || 0) * (Number(i.qty) || 1);
+        const sizeStr = i.size ? ` (${escH(i.size)})` : '';
+        return `<li><span class="li-name">${Number(i.qty) || 1}× ${escH(i.name)}${sizeStr}</span><span class="li-sub">${sub} DT</span></li>`;
+      })
+      .join('');
+    orderModalItems.innerHTML = itemsHtml;
+    orderModalTotal.innerHTML = `<span class="lbl">Total</span><span class="val">${Number(o.total) || 0} DT</span>`;
+
+    orderCustomerName.textContent = o.customerName || 'Client invité';
+    if (!o.customerName) orderCustomerName.classList.add('muted');
+    else orderCustomerName.classList.remove('muted');
+
+    if (o.phone) {
+      orderCustomerPhone.innerHTML = `<a href="tel:${escH(o.phone)}">${escH(o.phone)}</a>`;
+      orderCustomerActions.innerHTML = `
+        <a class="btn btn-gold btn-sm" href="https://wa.me/${encodeURIComponent(o.phone.replace(/[^\d+]/g, ''))}" target="_blank" rel="noopener">WhatsApp</a>
+        <a class="btn btn-outline btn-sm" href="tel:${escH(o.phone)}">Appeler</a>
+      `;
+    } else {
+      orderCustomerPhone.textContent = '—';
+      orderCustomerActions.innerHTML = '';
+    }
+
+    orderNotes.value = o.notes || '';
+    orderNotesStatus.textContent = '';
+    orderNotesStatus.classList.remove('visible');
+
+    orderStamps.textContent = `Créée le ${fmtOrderDate(o.createdAt)} · Dernière mise à jour ${fmtOrderDate(o.updatedAt)}`;
+
+    orderModal.classList.remove('hidden');
+  }
+  function closeOrderModal() {
+    orderModal.classList.add('hidden');
+    modalOrderId = '';
+  }
+  orderClose?.addEventListener('click', closeOrderModal);
+  orderOverlay?.addEventListener('click', closeOrderModal);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !orderModal.classList.contains('hidden')) closeOrderModal();
+  });
+
+  orderSaveNotes?.addEventListener('click', async () => {
+    if (!modalOrderId) return;
+    orderSaveNotes.disabled = true;
+    orderSaveNotes.textContent = 'Enregistrement…';
+    const res = await adminUpdateOrder(getPassword(), modalOrderId, { notes: orderNotes.value });
+    orderSaveNotes.disabled = false;
+    orderSaveNotes.textContent = 'Enregistrer les notes';
+    if (!res.ok || !res.order) {
+      orderNotesStatus.textContent = res.error || 'Échec';
+      orderNotesStatus.style.color = '#B23A1F';
+      orderNotesStatus.classList.add('visible');
+      return;
+    }
+    const idx = allOrders.findIndex((o) => o.id === modalOrderId);
+    if (idx >= 0) allOrders[idx] = res.order;
+    orderNotesStatus.textContent = '✓ Notes enregistrées';
+    orderNotesStatus.style.color = '';
+    orderNotesStatus.classList.add('visible');
+    setTimeout(() => orderNotesStatus.classList.remove('visible'), 2400);
+  });
+
+  // ===== After admin login, also hydrate the orders block =====
+  // attemptLogin() already calls loadProducts(); we hook the orders load
+  // into the same code path by patching loadProducts to also fire ours.
+  // Cheapest way: observe DOM, kick once when adminMain becomes visible.
+  const adminMainObserver = new MutationObserver(() => {
+    if (!adminMain?.classList.contains('hidden')) {
+      adminMainObserver.disconnect();
+      loadAdminOrders();
+    }
+  });
+  if (adminMain) adminMainObserver.observe(adminMain, { attributes: true, attributeFilter: ['class'] });
+  // If we're already past the gate when this runs (auto-login path), fire now.
+  if (adminMain && !adminMain.classList.contains('hidden')) loadAdminOrders();
 </script>
 
 <!-- Seed data for first load when KV is empty -->

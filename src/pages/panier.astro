@@ -59,9 +59,9 @@ import Base from '../layouts/Base.astro';
       </div>
 
       <div class="cart-actions">
-        <a id="whatsappBtn" href="#" target="_blank" rel="noopener" class="btn btn-primary cta-wa">
+        <button type="button" id="whatsappBtn" class="btn btn-primary cta-wa">
           Commander sur WhatsApp
-        </a>
+        </button>
         <button type="button" id="clearBtn" class="btn btn-outline btn-sm">Vider le panier</button>
       </div>
 
@@ -72,6 +72,41 @@ import Base from '../layouts/Base.astro';
     </aside>
   </div>
 </section>
+
+<!-- ===== Guest phone modal — only shown if not logged in ===== -->
+<div id="phoneModal" class="phone-modal" hidden>
+  <div class="phone-overlay" id="phoneOverlay"></div>
+  <div class="phone-box" role="dialog" aria-modal="true" aria-labelledby="phoneTitle">
+    <button type="button" class="phone-close" id="phoneClose" aria-label="Fermer">×</button>
+    <div class="eyebrow">Suivi de commande</div>
+    <h2 id="phoneTitle">Votre numéro WhatsApp</h2>
+    <p>
+      Pour suivre votre commande dans votre espace client, indiquez votre
+      numéro. Sinon, votre commande sera passée directement par message.
+    </p>
+    <form id="phoneForm" novalidate>
+      <label>
+        <span>Téléphone</span>
+        <input
+          type="tel"
+          id="phoneInput"
+          placeholder="+216 56 731 891"
+          inputmode="tel"
+          autocomplete="tel"
+        />
+      </label>
+      <p id="phoneErr" class="phone-err" hidden></p>
+      <div class="phone-actions">
+        <button type="button" id="phoneSkip" class="btn btn-outline btn-sm">
+          Continuer sans suivi
+        </button>
+        <button type="submit" id="phoneContinue" class="btn btn-primary btn-sm">
+          Continuer
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
 
 </Base>
 
@@ -291,6 +326,82 @@ import Base from '../layouts/Base.astro';
     .cart-body { grid-template-columns: 1fr; }
     .cart-summary { position: static; }
   }
+  /* ===== guest phone modal ===== */
+  .phone-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .phone-modal[hidden] { display: none !important; }
+  .phone-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(5, 26, 14, 0.72);
+    backdrop-filter: blur(4px);
+  }
+  .phone-box {
+    position: relative;
+    background: var(--cream);
+    border: 1px solid var(--border-strong);
+    border-radius: 14px;
+    width: 100%;
+    max-width: 460px;
+    padding: 32px 32px 28px;
+  }
+  .phone-close {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    background: none;
+    border: none;
+    font-size: 26px;
+    cursor: pointer;
+    color: var(--ink-mute);
+    line-height: 1;
+  }
+  .phone-box h2 { font-size: 24px; margin: 6px 0 12px; }
+  .phone-box > p { color: var(--ink-soft); line-height: 1.6; margin-bottom: 18px; font-size: 14px; }
+  .phone-box label { display: block; }
+  .phone-box label > span {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  .phone-box input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    background: var(--cream-soft);
+    font-family: var(--font-body);
+    font-size: 14px;
+    box-sizing: border-box;
+  }
+  .phone-box input:focus { outline: none; border-color: var(--emerald); }
+  .phone-err {
+    background: rgba(178, 58, 31, 0.08);
+    border: 1px solid #B23A1F;
+    color: #8a2a14;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin: 10px 0 0;
+  }
+  .phone-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+    flex-wrap: wrap;
+  }
+  .phone-actions .btn { flex: 1; min-width: 0; }
+
   @media (max-width: 720px) {
     .panier-hero, .panier-wrap { padding-left: 16px; padding-right: 16px; }
     .crumb-wrap { padding: 12px 16px 0; }
@@ -314,9 +425,12 @@ import Base from '../layouts/Base.astro';
 <script>
   import { getCart, addItem, removeItem, clear, onChange } from '../scripts/cart.js';
   import { syncCatalogFromApi } from '../scripts/catalogSync.js';
+  import { isLoggedIn, getStoredPhone, me } from '../scripts/customerApi.js';
+  import { createOrder, shortOrderId } from '../scripts/ordersApi.js';
 
   const WA_NUMBER = '21656731891';
   const FREE_DELIVERY_THRESHOLD = 100;
+  const ORDER_SAVE_TIMEOUT_MS = 3000;
 
   const cartBody = document.getElementById('cartBody') as HTMLElement;
   const cartEmpty = document.getElementById('cartEmpty') as HTMLElement;
@@ -326,8 +440,17 @@ import Base from '../layouts/Base.astro';
   const totalEl = document.getElementById('cartTotal') as HTMLElement;
   const deliveryNote = document.getElementById('deliveryNote') as HTMLElement;
   const deliveryRow = deliveryEl.parentElement as HTMLElement;
-  const whatsappBtn = document.getElementById('whatsappBtn') as HTMLAnchorElement;
+  const whatsappBtn = document.getElementById('whatsappBtn') as HTMLButtonElement;
   const clearBtn = document.getElementById('clearBtn') as HTMLElement;
+
+  // ===== Guest phone modal =====
+  const phoneModal = document.getElementById('phoneModal') as HTMLElement;
+  const phoneOverlay = document.getElementById('phoneOverlay') as HTMLElement;
+  const phoneClose = document.getElementById('phoneClose') as HTMLButtonElement;
+  const phoneForm = document.getElementById('phoneForm') as HTMLFormElement;
+  const phoneInput = document.getElementById('phoneInput') as HTMLInputElement;
+  const phoneSkip = document.getElementById('phoneSkip') as HTMLButtonElement;
+  const phoneErr = document.getElementById('phoneErr') as HTMLElement;
 
   // Cart items only store slug/name/size/price/qty. To show product images
   // we look them up from the live KV catalog (with /products.json fallback).
@@ -421,8 +544,159 @@ import Base from '../layouts/Base.astro';
       deliveryNote.classList.remove('success');
     }
     totalEl.textContent = `${subtotal} DT`;
-    whatsappBtn.href = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(buildWhatsAppMessage(cart))}`;
+    // (URL is built on click, since we may append an order reference after save.)
   }
+
+  function waUrl(text: string) {
+    return `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(text)}`;
+  }
+
+  // ===== Cached customer info (logged-in fast path) =====
+  // We try to resolve phone + name without a network call so the checkout
+  // flow stays snappy. /me only runs as a fallback or as a background refresh.
+  let cachedCustomer: { phone: string; name: string } | null = null;
+
+  async function resolveCustomerInfo() {
+    if (cachedCustomer) return cachedCustomer;
+    if (!isLoggedIn()) return null;
+    const storedPhone = getStoredPhone();
+    if (storedPhone) {
+      cachedCustomer = { phone: storedPhone, name: '' };
+      // Refresh name in background; not blocking.
+      me().then((res) => {
+        if (res.ok && res.customer) {
+          cachedCustomer = { phone: res.customer.phone || storedPhone, name: res.customer.name || '' };
+        }
+      }).catch(() => {});
+      return cachedCustomer;
+    }
+    const res = await me();
+    if (res.ok && res.customer) {
+      cachedCustomer = { phone: res.customer.phone || '', name: res.customer.name || '' };
+      return cachedCustomer;
+    }
+    return null;
+  }
+
+  // Kick off resolve on mount so the click is instant for logged-in users.
+  resolveCustomerInfo();
+
+  // ===== Guest phone modal =====
+  type GuestPhoneResult = { cancelled: true } | { cancelled: false; phone: string; skipped: boolean };
+  let pendingPhoneResolve: ((r: GuestPhoneResult) => void) | null = null;
+
+  function openPhoneModal(): Promise<GuestPhoneResult> {
+    return new Promise((resolve) => {
+      pendingPhoneResolve = resolve;
+      phoneInput.value = '';
+      phoneErr.hidden = true;
+      phoneModal.hidden = false;
+      setTimeout(() => phoneInput.focus(), 50);
+    });
+  }
+
+  function closePhoneModal(result: GuestPhoneResult) {
+    phoneModal.hidden = true;
+    if (pendingPhoneResolve) {
+      const r = pendingPhoneResolve;
+      pendingPhoneResolve = null;
+      r(result);
+    }
+  }
+
+  phoneClose.addEventListener('click', () => closePhoneModal({ cancelled: true }));
+  phoneOverlay.addEventListener('click', () => closePhoneModal({ cancelled: true }));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !phoneModal.hidden) closePhoneModal({ cancelled: true });
+  });
+  phoneSkip.addEventListener('click', () => {
+    closePhoneModal({ cancelled: false, phone: '', skipped: true });
+  });
+  phoneForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const v = phoneInput.value.trim();
+    if (!v) {
+      phoneErr.textContent = 'Numéro requis (ou utilisez « Continuer sans suivi »).';
+      phoneErr.hidden = false;
+      return;
+    }
+    closePhoneModal({ cancelled: false, phone: v, skipped: false });
+  });
+
+  // ===== "Commander sur WhatsApp" — save first, then open =====
+  async function saveOrderWithTimeout(phone: string, customerName: string, cart: any) {
+    const items = cart.items.map((i: any) => ({
+      slug: i.slug,
+      name: i.name,
+      size: i.size,
+      price: Number(i.price) || 0,
+      qty: Number(i.qty) || 1,
+      image: (productMap[i.slug] && productMap[i.slug].image) || null,
+    }));
+    const { subtotal } = computeTotals(cart);
+    return Promise.race([
+      createOrder({ phone, customerName, items, total: subtotal }),
+      new Promise<{ ok: false; _timeout: true }>((resolve) =>
+        setTimeout(() => resolve({ ok: false, _timeout: true }), ORDER_SAVE_TIMEOUT_MS),
+      ),
+    ]);
+  }
+
+  whatsappBtn.addEventListener('click', async () => {
+    const cart = getCart();
+    if (!cart.items.length) return;
+
+    // Determine phone path:
+    //   - logged in → use cached customer info
+    //   - guest    → modal: "Continuer" (with phone) or "Continuer sans suivi"
+    let phone = '';
+    let customerName = '';
+    if (isLoggedIn()) {
+      const info = await resolveCustomerInfo();
+      if (info) {
+        phone = info.phone;
+        customerName = info.name;
+      }
+    } else {
+      const result = await openPhoneModal();
+      if (result.cancelled) return; // user dismissed → keep cart, do nothing
+      if (!result.skipped) phone = result.phone;
+    }
+
+    // Open the WhatsApp tab synchronously so popup blockers don't interfere
+    // (the click is still the active user gesture when we call window.open).
+    // We point it at about:blank first and rewrite its location once we have
+    // the final URL. Falls back to same-tab navigation if window.open is null.
+    const newWin = window.open('about:blank', '_blank', 'noopener,noreferrer');
+
+    const baseMessage = buildWhatsAppMessage(cart);
+    let finalMessage = baseMessage;
+
+    if (phone) {
+      const saveResult: any = await saveOrderWithTimeout(phone, customerName, cart);
+      if (saveResult && saveResult.ok && saveResult.orderId) {
+        finalMessage = baseMessage + `\n\nRéférence: #${shortOrderId(saveResult.orderId)}`;
+      } else if (saveResult && !saveResult.ok && !saveResult._timeout && saveResult.error) {
+        console.warn('Order save failed:', saveResult.error);
+      }
+    }
+
+    const url = waUrl(finalMessage);
+    if (newWin && !newWin.closed) {
+      try { newWin.location.href = url; }
+      catch { window.location.href = url; }
+    } else {
+      window.location.href = url;
+    }
+
+    // Clear the cart now that WhatsApp is open — same UX as before.
+    clear();
+
+    // Logged-in customers go to the dashboard so they see the new order.
+    if (isLoggedIn() && phone) {
+      setTimeout(() => window.location.assign('/compte/dashboard?ordered=1'), 120);
+    }
+  });
 
   // Event delegation: + / − / × per row
   cartItems.addEventListener('click', (e) => {

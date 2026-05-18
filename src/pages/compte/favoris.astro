@@ -1,0 +1,446 @@
+---
+import Base from '../../layouts/Base.astro';
+import data from '../../data/products.json';
+
+// Inline sizes so the "Ajouter au panier" modal can offer the current
+// 20ml / 50ml options without an extra fetch.
+const sizes = data.sizes;
+---
+<Base
+  title="Mes favoris — Dadios Fragrance"
+  description="Vos parfums préférés Dadios."
+>
+
+<div class="crumb-wrap">
+  <nav class="crumbs" aria-label="Fil d'Ariane">
+    <a href="/">Accueil</a> <span>·</span>
+    <a href="/compte/dashboard">Mon compte</a> <span>·</span>
+    <span>Favoris</span>
+  </nav>
+</div>
+
+<div id="favLoading" class="fav-loading">Chargement…</div>
+
+<main id="favMain" class="fav-main" hidden>
+
+  <section class="fav-hero">
+    <div class="fav-hero-inner">
+      <div class="eyebrow">Espace client</div>
+      <h1>Mes favoris</h1>
+      <p class="fav-tagline">
+        <span class="script">Vos parfums préférés.</span>
+      </p>
+    </div>
+  </section>
+
+  <section class="fav-wrap">
+    <div id="favEmpty" class="fav-empty" hidden>
+      <p>Votre liste d'envies est vide.</p>
+      <a href="/parfums" class="btn btn-primary">Découvrir nos parfums</a>
+    </div>
+
+    <div id="favGrid" class="fav-grid" hidden></div>
+  </section>
+
+</main>
+
+<!-- ===== Size picker modal ===== -->
+<div id="sizeModal" class="size-modal" hidden>
+  <div class="size-overlay" id="sizeOverlay"></div>
+  <div class="size-box" role="dialog" aria-modal="true" aria-labelledby="sizeTitle">
+    <button type="button" class="size-close" id="sizeClose" aria-label="Fermer">×</button>
+    <div class="eyebrow">Quel format ?</div>
+    <h2 id="sizeTitle">Choisissez votre flacon</h2>
+    <p id="sizeProductName" class="size-product"></p>
+    <div class="size-options" id="sizeOptions"></div>
+  </div>
+</div>
+
+<script id="__sizes" type="application/json" set:html={JSON.stringify(sizes)}></script>
+
+</Base>
+
+<style>
+  .crumb-wrap { max-width: 1280px; margin: 0 auto; padding: 16px 32px 0; }
+  .crumbs { font-size: 12px; color: var(--ink-mute); letter-spacing: 0.06em; }
+  .crumbs a:hover { color: var(--emerald); }
+  .crumbs span { margin: 0 6px; opacity: 0.5; }
+
+  .fav-loading {
+    padding: 96px 32px;
+    text-align: center;
+    color: var(--ink-mute);
+    font-style: italic;
+  }
+
+  .fav-hero {
+    background: var(--cream);
+    padding: 40px 32px 32px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .fav-hero h1 { font-size: clamp(36px, 5vw, 50px); margin: 12px 0 10px; }
+  .fav-tagline .script { font-size: 26px; }
+
+  .fav-wrap {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 40px 32px 96px;
+  }
+
+  .fav-empty {
+    background: var(--cream-soft);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 64px 32px;
+    text-align: center;
+    max-width: 520px;
+    margin: 0 auto;
+  }
+  .fav-empty p { color: var(--ink-soft); margin-bottom: 22px; font-size: 16px; }
+
+  .fav-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 22px;
+  }
+
+  .fav-card {
+    background: var(--cream-soft);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: border-color .2s, transform .2s;
+  }
+  .fav-card:hover {
+    border-color: var(--border-strong);
+    transform: translateY(-3px);
+  }
+  .fav-card-link {
+    display: block;
+    color: inherit;
+  }
+  .fav-img {
+    aspect-ratio: 1;
+    background: var(--cream-warm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .fav-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .fav-img svg { width: 60%; height: auto; }
+  .fav-meta { padding: 18px 20px 12px; }
+  .fav-family {
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--gold-soft);
+    margin-bottom: 6px;
+  }
+  .fav-name {
+    font-family: var(--font-display);
+    font-size: 20px;
+    color: var(--ink);
+    margin: 0;
+  }
+  .fav-actions {
+    padding: 0 18px 18px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-top: auto;
+  }
+  .fav-actions .btn { flex: 1; }
+  .fav-remove-btn {
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    color: var(--ink-mute);
+    padding: 8px 12px;
+    border-radius: 999px;
+    font-family: var(--font-body);
+    font-size: 12px;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: all .2s;
+  }
+  .fav-remove-btn:hover {
+    color: #B23A1F;
+    border-color: #B23A1F;
+  }
+
+  /* ===== size modal ===== */
+  .size-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 220;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .size-modal[hidden] { display: none !important; }
+  .size-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(5, 26, 14, 0.72);
+    backdrop-filter: blur(4px);
+  }
+  .size-box {
+    position: relative;
+    background: var(--cream);
+    border: 1px solid var(--border-strong);
+    border-radius: 14px;
+    width: 100%;
+    max-width: 440px;
+    padding: 30px 30px 26px;
+    text-align: center;
+  }
+  .size-close {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    background: none;
+    border: none;
+    font-size: 26px;
+    cursor: pointer;
+    color: var(--ink-mute);
+    line-height: 1;
+  }
+  .size-box h2 { font-size: 24px; margin: 6px 0 4px; }
+  .size-product {
+    color: var(--ink-mute);
+    font-style: italic;
+    margin-bottom: 22px;
+    font-size: 14px;
+  }
+  .size-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .size-pick {
+    background: var(--cream-soft);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 14px;
+    cursor: pointer;
+    text-align: center;
+    transition: all .2s;
+    font-family: var(--font-body);
+  }
+  .size-pick:hover { border-color: var(--emerald); transform: translateY(-2px); }
+  .size-pick .lbl {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    margin-bottom: 6px;
+  }
+  .size-pick .price {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 22px;
+    color: var(--emerald);
+  }
+  .size-pick .price small {
+    font-size: 12px;
+    color: var(--ink-mute);
+    margin-left: 4px;
+    font-weight: 400;
+  }
+
+  @media (max-width: 880px) {
+    .fav-wrap { padding: 32px 16px 72px; }
+    .fav-hero { padding: 32px 16px 24px; }
+    .crumb-wrap { padding: 12px 16px 0; }
+  }
+  @media (max-width: 480px) {
+    .fav-grid { grid-template-columns: 1fr; }
+  }
+</style>
+
+<script>
+  import { isLoggedIn } from '../../scripts/customerApi.js';
+  import {
+    getWishlist,
+    removeFromWishlist,
+    refreshFromServer,
+    onWishlistChange,
+  } from '../../scripts/wishlist.js';
+  import { syncCatalogFromApi } from '../../scripts/catalogSync.js';
+  import { addItem, showAddedToast } from '../../scripts/cart.js';
+
+  const loading = document.getElementById('favLoading') as HTMLElement;
+  const main = document.getElementById('favMain') as HTMLElement;
+  const empty = document.getElementById('favEmpty') as HTMLElement;
+  const grid = document.getElementById('favGrid') as HTMLElement;
+
+  const SIZES = JSON.parse(document.getElementById('__sizes')?.textContent || '[]');
+
+  // Size modal
+  const sizeModal = document.getElementById('sizeModal') as HTMLElement;
+  const sizeOverlay = document.getElementById('sizeOverlay') as HTMLElement;
+  const sizeClose = document.getElementById('sizeClose') as HTMLButtonElement;
+  const sizeProductName = document.getElementById('sizeProductName') as HTMLElement;
+  const sizeOptions = document.getElementById('sizeOptions') as HTMLElement;
+
+  function bounceToLogin() {
+    window.location.replace('/compte');
+  }
+
+  let productMap: Record<string, any> = {};
+
+  function escHtml(s: any) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    })[c]);
+  }
+
+  function bottleSvg() {
+    return `<svg viewBox="0 0 200 220" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect x="68" y="34" width="64" height="160" rx="3" fill="#0E3A1F"/>
+      <rect x="68" y="34" width="64" height="160" rx="3" fill="none" stroke="rgba(212,175,55,0.5)" stroke-width="0.8"/>
+      <rect x="78" y="84" width="44" height="68" fill="#0E3A1F"/>
+      <rect x="78" y="84" width="44" height="68" fill="none" stroke="#D4AF37" stroke-width="0.6"/>
+      <text x="100" y="108" text-anchor="middle" font-family="Allura, cursive" font-size="20" fill="#D4AF37">Dadios</text>
+      <rect x="84" y="14" width="32" height="22" rx="2" fill="#A87C45"/>
+      <rect x="88" y="8" width="24" height="10" rx="1.5" fill="#A87C45"/>
+    </svg>`;
+  }
+
+  function renderCard(slug: string) {
+    const product = productMap[slug];
+    // If the product no longer exists (deleted in admin), show a small
+    // placeholder card so the user can still remove it from their list.
+    const name = product?.name || slug;
+    const family = product?.family || '';
+    const image = product?.image;
+    return `<article class="fav-card" data-slug="${escHtml(slug)}">
+      <a class="fav-card-link" href="/parfums/${escHtml(slug)}">
+        <div class="fav-img">
+          ${image ? `<img src="${escHtml(image)}" alt="${escHtml(name)}" loading="lazy"/>` : bottleSvg()}
+        </div>
+        <div class="fav-meta">
+          ${family ? `<div class="fav-family">${escHtml(family)}</div>` : ''}
+          <h3 class="fav-name">${escHtml(name)}</h3>
+        </div>
+      </a>
+      <div class="fav-actions">
+        <button type="button" class="fav-remove-btn" data-action="remove">Retirer</button>
+        <button type="button" class="btn btn-primary btn-sm" data-action="add-cart">Ajouter au panier</button>
+      </div>
+    </article>`;
+  }
+
+  function render() {
+    const slugs = getWishlist();
+    if (!slugs.length) {
+      empty.hidden = false;
+      grid.hidden = true;
+      grid.innerHTML = '';
+      return;
+    }
+    empty.hidden = true;
+    grid.hidden = false;
+    grid.innerHTML = slugs.map(renderCard).join('');
+  }
+
+  // Event delegation for Retirer + Ajouter au panier
+  grid.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    const btn = target.closest('[data-action]') as HTMLElement | null;
+    if (!btn) return;
+    const card = btn.closest('.fav-card') as HTMLElement | null;
+    if (!card) return;
+    const slug = card.dataset.slug || '';
+    if (!slug) return;
+    const action = btn.dataset.action;
+    if (action === 'remove') {
+      removeFromWishlist(slug);
+      // render() is invoked via onWishlistChange below
+    } else if (action === 'add-cart') {
+      openSizeModal(slug);
+    }
+  });
+
+  // ===== Size modal =====
+  let pendingSlug = '';
+
+  function openSizeModal(slug: string) {
+    const product = productMap[slug];
+    pendingSlug = slug;
+    sizeProductName.textContent = product?.name || slug;
+    sizeOptions.innerHTML = SIZES
+      .map((s: any) => `<button type="button" class="size-pick" data-code="${escHtml(s.code)}" data-label="${escHtml(s.label)}" data-price="${escHtml(s.price)}">
+        <span class="lbl">${escHtml(s.label)}</span>
+        <span class="price">${escHtml(s.price)} <small>DT</small></span>
+      </button>`)
+      .join('');
+    sizeModal.hidden = false;
+  }
+  function closeSizeModal() {
+    sizeModal.hidden = true;
+    pendingSlug = '';
+  }
+  sizeClose.addEventListener('click', closeSizeModal);
+  sizeOverlay.addEventListener('click', closeSizeModal);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !sizeModal.hidden) closeSizeModal();
+  });
+
+  sizeOptions.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest('.size-pick') as HTMLElement | null;
+    if (!btn || !pendingSlug) return;
+    const product = productMap[pendingSlug];
+    const code = btn.dataset.code || '';
+    const label = btn.dataset.label || code;
+    const price = Number(btn.dataset.price) || 0;
+    addItem({
+      slug: pendingSlug,
+      name: product?.name || pendingSlug,
+      size: label,
+      price,
+      qty: 1,
+    });
+    showAddedToast(`Ajouté · ${product?.name || pendingSlug} (${label})`);
+    closeSizeModal();
+  });
+
+  // Re-render whenever the wishlist changes (e.g. removeFromWishlist above).
+  onWishlistChange(render);
+
+  // ===== Init =====
+  (async () => {
+    if (!isLoggedIn()) return bounceToLogin();
+
+    // 1. Instant paint from cache so the page never looks empty for a beat.
+    render();
+    loading.hidden = true;
+    main.hidden = false;
+
+    // 2. Fetch product data (live catalog with KV-added products), build map.
+    try {
+      const products = await syncCatalogFromApi();
+      if (products && products.length) {
+        productMap = Object.fromEntries(products.map((p: any) => [p.slug, p]));
+      } else {
+        const res = await fetch('/products.json');
+        if (res.ok) {
+          const data = await res.json();
+          productMap = Object.fromEntries((data.products || []).map((p: any) => [p.slug, p]));
+        }
+      }
+    } catch {}
+
+    // 3. Pull wishlist from server in case another device added something.
+    await refreshFromServer().catch(() => {});
+
+    // Re-render with enriched data.
+    render();
+  })();
+</script>

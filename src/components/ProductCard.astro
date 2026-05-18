@@ -33,6 +33,19 @@ const hasImage = product.image && product.image.length > 0;
     )}
     <span class="card-gender">{product.gender}</span>
     {product.featured && <span class="card-badge">Bestseller</span>}
+    <span
+      class="card-heart"
+      data-wishlist-toggle
+      data-slug={product.slug}
+      role="button"
+      tabindex="0"
+      aria-label="Ajouter aux favoris"
+      aria-pressed="false"
+    >
+      <svg class="heart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+      </svg>
+    </span>
   </div>
   <div class="card-body">
     <div class="eyebrow card-family">{product.family}</div>
@@ -86,8 +99,8 @@ const hasImage = product.image && product.image.length > 0;
   }
   .card-badge {
     position: absolute;
-    top: 12px;
-    right: 14px;
+    bottom: 12px;
+    left: 14px;
     background: var(--emerald);
     color: var(--gold);
     font-size: 10px;
@@ -95,6 +108,46 @@ const hasImage = product.image && product.image.length > 0;
     padding: 4px 10px;
     border-radius: 999px;
     text-transform: uppercase;
+  }
+  .card-heart {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--cream-soft);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--ink-mute);
+    transition: transform .15s ease-out, background .2s, color .2s, border-color .2s;
+    z-index: 2;
+    box-shadow: 0 2px 6px rgba(5, 26, 14, 0.08);
+    user-select: none;
+  }
+  .card-heart:hover {
+    color: var(--emerald);
+    background: var(--cream);
+  }
+  .card-heart .heart-icon { width: 18px; height: 18px; pointer-events: none; }
+  .card-heart.filled {
+    background: var(--emerald);
+    border-color: var(--emerald);
+    color: var(--gold);
+  }
+  .card-heart.filled .heart-icon { fill: var(--gold); stroke: var(--gold); }
+  .card-heart.bump { animation: dadiosHeartBump 180ms ease-out; }
+  @keyframes dadiosHeartBump {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.22); }
+    100% { transform: scale(1); }
+  }
+  .card-heart:focus-visible {
+    outline: 2px solid var(--emerald);
+    outline-offset: 2px;
   }
   .card-body { padding: 20px 22px 22px; }
   .card-family { margin-bottom: 6px; }

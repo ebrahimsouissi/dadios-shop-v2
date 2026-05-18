@@ -146,7 +146,7 @@ const allFamilies = [...new Set(products.map((p: any) => p.family))].sort();
 
 <script id="__sizes" type="application/json" set:html={JSON.stringify(sizes)}></script>
 <script>
-  import { syncCatalogFromApi, getCardScopeAttr, getScopeAttr, renderProductCardHtml } from '../../scripts/catalogSync.js';
+  import { syncCatalogFromApi, getCardScopeAttr, getScopeAttr, renderProductCardHtml, notifyCatalogRendered } from '../../scripts/catalogSync.js';
 
   const SIZES = JSON.parse(document.getElementById('__sizes')?.textContent || '[]');
   const grid = document.getElementById('productGrid');
@@ -224,6 +224,7 @@ const allFamilies = [...new Set(products.map((p: any) => p.family))].sort();
   syncCatalogFromApi().then((products) => {
     if (products && products.length) {
       renderProducts(products);
+      notifyCatalogRendered();
       applyFilters();
     }
   });

@@ -25,6 +25,7 @@ import Base from '../../layouts/Base.astro';
       <div class="eyebrow">Espace client</div>
       <h1 id="greeting">Bonjour</h1>
       <p id="welcomeNote" class="dash-welcome" hidden></p>
+      <p id="orderedNote" class="dash-welcome ordered" hidden></p>
     </div>
   </section>
 
@@ -111,10 +112,45 @@ import Base from '../../layouts/Base.astro';
     </article>
   </section>
 
+  <!-- ===== Quick tiles row (favoris + future) ===== -->
+  <section class="dash-quick">
+    <a class="quick-tile" href="/compte/favoris">
+      <div class="quick-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+        </svg>
+      </div>
+      <div class="quick-text">
+        <div class="quick-label">Mes favoris</div>
+        <div class="quick-count" id="favorisCount">0</div>
+      </div>
+      <div class="quick-arrow" aria-hidden="true">→</div>
+    </a>
+  </section>
+
+  <!-- ===== Orders section ===== -->
+  <section class="orders-section">
+    <header class="orders-head">
+      <div>
+        <div class="eyebrow">Historique</div>
+        <h2>Mes commandes</h2>
+      </div>
+    </header>
+
+    <div id="ordersLoading" class="orders-loading">Chargement de vos commandes...</div>
+
+    <div id="ordersEmpty" class="orders-empty" hidden>
+      <p>Aucune commande pour le moment.</p>
+      <a href="/parfums" class="btn btn-primary btn-sm">Découvrir nos parfums</a>
+    </div>
+
+    <div id="ordersList" class="orders-list" hidden></div>
+  </section>
+
   <!-- ===== Future placeholders ===== -->
   <section class="dash-soon">
     <div class="eyebrow">Bientôt</div>
-    <p>Historique de commandes · Liste d'envies · Programme VIP</p>
+    <p>Programme VIP · Recommandations personnalisées</p>
   </section>
 
   <div class="dash-footer">
@@ -337,6 +373,201 @@ import Base from '../../layouts/Base.astro';
   .loyalty-state p { margin-bottom: 12px; line-height: 1.6; }
   .loyalty-state p.muted { color: var(--ink-mute); font-size: 14px; }
 
+  /* ===== quick tile (favoris) ===== */
+  .dash-quick {
+    max-width: 1280px;
+    margin: 24px auto 0;
+    padding: 0 32px;
+  }
+  .quick-tile {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    background: var(--cream-soft);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 22px;
+    color: inherit;
+    transition: all .2s;
+    max-width: 360px;
+  }
+  .quick-tile:hover {
+    border-color: var(--emerald);
+    transform: translateY(-2px);
+  }
+  .quick-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--cream-warm);
+    border: 1px solid var(--border);
+    color: var(--emerald);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .quick-icon svg { width: 22px; height: 22px; }
+  .quick-text { flex: 1; min-width: 0; }
+  .quick-label {
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    margin-bottom: 2px;
+  }
+  .quick-count {
+    font-family: var(--font-display);
+    font-size: 22px;
+    color: var(--emerald);
+    line-height: 1.1;
+  }
+  .quick-arrow {
+    color: var(--gold-soft);
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  /* ===== orders ===== */
+  .orders-section {
+    max-width: 1280px;
+    margin: 32px auto 0;
+    padding: 0 32px;
+  }
+  .orders-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 18px;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .orders-head h2 { font-size: 24px; margin-top: 6px; }
+  .orders-loading {
+    background: var(--cream-soft);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px;
+    text-align: center;
+    color: var(--ink-mute);
+    font-style: italic;
+  }
+  .orders-empty {
+    background: var(--cream-soft);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 36px 28px;
+    text-align: center;
+  }
+  .orders-empty p {
+    color: var(--ink-soft);
+    margin-bottom: 18px;
+  }
+  .orders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .order-card {
+    background: var(--cream-soft);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 22px;
+  }
+  .order-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .order-ref {
+    font-family: var(--font-display);
+    font-size: 17px;
+    color: var(--ink);
+  }
+  .order-date {
+    font-size: 12px;
+    color: var(--ink-mute);
+    letter-spacing: 0.06em;
+    margin-left: 8px;
+  }
+  .order-status {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+  .order-status.pending {
+    background: var(--cream-warm);
+    color: #A87C45;
+    border: 1px solid #c79e62;
+  }
+  .order-status.confirmed {
+    background: var(--gold-light);
+    color: var(--emerald);
+    border: 1px solid var(--gold);
+  }
+  .order-status.delivered {
+    background: var(--emerald);
+    color: var(--cream);
+    border: 1px solid var(--emerald);
+  }
+  .order-status.cancelled {
+    background: rgba(120, 104, 80, 0.15);
+    color: var(--ink-mute);
+    border: 1px solid rgba(120, 104, 80, 0.35);
+    text-decoration: line-through;
+  }
+  .order-items {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .order-items li {
+    font-size: 14px;
+    color: var(--ink-soft);
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .order-items .li-name { color: var(--ink); }
+  .order-total {
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-family: var(--font-display);
+  }
+  .order-total .lbl {
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    font-family: var(--font-body);
+    font-weight: 500;
+  }
+  .order-total .val {
+    font-size: 22px;
+    color: var(--emerald);
+  }
+
+  .dash-welcome.ordered {
+    background: rgba(212, 175, 55, 0.12);
+    border-color: var(--gold);
+    color: var(--emerald);
+  }
+
   /* ===== footer / soon ===== */
   .dash-soon {
     max-width: 1280px;
@@ -364,17 +595,24 @@ import Base from '../../layouts/Base.astro';
 
   @media (max-width: 880px) {
     .dash-grid { grid-template-columns: 1fr; }
-    .dash-grid, .dash-hero, .dash-soon, .dash-footer { padding-left: 16px; padding-right: 16px; }
+    .dash-grid, .dash-hero, .dash-soon, .dash-footer,
+    .dash-quick, .orders-section { padding-left: 16px; padding-right: 16px; }
     .crumb-wrap { padding: 12px 16px 0; }
+    .order-head { flex-direction: column; align-items: flex-start; gap: 8px; }
   }
   @media (max-width: 480px) {
     .dash-card { padding: 24px 20px 20px; }
     .stamps-row { gap: 6px; }
+    .quick-tile { max-width: 100%; padding: 16px 18px; }
+    .order-card { padding: 16px 18px; }
+    .order-items li { font-size: 13px; }
   }
 </style>
 
 <script>
   import { me, updateProfile, logout, isLoggedIn } from '../../scripts/customerApi.js';
+  import { listMyOrders } from '../../scripts/ordersApi.js';
+  import { getWishlist, refreshFromServer as refreshWishlist, onWishlistChange } from '../../scripts/wishlist.js';
 
   const loading = document.getElementById('dashLoading') as HTMLElement;
   const main = document.getElementById('dashMain') as HTMLElement;
@@ -454,12 +692,97 @@ import Base from '../../layouts/Base.astro';
       welcomeNote.textContent = '✓ Bienvenue ! Votre compte est actif.';
       welcomeNote.hidden = false;
     }
-    if (w) {
+    const ordered = qp.get('ordered');
+    if (ordered === '1') {
+      const orderedNote = document.getElementById('orderedNote');
+      if (orderedNote) {
+        orderedNote.textContent = '✓ Commande enregistrée. Confirmation par WhatsApp.';
+        orderedNote.hidden = false;
+      }
+    }
+    if (w || ordered) {
       const url = new URL(window.location.href);
       url.searchParams.delete('welcome');
+      url.searchParams.delete('ordered');
       window.history.replaceState({}, '', url.toString());
     }
   }
+
+  // ===== Orders =====
+  const ordersLoading = document.getElementById('ordersLoading') as HTMLElement;
+  const ordersEmpty = document.getElementById('ordersEmpty') as HTMLElement;
+  const ordersList = document.getElementById('ordersList') as HTMLElement;
+
+  const STATUS_LABEL: Record<string, string> = {
+    pending: 'En attente',
+    confirmed: 'Confirmée',
+    delivered: 'Livrée',
+    cancelled: 'Annulée',
+  };
+
+  function escHtml(s: any) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    })[c]);
+  }
+  function shortId(uuid: string) {
+    return String(uuid || '').replace(/-/g, '').substring(0, 8);
+  }
+  function fmtDate(iso: string) {
+    if (!iso) return '';
+    try {
+      return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+    } catch { return iso; }
+  }
+
+  function renderOrder(o: any) {
+    const itemsHtml = (o.items || [])
+      .map((i: any) => {
+        const sub = (Number(i.price) || 0) * (Number(i.qty) || 1);
+        const sizeStr = i.size ? ` (${escHtml(i.size)})` : '';
+        return `<li><span class="li-name">${Number(i.qty) || 1}× ${escHtml(i.name)}${sizeStr}</span><span class="li-val">${sub} DT</span></li>`;
+      })
+      .join('');
+    const status = String(o.status || 'pending');
+    return `<article class="order-card">
+      <header class="order-head">
+        <div>
+          <span class="order-ref">Commande #${escHtml(shortId(o.id))}</span>
+          <span class="order-date">${escHtml(fmtDate(o.createdAt))}</span>
+        </div>
+        <span class="order-status ${escHtml(status)}">${escHtml(STATUS_LABEL[status] || status)}</span>
+      </header>
+      <ul class="order-items">${itemsHtml}</ul>
+      <div class="order-total"><span class="lbl">Total</span><span class="val">${Number(o.total) || 0} DT</span></div>
+    </article>`;
+  }
+
+  async function loadOrders() {
+    ordersLoading.hidden = false;
+    ordersEmpty.hidden = true;
+    ordersList.hidden = true;
+    const res = await listMyOrders();
+    ordersLoading.hidden = true;
+    if (!res.ok) {
+      // Auth failure handled at mount; here we just degrade quietly.
+      ordersEmpty.hidden = false;
+      return;
+    }
+    const orders = (res.orders || []) as any[];
+    if (!orders.length) {
+      ordersEmpty.hidden = false;
+      return;
+    }
+    ordersList.innerHTML = orders.map(renderOrder).join('');
+    ordersList.hidden = false;
+  }
+
+  // ===== Favoris count tile =====
+  const favorisCountEl = document.getElementById('favorisCount') as HTMLElement;
+  function renderFavorisCount() {
+    favorisCountEl.textContent = String(getWishlist().length);
+  }
+  onWishlistChange(renderFavorisCount);
 
   function showErr(el: HTMLElement, msg: string) { el.textContent = msg; el.hidden = false; }
   function hideErr(el: HTMLElement) { el.hidden = true; el.textContent = ''; }
@@ -521,8 +844,13 @@ import Base from '../../layouts/Base.astro';
     if (!res.ok || !res.customer) return bounceToLogin();
     renderProfile(res.customer);
     renderLoyalty(res.customer.loyalty);
+    renderFavorisCount();
     applyWelcomeFlag();
     loading.hidden = true;
     main.hidden = false;
+    // Fire-and-forget: load orders + refresh wishlist count from server.
+    // Failures are non-fatal — the dashboard already rendered.
+    loadOrders().catch(() => {});
+    refreshWishlist().then(renderFavorisCount).catch(() => {});
   })();
 </script>
