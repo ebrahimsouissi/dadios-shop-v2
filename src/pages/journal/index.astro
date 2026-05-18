@@ -1,0 +1,319 @@
+---
+import Base from '../../layouts/Base.astro';
+import seedData from '../../data/articles-seed.json';
+
+const WORKER_URL = 'https://cold-cloud-895a.dadios-fragrances.workers.dev';
+
+// Build-time fetch from the public Worker endpoint so the initial paint
+// already shows the real article list. Client-side script runs on every
+// visit and replaces this snapshot with the freshest data — covers
+// articles published between builds.
+let buildtimeArticles = [];
+try {
+  const res = await fetch(`${WORKER_URL}/api/articles`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'list_published', limit: 200 }),
+  });
+  const data = await res.json();
+  if (data && data.ok && Array.isArray(data.articles)) {
+    buildtimeArticles = data.articles;
+  }
+} catch {}
+
+const seedArticles = (seedData.articles || []).filter((a) => a.status === 'published');
+const initialArticles = buildtimeArticles.length ? buildtimeArticles : seedArticles;
+---
+<Base
+  title="Journal — Dadios Fragrance"
+  description="Récits, conseils et inspirations autour de la parfumerie artisanale Dadios."
+>
+
+<section class="journal-hero">
+  <div class="journal-hero-inner">
+    <div class="eyebrow">Journal</div>
+    <h1>Le Journal Dadios</h1>
+    <p class="journal-tagline">
+      <span class="script">Récits, conseils et inspirations.</span>
+    </p>
+  </div>
+</section>
+
+<section class="journal-filters" aria-label="Filtres par tag">
+  <div class="filters-inner" id="journalFilters">
+    <button type="button" class="filter-pill active" data-tag="">Tous</button>
+    <!-- additional pills injected by client based on available tags -->
+  </div>
+</section>
+
+<section class="journal-wrap">
+  <div id="journalGrid" class="journal-grid"></div>
+  <p id="journalEmpty" class="journal-empty" hidden>
+    Aucun article ne correspond à ce filtre.
+  </p>
+</section>
+
+<script id="__journalSeed" type="application/json" set:html={JSON.stringify(initialArticles)}></script>
+
+</Base>
+
+<style>
+  .journal-hero {
+    background: var(--cream);
+    padding: 64px 32px 36px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .journal-hero-inner { max-width: 720px; margin: 0 auto; }
+  .journal-hero h1 { font-size: clamp(40px, 5vw, 56px); margin: 12px 0 10px; }
+  .journal-tagline .script { font-size: 28px; }
+
+  .journal-filters {
+    background: var(--cream);
+    padding: 20px 32px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 73px;
+    z-index: 30;
+  }
+  .filters-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .filter-pill {
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--cream-soft);
+    font-family: var(--font-body);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    color: var(--ink);
+    transition: all .2s;
+  }
+  .filter-pill:hover { border-color: var(--gold-soft); }
+  .filter-pill.active {
+    background: var(--emerald);
+    color: var(--cream);
+    border-color: var(--emerald);
+  }
+
+  .journal-wrap {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 56px 32px 96px;
+  }
+  .journal-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+  }
+  .journal-empty {
+    text-align: center;
+    color: var(--ink-mute);
+    font-style: italic;
+    padding: 48px 0;
+  }
+
+  .j-card {
+    background: var(--cream-soft);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: all .25s;
+    color: inherit;
+  }
+  .j-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--border-strong);
+  }
+  .j-card-img {
+    aspect-ratio: 16 / 10;
+    background: var(--cream-warm);
+    overflow: hidden;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+  .j-card-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .j-card-img.no-image {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .j-card-img.no-image .j-fallback {
+    font-family: var(--font-script);
+    color: var(--gold-soft);
+    font-size: 32px;
+    opacity: 0.7;
+  }
+  .j-card-body {
+    padding: 22px 24px 26px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+  .j-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .j-card-tag {
+    background: var(--cream-warm);
+    border: 1px solid var(--border);
+    color: var(--ink-soft);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 999px;
+  }
+  .j-card-title {
+    font-family: var(--font-display);
+    font-size: 22px;
+    margin: 0 0 10px;
+    line-height: 1.2;
+    color: var(--ink);
+  }
+  .j-card-excerpt {
+    color: var(--ink-soft);
+    font-size: 14px;
+    line-height: 1.6;
+    margin: 0 0 18px;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .j-card-foot {
+    margin-top: auto;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--ink-mute);
+  }
+  .j-card-cta {
+    color: var(--emerald);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 11px;
+  }
+
+  @media (max-width: 1024px) {
+    .journal-grid { grid-template-columns: repeat(2, 1fr); gap: 24px; }
+  }
+  @media (max-width: 640px) {
+    .journal-hero { padding: 48px 16px 24px; }
+    .journal-filters { padding: 14px 16px; top: 0; }
+    .journal-wrap { padding: 32px 16px 72px; }
+    .journal-grid { grid-template-columns: 1fr; gap: 20px; }
+  }
+</style>
+
+<script>
+  import { listPublishedArticles, frenchRelativeDate } from '../../scripts/articlesApi.js';
+
+  const SEED = JSON.parse(document.getElementById('__journalSeed')?.textContent || '[]');
+  const grid = document.getElementById('journalGrid');
+  const empty = document.getElementById('journalEmpty');
+  const filtersEl = document.getElementById('journalFilters');
+
+  let allArticles = SEED.slice();
+  let usingSeed = true;
+  let currentTag = '';
+
+  function escHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;',
+    })[c]);
+  }
+  const escAttr = escHtml;
+
+  function renderCard(a) {
+    const heroBlock = a.heroImage
+      ? `<div class="j-card-img"><img src="${escAttr(a.heroImage)}" alt="${escAttr(a.heroAlt || a.title || '')}" loading="lazy"/></div>`
+      : `<div class="j-card-img no-image"><span class="j-fallback">Dadios</span></div>`;
+    const tagsHtml = (a.tags || []).slice(0, 2).map((t) => `<span class="j-card-tag">${escHtml(t)}</span>`).join('');
+    const readingTime = Number(a.readingTime) || 1;
+    const date = frenchRelativeDate(a.publishedAt || a.createdAt);
+    return `<a href="/journal/${escAttr(a.slug)}" class="j-card">
+      ${heroBlock}
+      <div class="j-card-body">
+        <div class="j-card-tags">${tagsHtml}</div>
+        <h2 class="j-card-title">${escHtml(a.title)}</h2>
+        <p class="j-card-excerpt">${escHtml(a.excerpt || '')}</p>
+        <div class="j-card-foot">
+          <span>${escHtml(date)} · ${readingTime} min</span>
+          <span class="j-card-cta">Lire →</span>
+        </div>
+      </div>
+    </a>`;
+  }
+
+  function renderFilters() {
+    // Collect unique tags from current dataset, preserve insertion order
+    const seen = new Set();
+    const tags = [];
+    allArticles.forEach((a) => {
+      (a.tags || []).forEach((t) => {
+        if (!seen.has(t)) { seen.add(t); tags.push(t); }
+      });
+    });
+    filtersEl.innerHTML = [
+      `<button type="button" class="filter-pill ${currentTag === '' ? 'active' : ''}" data-tag="">Tous</button>`,
+      ...tags.map((t) => `<button type="button" class="filter-pill ${currentTag === t ? 'active' : ''}" data-tag="${escAttr(t)}">${escHtml(t)}</button>`),
+    ].join('');
+  }
+
+  function renderGrid() {
+    const filtered = currentTag
+      ? allArticles.filter((a) => (a.tags || []).includes(currentTag))
+      : allArticles;
+    if (!filtered.length) {
+      grid.innerHTML = '';
+      empty.hidden = false;
+      return;
+    }
+    empty.hidden = true;
+    grid.innerHTML = filtered.map(renderCard).join('');
+  }
+
+  filtersEl.addEventListener('click', (e) => {
+    const btn = e.target?.closest('.filter-pill');
+    if (!btn) return;
+    currentTag = btn.dataset.tag || '';
+    renderFilters();
+    renderGrid();
+  });
+
+  // Initial seed paint, then ask the API. If the API returns at least
+  // one article we throw the seed away.
+  renderFilters();
+  renderGrid();
+  (async () => {
+    const res = await listPublishedArticles({ limit: 100 });
+    if (res.ok && Array.isArray(res.articles) && res.articles.length) {
+      allArticles = res.articles;
+      usingSeed = false;
+      renderFilters();
+      renderGrid();
+    }
+  })();
+</script>

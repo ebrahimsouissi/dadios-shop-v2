@@ -1,0 +1,137 @@
+---
+/**
+ * Editor page. Handles both create (no query) and edit (`?slug=<id>`).
+ *
+ * Deliberately not a `[slug].astro` dynamic route: getStaticPaths would
+ * have to call admin_list at build time, which requires shipping the
+ * admin password to Cloudflare Pages' build env. Single-page + query
+ * string keeps the secret server-side.
+ */
+import Base from '../../../layouts/Base.astro';
+import ArticleEditor from '../../../components/ArticleEditor.astro';
+---
+<Base
+  title="Éditeur d'article — Journal Dadios"
+  description="Espace administration"
+>
+
+<div id="adminGate" class="admin-gate">
+  <p>Authentification requise. <a href="/admin">Aller à l'admin</a></p>
+</div>
+
+<div id="adminLoading" class="admin-loading" hidden>
+  <p>Chargement…</p>
+</div>
+
+<div id="adminContent" class="admin-shell" hidden>
+  <div class="admin-bar">
+    <a href="/admin" class="back-link">← Tous les articles</a>
+    <h1 class="admin-bar-title" id="adminBarTitle">Nouvel article</h1>
+  </div>
+  <ArticleEditor initial={{}} isEdit={false} />
+</div>
+
+</Base>
+
+<style>
+  .admin-gate, .admin-loading {
+    max-width: 480px;
+    margin: 80px auto;
+    padding: 32px;
+    background: var(--cream-soft);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    text-align: center;
+    color: var(--ink-soft);
+  }
+  .admin-gate a { color: var(--emerald); text-decoration: underline; }
+  .admin-loading p { font-style: italic; color: var(--ink-mute); }
+  .admin-shell { background: var(--cream); min-height: calc(100vh - 73px); }
+  .admin-bar {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 18px 24px 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .back-link {
+    color: var(--ink-mute);
+    font-size: 13px;
+    text-decoration: none;
+  }
+  .back-link:hover { color: var(--emerald); }
+  .admin-bar-title {
+    font-family: var(--font-display);
+    font-size: 13px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--gold-soft);
+    margin: 0;
+  }
+  @media (max-width: 880px) {
+    .admin-bar { padding: 14px 16px 4px; }
+  }
+</style>
+
+<script>
+  /**
+   * Sequence on mount:
+   *   1. Gate on admin password (sessionStorage from /admin login).
+   *   2. If `?slug=` is present, fetch admin_get; otherwise prepare an
+   *      empty initial. Then call initArticleEditor() which spins up
+   *      TipTap. This deterministic ordering avoids the race that would
+   *      happen if the editor self-bootstrapped inside the component.
+   */
+  import { getPassword, checkPassword } from '../../../scripts/adminApi.js';
+  import { adminGetArticle } from '../../../scripts/articlesApi.js';
+  import { initArticleEditor } from '../../../scripts/articleEditor.js';
+
+  const gate = document.getElementById('adminGate') as HTMLElement;
+  const loading = document.getElementById('adminLoading') as HTMLElement;
+  const content = document.getElementById('adminContent') as HTMLElement;
+  const titleEl = document.getElementById('adminBarTitle') as HTMLElement;
+
+  (async () => {
+    const pw = getPassword();
+    if (!pw) {
+      window.location.replace('/admin');
+      return;
+    }
+    const ok = await checkPassword(pw);
+    if (!ok) {
+      window.location.replace('/admin');
+      return;
+    }
+    gate.hidden = true;
+
+    const slug = new URLSearchParams(window.location.search).get('slug');
+
+    if (!slug) {
+      content.hidden = false;
+      initArticleEditor({ initial: {}, isEdit: false });
+      return;
+    }
+
+    loading.hidden = false;
+    const res = await adminGetArticle(slug);
+    loading.hidden = true;
+
+    if (!res.ok || !res.article) {
+      content.hidden = false;
+      // The editor markup is still on the page; instead of mounting,
+      // show an inline error in the toolbar slot.
+      const root = document.getElementById('artEditor');
+      if (root) {
+        root.innerHTML = `<p style="text-align:center;padding:48px 24px;color:#B23A1F;font-style:italic">${(res.error || 'Article introuvable.')}</p>`;
+      }
+      return;
+    }
+
+    titleEl.textContent = res.article.title
+      ? `Modifier — ${res.article.title}`
+      : "Modifier l'article";
+    content.hidden = false;
+    initArticleEditor({ initial: res.article, isEdit: true });
+  })();
+</script>

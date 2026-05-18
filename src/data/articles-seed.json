@@ -1,0 +1,27 @@
+{
+  "_comment": "Fallback article displayed on /journal when the API returns zero articles. Once the admin creates a real article via /admin/articles/new, the API replaces this on /journal.",
+  "articles": [
+    {
+      "slug": "bienvenue-dans-le-journal-dadios",
+      "title": "Bienvenue dans le Journal Dadios",
+      "subtitle": "Notre nouvel espace pour partager notre univers",
+      "excerpt": "Le Journal Dadios accueille récits d'atelier, conseils olfactifs et histoires des grandes signatures qui inspirent nos parfums. Bonne lecture.",
+      "content": "<p>Bienvenue. Ce Journal est notre nouvel espace de partage. Vous y trouverez des récits de l'atelier, des notes sur la composition d'un parfum, des coups de cœur olfactifs, et l'histoire des grandes signatures qui inspirent nos créations.</p><p>Nous écrivons à la main, à Tunis, comme nous composons nos fragrances. Pas de pub, pas de bruit — juste des textes courts qui prolongent l'expérience Dadios.</p><p>Bonne lecture, et à très vite en boutique.</p>",
+      "contentText": "Bienvenue. Ce Journal est notre nouvel espace de partage. Vous y trouverez des récits de l'atelier, des notes sur la composition d'un parfum, des coups de cœur olfactifs, et l'histoire des grandes signatures qui inspirent nos créations. Nous écrivons à la main, à Tunis, comme nous composons nos fragrances. Pas de pub, pas de bruit — juste des textes courts qui prolongent l'expérience Dadios. Bonne lecture, et à très vite en boutique.",
+      "heroImage": null,
+      "heroAlt": "",
+      "tags": ["Nouveautés"],
+      "author": "Dadios Fragrances",
+      "status": "published",
+      "publishedAt": "2026-05-18T09:00:00.000Z",
+      "createdAt": "2026-05-18T09:00:00.000Z",
+      "updatedAt": "2026-05-18T09:00:00.000Z",
+      "readingTime": 1,
+      "seo": {
+        "metaTitle": "Bienvenue dans le Journal Dadios — Parfumerie artisanale, Tunis",
+        "metaDescription": "Notre nouvel espace pour partager notre univers : récits d'atelier, conseils olfactifs, et histoires des grandes signatures.",
+        "canonical": ""
+      }
+    }
+  ]
+}

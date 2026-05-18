@@ -1,0 +1,534 @@
+---
+/**
+ * Article editor used by /admin/articles/new and /admin/articles/[slug].
+ *
+ * The component renders just the HTML scaffolding; all behavior lives in the
+ * <script> below. TipTap is loaded as a client-side ES module — Astro's
+ * <script> blocks are not executed during SSR, so the editor never runs on
+ * the server (avoiding the "document is not defined" trap).
+ *
+ * Props are read from a `data-initial` JSON attribute so we can mount the
+ * same component for new + edit flows.
+ */
+export interface Props {
+  initial?: {
+    slug?: string;
+    title?: string;
+    subtitle?: string;
+    excerpt?: string;
+    content?: string;
+    heroImage?: string | null;
+    heroAlt?: string;
+    tags?: string[];
+    status?: 'draft' | 'published';
+    publishedAt?: string | null;
+    updatedAt?: string | null;
+    seo?: { metaTitle?: string; metaDescription?: string; canonical?: string };
+  };
+  /** When true, the slug field is read-only (editing existing article). */
+  isEdit?: boolean;
+}
+const { initial = {}, isEdit = false } = Astro.props;
+const initialJson = JSON.stringify(initial);
+---
+<div class="art-editor" id="artEditor" data-initial={initialJson} data-is-edit={isEdit ? '1' : '0'}>
+  <!-- Title + subtitle -->
+  <input
+    type="text"
+    id="artTitle"
+    class="art-title"
+    placeholder="Titre de l'article"
+    maxlength="160"
+    autocomplete="off"
+  />
+  <input
+    type="text"
+    id="artSubtitle"
+    class="art-subtitle"
+    placeholder="Sous-titre (optionnel)"
+    maxlength="220"
+    autocomplete="off"
+  />
+
+  <div class="art-divider"></div>
+
+  <!-- Hero image -->
+  <div class="art-section">
+    <div class="art-section-head">
+      <strong>Image de couverture</strong>
+      <small>JPG, PNG ou WebP. Visible en haut de l'article et dans les partages.</small>
+    </div>
+    <div class="art-hero-row">
+      <div class="art-hero-preview" id="artHeroPreview">
+        <span class="art-hero-empty">Aucune image de couverture</span>
+      </div>
+      <div class="art-hero-controls">
+        <input type="file" id="artHeroFile" accept="image/jpeg,image/jpg,image/png,image/webp" hidden />
+        <button type="button" class="btn btn-outline btn-sm" id="artHeroPick">📁 Choisir une image</button>
+        <button type="button" class="btn btn-outline btn-sm hidden" id="artHeroRemove">Retirer</button>
+        <p class="art-hero-status" id="artHeroStatus"></p>
+      </div>
+    </div>
+    <label class="art-label">
+      <span>Texte alternatif (alt)</span>
+      <input type="text" id="artHeroAlt" placeholder="Décrivez l'image pour le SEO et l'accessibilité" maxlength="220" />
+    </label>
+  </div>
+
+  <div class="art-divider"></div>
+
+  <!-- Toolbar (sticky) -->
+  <div class="art-toolbar" id="artToolbar" role="toolbar" aria-label="Mise en forme">
+    <button type="button" data-cmd="bold"      title="Gras (Ctrl+B)"><strong>B</strong></button>
+    <button type="button" data-cmd="italic"    title="Italique (Ctrl+I)"><em>I</em></button>
+    <button type="button" data-cmd="underline" title="Souligné (Ctrl+U)"><u>U</u></button>
+    <span class="art-toolbar-sep"></span>
+    <button type="button" data-cmd="h2" title="Titre de section">H2</button>
+    <button type="button" data-cmd="h3" title="Sous-titre">H3</button>
+    <span class="art-toolbar-sep"></span>
+    <button type="button" data-cmd="bulletList"  title="Liste à puces">•</button>
+    <button type="button" data-cmd="orderedList" title="Liste numérotée">1.</button>
+    <button type="button" data-cmd="blockquote"  title="Citation">"</button>
+    <span class="art-toolbar-sep"></span>
+    <button type="button" data-cmd="link"  title="Lien">🔗</button>
+    <button type="button" data-cmd="image" title="Image">🖼</button>
+    <span class="art-toolbar-sep"></span>
+    <button type="button" data-cmd="undo" title="Annuler">↶</button>
+    <button type="button" data-cmd="redo" title="Rétablir">↷</button>
+    <input type="file" id="artInlineImageFile" accept="image/jpeg,image/jpg,image/png,image/webp" hidden />
+  </div>
+
+  <!-- Editor body -->
+  <div id="artEditorMount" class="art-editor-mount" aria-label="Contenu de l'article"></div>
+
+  <div class="art-divider"></div>
+
+  <!-- Sidebar (becomes stacked sections on mobile) -->
+  <aside class="art-sidebar">
+    <div class="art-side-block">
+      <label class="art-label">
+        <span>Identifiant URL (slug) *</span>
+        <input
+          type="text"
+          id="artSlug"
+          pattern="[a-z0-9\-]+"
+          placeholder="ex. comment-choisir-son-parfum"
+          maxlength="96"
+          readonly={isEdit}
+        />
+        <small>Lettres minuscules, chiffres, tirets uniquement. Une fois publié, évitez de le modifier.</small>
+      </label>
+    </div>
+
+    <div class="art-side-block">
+      <label class="art-label">
+        <span>Tags</span>
+        <div class="art-tags" id="artTagsWrap">
+          <div class="art-tag-chips" id="artTagChips"></div>
+          <input type="text" id="artTagInput" placeholder="Ajouter un tag (Entrée pour valider)" autocomplete="off" list="artTagSuggestions" />
+          <datalist id="artTagSuggestions"></datalist>
+        </div>
+        <small>Maximum 8 tags. Réutilisez les tags existants quand c'est possible.</small>
+      </label>
+    </div>
+
+    <div class="art-side-block">
+      <label class="art-label">
+        <span>Extrait (240 caractères max)</span>
+        <textarea id="artExcerpt" rows="3" maxlength="240" placeholder="Résumé court pour le partage et le SEO"></textarea>
+        <div class="art-row-between">
+          <small><span id="artExcerptCount">0</span>/240</small>
+          <button type="button" class="art-link-btn" id="artExcerptAuto">Auto-générer depuis le contenu</button>
+        </div>
+      </label>
+    </div>
+
+    <details class="art-side-block art-seo">
+      <summary>Options SEO</summary>
+      <label class="art-label">
+        <span>Titre meta</span>
+        <input type="text" id="artSeoTitle" maxlength="200" placeholder="Par défaut : titre de l'article" />
+      </label>
+      <label class="art-label">
+        <span>Description meta</span>
+        <textarea id="artSeoDesc" rows="2" maxlength="320" placeholder="Par défaut : extrait"></textarea>
+      </label>
+      <label class="art-label">
+        <span>URL canonique</span>
+        <input type="url" id="artSeoCanonical" placeholder="https://thedadios.com/journal/..." />
+      </label>
+    </details>
+  </aside>
+
+  <!-- Footer bar (sticky) -->
+  <div class="art-footer" id="artFooter">
+    <div class="art-footer-left">
+      <span class="art-status" id="artStatusBadge"></span>
+      <span class="art-saved" id="artSavedHint"></span>
+    </div>
+    <div class="art-footer-right">
+      <a id="artPreviewLink" class="btn btn-outline btn-sm" target="_blank" rel="noopener">Aperçu</a>
+      <button type="button" id="artSaveDraft" class="btn btn-outline btn-sm">Enregistrer brouillon</button>
+      <button type="button" id="artPublishBtn" class="btn btn-primary btn-sm">Publier</button>
+    </div>
+  </div>
+
+  <p id="artGlobalErr" class="art-global-err hidden"></p>
+</div>
+
+<!--
+  This component is markup-only on purpose. The host page (currently
+  src/pages/admin/articles/new.astro) calls initArticleEditor() from
+  src/scripts/articleEditor.js once it has decided whether we're creating
+  or editing — which avoids a race between the editor's script and the
+  page's data fetch.
+-->
+
+
+<style>
+  .art-editor {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 24px 24px 140px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  .art-title,
+  .art-subtitle {
+    width: 100%;
+    border: none;
+    background: transparent;
+    font-family: var(--font-display);
+    color: var(--ink);
+    padding: 4px 0;
+  }
+  .art-title {
+    font-size: clamp(32px, 4.4vw, 48px);
+    font-weight: 500;
+    line-height: 1.05;
+  }
+  .art-subtitle {
+    font-size: clamp(18px, 2.2vw, 22px);
+    color: var(--ink-soft);
+    font-style: italic;
+  }
+  .art-title:focus,
+  .art-subtitle:focus { outline: none; }
+  .art-title::placeholder,
+  .art-subtitle::placeholder { color: var(--ink-mute); opacity: 0.6; }
+
+  .art-divider { height: 1px; background: var(--border); }
+
+  .art-section { display: flex; flex-direction: column; gap: 12px; }
+  .art-section-head strong {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 16px;
+    color: var(--emerald);
+  }
+  .art-section-head small { color: var(--ink-mute); font-size: 12px; }
+
+  .art-hero-row {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 18px;
+    align-items: start;
+  }
+  .art-hero-preview {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    border-radius: 10px;
+    background: var(--cream-warm);
+    border: 1.5px dashed var(--border-strong);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-mute);
+    font-size: 12px;
+    text-align: center;
+    padding: 12px;
+  }
+  .art-hero-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .art-hero-empty { font-style: italic; }
+  .art-hero-controls { display: flex; flex-direction: column; gap: 10px; }
+  .art-hero-status { font-size: 12px; color: var(--ink-mute); min-height: 18px; margin: 0; }
+  .art-hero-status.success { color: var(--emerald); }
+  .art-hero-status.error { color: #B23A1F; }
+
+  .art-label { display: block; }
+  .art-label > span {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  .art-label input,
+  .art-label textarea {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    background: var(--cream-soft);
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--ink);
+    box-sizing: border-box;
+  }
+  .art-label textarea { resize: vertical; min-height: 60px; }
+  .art-label input:focus,
+  .art-label textarea:focus { outline: none; border-color: var(--emerald); }
+  .art-label small { display: block; font-size: 11px; color: var(--ink-mute); margin-top: 4px; line-height: 1.5; }
+  .art-row-between { display: flex; justify-content: space-between; align-items: baseline; margin-top: 4px; }
+
+  /* ===== Toolbar ===== */
+  .art-toolbar {
+    position: sticky;
+    top: 73px;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 10px;
+    background: var(--cream);
+    border: 1px solid var(--border-strong);
+    border-radius: 10px;
+    flex-wrap: wrap;
+    box-shadow: 0 4px 18px rgba(5, 26, 14, 0.05);
+  }
+  .art-toolbar button {
+    min-width: 34px;
+    height: 32px;
+    padding: 0 8px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--ink);
+    border-radius: 6px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .art-toolbar button:hover { background: var(--cream-warm); border-color: var(--border); }
+  .art-toolbar button.active {
+    background: var(--emerald);
+    color: var(--cream);
+    border-color: var(--emerald);
+  }
+  .art-toolbar-sep {
+    width: 1px;
+    height: 22px;
+    background: var(--border);
+    margin: 0 4px;
+  }
+
+  /* ===== TipTap content ===== */
+  .art-editor-mount {
+    min-height: 420px;
+    padding: 24px 28px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--cream-soft);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.75;
+    color: var(--ink);
+  }
+  .art-editor-mount :global(.ProseMirror) {
+    outline: none;
+    min-height: 380px;
+  }
+  .art-editor-mount :global(.ProseMirror p.is-editor-empty:first-child::before) {
+    content: attr(data-placeholder);
+    color: var(--ink-mute);
+    float: left;
+    height: 0;
+    pointer-events: none;
+    font-style: italic;
+  }
+  .art-editor-mount :global(h2) {
+    font-family: var(--font-display);
+    font-size: 28px;
+    margin: 1.4em 0 0.4em;
+    color: var(--emerald);
+    font-weight: 500;
+  }
+  .art-editor-mount :global(h3) {
+    font-family: var(--font-display);
+    font-size: 22px;
+    margin: 1.2em 0 0.4em;
+    color: var(--ink);
+    font-weight: 500;
+  }
+  .art-editor-mount :global(p) { margin: 0 0 1em; }
+  .art-editor-mount :global(blockquote) {
+    border-left: 3px solid var(--gold);
+    padding: 4px 16px;
+    margin: 1em 0;
+    font-style: italic;
+    color: var(--ink-soft);
+  }
+  .art-editor-mount :global(ul),
+  .art-editor-mount :global(ol) { padding-left: 1.5em; margin: 0 0 1em; }
+  .art-editor-mount :global(li) { margin: 0.2em 0; }
+  .art-editor-mount :global(img) {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 1em auto;
+    border-radius: 8px;
+  }
+  .art-editor-mount :global(a) {
+    color: var(--emerald);
+    text-decoration: underline;
+  }
+
+  /* ===== Sidebar / side blocks ===== */
+  .art-sidebar { display: flex; flex-direction: column; gap: 20px; }
+  .art-side-block {
+    background: var(--cream-soft);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+  }
+  .art-side-block summary {
+    cursor: pointer;
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--gold-soft);
+    margin-bottom: 12px;
+  }
+  .art-side-block.art-seo summary { margin-bottom: 0; }
+  .art-side-block.art-seo[open] summary { margin-bottom: 12px; }
+
+  /* Tag chips */
+  .art-tags {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .art-tag-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-height: 0;
+  }
+  .art-tag-chips:empty { display: none; }
+  .art-tag-chip {
+    background: var(--emerald);
+    color: var(--cream);
+    padding: 4px 10px 4px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .art-tag-chip button {
+    background: transparent;
+    border: none;
+    color: var(--gold);
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+  }
+
+  /* Link helpers */
+  .art-link-btn {
+    background: none;
+    border: none;
+    color: var(--emerald);
+    font-size: 12px;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: underline;
+    font-family: var(--font-body);
+  }
+  .art-link-btn:hover { color: var(--emerald-dark); }
+
+  .hidden { display: none !important; }
+
+  /* ===== Footer bar (sticky) ===== */
+  .art-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 60;
+    background: var(--cream);
+    border-top: 1px solid var(--border);
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin: 0 -24px -140px;
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+  .art-footer-left { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .art-footer-right { display: flex; gap: 8px; flex-wrap: wrap; }
+  .art-status {
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    background: var(--cream-warm);
+    color: var(--ink-mute);
+    border: 1px solid var(--border);
+  }
+  .art-status.published {
+    background: var(--emerald);
+    color: var(--cream);
+    border-color: var(--emerald);
+  }
+  .art-status.draft {
+    background: var(--cream-warm);
+    color: #A87C45;
+    border-color: #c79e62;
+  }
+  .art-saved {
+    font-size: 12px;
+    color: var(--ink-mute);
+    font-style: italic;
+  }
+  .art-saved.success { color: var(--emerald); }
+  .art-saved.error { color: #B23A1F; }
+
+  .art-global-err {
+    background: rgba(178, 58, 31, 0.08);
+    border: 1px solid #B23A1F;
+    color: #8a2a14;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin: 0;
+  }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 880px) {
+    .art-editor { padding: 16px 16px 200px; }
+    .art-hero-row { grid-template-columns: 1fr; }
+    .art-toolbar { top: 60px; }
+    .art-editor-mount { padding: 18px 18px; }
+    .art-footer {
+      margin: 0 -16px -200px;
+      padding-left: 16px;
+      padding-right: 16px;
+    }
+  }
+  @media (max-width: 480px) {
+    .art-toolbar { padding: 6px 6px; }
+    .art-toolbar button { min-width: 30px; height: 30px; font-size: 13px; padding: 0 6px; }
+    .art-footer-right { width: 100%; justify-content: stretch; }
+    .art-footer-right .btn { flex: 1; }
+  }
+</style>
+

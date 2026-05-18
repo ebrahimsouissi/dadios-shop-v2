@@ -8,19 +8,22 @@
  *   POST /api/customer     — customer auth & profile: signup, login, me, update, logout
  *   POST /api/orders       — orders: create, list (own), get (own), admin_list, admin_update
  *   POST /api/wishlist     — wishlist: list, add, remove, sync (all session-gated)
+ *   POST /api/articles     — journal: list_published, get_published, related, admin_list,
+ *                            admin_get, admin_upsert, admin_delete, admin_publish, admin_unpublish
  *
  * Required bindings (set in Cloudflare dashboard → Worker → Settings):
  *   LOYALTY_KV   (KV namespace) — already configured
  *   PRODUCTS_KV  (KV namespace) — KV namespace "dadios-products"
  *   CUSTOMERS_KV (KV namespace) — KV namespace "dadios-customers"
  *                                 (also stores wishlist:${phone} → [slugs])
- *   ORDERS_KV    (KV namespace) — *** NEW for Phase 6b ***
+ *   ORDERS_KV    (KV namespace) — KV namespace "dadios-orders"
+ *   ARTICLES_KV  (KV namespace) — *** NEW for Phase 10 ***
  *                                  Steps:
  *                                    1. Cloudflare dashboard → Workers KV → Create namespace
- *                                       Name: "dadios-orders"
+ *                                       Name: "dadios-articles"
  *                                    2. Worker → Settings → Variables → KV Namespace Bindings
- *                                       Variable name: ORDERS_KV
- *                                       Bind to: dadios-orders
+ *                                       Variable name: ARTICLES_KV
+ *                                       Bind to: dadios-articles
  *                                    3. Save & deploy the Worker
  *   IMAGES       (R2 bucket)    — R2 bucket "dadios-images"
  *
@@ -839,6 +842,438 @@ async function handleWishlist(body, env) {
 }
 
 // ============================================================
+// ARTICLES (Journal / blog)
+//   KV namespace binding: ARTICLES_KV
+//   Keys:
+//     article:${slug}                          — full article JSON
+//     slug:${slug}                             — "1" marker (existence check)
+//     published:${publishedAt}:${slug}         — "1" marker, published articles
+//     tag:${tagLowercase}:${slug}              — "1" marker, by-tag lookup
+// ============================================================
+
+const ARTICLE_ALLOWED_TAGS = new Set([
+  'p', 'br', 'strong', 'em', 'u', 'a', 'h2', 'h3',
+  'ul', 'ol', 'li', 'blockquote', 'img', 'figure', 'figcaption',
+]);
+const ARTICLE_ALLOWED_ATTRS = {
+  a:           ['href', 'target', 'rel', 'class'],
+  img:         ['src', 'alt', 'width', 'height', 'class'],
+  figure:      ['class'],
+  figcaption:  ['class'],
+  blockquote:  ['class'],
+  '*':         ['class'],
+};
+const ARTICLE_ALLOWED_CLASSES = new Set(['article-img', 'article-quote']);
+
+/**
+ * Tight allowlist HTML sanitizer for TipTap output. Workers don't have
+ * DOMParser; this regex pass strips disallowed tags/attrs while keeping
+ * inner text content. Anything not on the allowlist is removed.
+ *
+ * Hardened against:
+ *   - <script>, <style>, comments → stripped wholesale
+ *   - javascript: / data: URLs on href/src → dropped
+ *   - inline event handlers (onclick=...) → not in allowlist, dropped
+ *   - target=_blank without rel=noopener → rel auto-injected
+ */
+function sanitizeArticleHtml(html) {
+  if (typeof html !== 'string') return '';
+  // Strip script/style blocks + HTML comments before any further processing
+  let s = html
+    .replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, '')
+    .replace(/<!--[\s\S]*?-->/g, '');
+  return s.replace(
+    /<(\/?)([a-zA-Z][a-zA-Z0-9]*)\s*([^>]*?)\s*(\/?)>/g,
+    (match, slash, name, rest) => {
+      const tag = name.toLowerCase();
+      if (!ARTICLE_ALLOWED_TAGS.has(tag)) return '';
+      if (slash) return `</${tag}>`;
+      const allowed = (ARTICLE_ALLOWED_ATTRS[tag] || []).concat(
+        ARTICLE_ALLOWED_ATTRS['*'] || []
+      );
+      const attrs = [];
+      const attrRegex =
+        /([a-zA-Z][a-zA-Z0-9_-]*)(\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g;
+      let m;
+      let hasTargetBlank = false;
+      let relSeen = false;
+      while ((m = attrRegex.exec(rest))) {
+        const k = m[1].toLowerCase();
+        if (!allowed.includes(k)) continue;
+        let v = m[3] != null ? m[3] : m[4] != null ? m[4] : m[5] != null ? m[5] : '';
+        if (k === 'href' || k === 'src') {
+          if (!/^(https?:\/\/|\/)/i.test(v)) continue;
+        }
+        if (k === 'class') {
+          const classes = v.split(/\s+/).filter((c) => ARTICLE_ALLOWED_CLASSES.has(c));
+          if (!classes.length) continue;
+          v = classes.join(' ');
+        }
+        if (k === 'target') {
+          if (v !== '_blank') continue;
+          hasTargetBlank = true;
+        }
+        if (k === 'rel') {
+          v = 'noopener noreferrer';
+          relSeen = true;
+        }
+        if (k === 'width' || k === 'height') {
+          if (!/^\d+$/.test(v)) continue;
+        }
+        const escaped = String(v)
+          .replace(/&/g, '&amp;')
+          .replace(/"/g, '&quot;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
+        attrs.push(`${k}="${escaped}"`);
+      }
+      // If author opened a target=_blank link, force a safe rel.
+      if (tag === 'a' && hasTargetBlank && !relSeen) {
+        attrs.push('rel="noopener noreferrer"');
+      }
+      const selfClosing = tag === 'img' || tag === 'br';
+      return `<${tag}${attrs.length ? ' ' + attrs.join(' ') : ''}${selfClosing ? ' /' : ''}>`;
+    }
+  );
+}
+
+function htmlToPlainText(html) {
+  return String(html || '')
+    .replace(/<\/(p|h2|h3|li|blockquote|figcaption)>/gi, ' ')
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function computeReadingTime(text) {
+  const words = String(text || '').trim().split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.ceil(words / 200));
+}
+
+function safeArticleSlug(slug) {
+  return String(slug || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+    .slice(0, 96);
+}
+
+/**
+ * Listing payload — drops heavy fields the listing UI doesn't need
+ * (contentText for search, full seo block). Detail endpoints return
+ * the full article.
+ */
+function articleListingPayload(a) {
+  if (!a) return null;
+  const { contentText, seo, ...rest } = a;
+  return rest;
+}
+
+async function handleArticles(body, env) {
+  const kv = env.ARTICLES_KV;
+  if (!kv) return json({ ok: false, error: "KV not bound (ARTICLES_KV)" }, 500);
+  const action = body?.action;
+  if (!action) return json({ ok: false, error: "Missing action" }, 400);
+
+  // ===== Public: list published =====
+  if (action === "list_published") {
+    const tag = body.tag ? String(body.tag).toLowerCase() : null;
+    const limit = Math.max(1, Math.min(100, Number(body.limit) || 50));
+    const offset = Math.max(0, Number(body.offset) || 0);
+
+    let slugs;
+    if (tag) {
+      const list = await kv.list({ prefix: `tag:${tag}:` });
+      slugs = new Set(list.keys.map((k) => k.name.substring(`tag:${tag}:`.length)));
+    } else {
+      const list = await kv.list({ prefix: "published:" });
+      slugs = new Set();
+      list.keys.forEach((k) => {
+        // key shape: published:${publishedAt}:${slug}
+        const i = k.name.lastIndexOf(":");
+        if (i > 0) slugs.add(k.name.substring(i + 1));
+      });
+    }
+
+    const articles = [];
+    await Promise.all(
+      [...slugs].map(async (s) => {
+        const raw = await kv.get(`article:${s}`);
+        if (!raw) return;
+        try {
+          const a = JSON.parse(raw);
+          if (a.status === "published") articles.push(articleListingPayload(a));
+        } catch {}
+      })
+    );
+    articles.sort((a, b) => (b.publishedAt || "").localeCompare(a.publishedAt || ""));
+    return json({
+      ok: true,
+      articles: articles.slice(offset, offset + limit),
+      total: articles.length,
+    });
+  }
+
+  // ===== Public: single published =====
+  if (action === "get_published") {
+    const slug = safeArticleSlug(body.slug);
+    if (!slug) return json({ ok: false, error: "Champ requis: slug" }, 400);
+    const raw = await kv.get(`article:${slug}`);
+    if (!raw) return json({ ok: false, error: "Article introuvable" }, 404);
+    let article;
+    try { article = JSON.parse(raw); }
+    catch { return json({ ok: false, error: "Article corrompu" }, 500); }
+    if (article.status !== "published") {
+      return json({ ok: false, error: "Article introuvable" }, 404);
+    }
+    return json({ ok: true, article });
+  }
+
+  // ===== Public: related =====
+  if (action === "related") {
+    const slug = safeArticleSlug(body.slug);
+    if (!slug) return json({ ok: false, error: "Champ requis: slug" }, 400);
+    const limit = Math.max(1, Math.min(10, Number(body.limit) || 3));
+    const raw = await kv.get(`article:${slug}`);
+    if (!raw) return json({ ok: true, articles: [] });
+    let current;
+    try { current = JSON.parse(raw); }
+    catch { return json({ ok: true, articles: [] }); }
+    const tags = (current.tags || []).map((t) => String(t).toLowerCase());
+    if (!tags.length) return json({ ok: true, articles: [] });
+
+    const candidate = new Set();
+    await Promise.all(
+      tags.map(async (t) => {
+        const list = await kv.list({ prefix: `tag:${t}:` });
+        list.keys.forEach((k) => {
+          const s = k.name.substring(`tag:${t}:`.length);
+          if (s && s !== slug) candidate.add(s);
+        });
+      })
+    );
+
+    const found = [];
+    await Promise.all(
+      [...candidate].map(async (s) => {
+        const r = await kv.get(`article:${s}`);
+        if (!r) return;
+        try {
+          const a = JSON.parse(r);
+          if (a.status === "published") found.push(articleListingPayload(a));
+        } catch {}
+      })
+    );
+    found.sort((a, b) => (b.publishedAt || "").localeCompare(a.publishedAt || ""));
+    return json({ ok: true, articles: found.slice(0, limit) });
+  }
+
+  // ===== Admin: list (drafts + published) =====
+  if (action === "admin_list") {
+    if (!requireAdmin(body, env)) return json({ ok: false, error: "Unauthorized" }, 401);
+    const statusFilter = body.status;
+    const list = await kv.list({ prefix: "article:" });
+    const articles = [];
+    await Promise.all(
+      list.keys.map(async (k) => {
+        const raw = await kv.get(k.name);
+        if (!raw) return;
+        try {
+          const a = JSON.parse(raw);
+          if (!statusFilter || a.status === statusFilter) {
+            articles.push(articleListingPayload(a));
+          }
+        } catch {}
+      })
+    );
+    articles.sort((a, b) => {
+      const ad = a.publishedAt || a.updatedAt || a.createdAt || "";
+      const bd = b.publishedAt || b.updatedAt || b.createdAt || "";
+      return bd.localeCompare(ad);
+    });
+    return json({ ok: true, articles });
+  }
+
+  // ===== Admin: single article (drafts allowed) =====
+  if (action === "admin_get") {
+    if (!requireAdmin(body, env)) return json({ ok: false, error: "Unauthorized" }, 401);
+    const slug = safeArticleSlug(body.slug);
+    if (!slug) return json({ ok: false, error: "Champ requis: slug" }, 400);
+    const raw = await kv.get(`article:${slug}`);
+    if (!raw) return json({ ok: false, error: "Article introuvable" }, 404);
+    try { return json({ ok: true, article: JSON.parse(raw) }); }
+    catch { return json({ ok: false, error: "Article corrompu" }, 500); }
+  }
+
+  // ===== Admin: upsert =====
+  if (action === "admin_upsert") {
+    if (!requireAdmin(body, env)) return json({ ok: false, error: "Unauthorized" }, 401);
+    const incoming = body.article;
+    if (!incoming) return json({ ok: false, error: "Champ requis: article" }, 400);
+
+    const slug = safeArticleSlug(incoming.slug);
+    if (!slug) return json({ ok: false, error: "Slug invalide" }, 400);
+    const title = String(incoming.title || "").trim();
+    if (!title) return json({ ok: false, error: "Champ requis: title" }, 400);
+
+    const status = incoming.status === "published" ? "published" : "draft";
+    const content = sanitizeArticleHtml(incoming.content || "");
+    if (status === "published" && !content) {
+      return json({ ok: false, error: "Le contenu est requis pour publier" }, 400);
+    }
+    const contentText = htmlToPlainText(content);
+    const readingTime = computeReadingTime(contentText);
+    const subtitle = String(incoming.subtitle || "").trim();
+    const heroImage = incoming.heroImage ? String(incoming.heroImage).trim() : null;
+    const heroAlt = String(incoming.heroAlt || "").trim();
+    const tags = Array.isArray(incoming.tags)
+      ? incoming.tags.map((t) => String(t || "").trim()).filter(Boolean).slice(0, 8)
+      : [];
+    const author = String(incoming.author || "Dadios Fragrances").trim();
+
+    let excerpt = String(incoming.excerpt || "").trim();
+    if (!excerpt && contentText) {
+      excerpt = contentText.slice(0, 240);
+      if (contentText.length > 240) excerpt += "…";
+    }
+    excerpt = excerpt.slice(0, 240);
+
+    const seo = {
+      metaTitle: String((incoming.seo && incoming.seo.metaTitle) || "").trim(),
+      metaDescription: String((incoming.seo && incoming.seo.metaDescription) || "").trim(),
+      canonical: String((incoming.seo && incoming.seo.canonical) || "").trim(),
+    };
+
+    const existingRaw = await kv.get(`article:${slug}`);
+    let existing = null;
+    if (existingRaw) {
+      try { existing = JSON.parse(existingRaw); } catch {}
+    }
+
+    const now = new Date().toISOString();
+    let publishedAt = existing ? existing.publishedAt : null;
+    if (status === "published" && !publishedAt) publishedAt = now;
+    if (status !== "published") {
+      // Keep the original publishedAt for record; only clear it via explicit unpublish.
+      // (Drafts: we keep publishedAt as-is so re-publishing preserves history.)
+    }
+
+    const article = {
+      slug,
+      title,
+      subtitle,
+      excerpt,
+      content,
+      contentText,
+      heroImage,
+      heroAlt,
+      tags,
+      author,
+      status,
+      publishedAt: status === "published" ? publishedAt : (existing?.publishedAt || null),
+      createdAt: existing?.createdAt || now,
+      updatedAt: now,
+      readingTime,
+      seo,
+    };
+
+    await kv.put(`article:${slug}`, JSON.stringify(article));
+    await kv.put(`slug:${slug}`, "1");
+
+    // Published index management
+    const wasPub = existing && existing.status === "published" && existing.publishedAt;
+    const willPub = status === "published" && publishedAt;
+    if (wasPub && (!willPub || existing.publishedAt !== publishedAt)) {
+      await kv.delete(`published:${existing.publishedAt}:${slug}`);
+    }
+    if (willPub) {
+      await kv.put(`published:${publishedAt}:${slug}`, "1");
+    }
+
+    // Tag index management
+    const oldTags = existing && Array.isArray(existing.tags)
+      ? existing.tags.map((t) => String(t).toLowerCase())
+      : [];
+    const newTagsLower = tags.map((t) => String(t).toLowerCase());
+    await Promise.all([
+      ...oldTags
+        .filter((t) => !newTagsLower.includes(t))
+        .map((t) => kv.delete(`tag:${t}:${slug}`)),
+      ...newTagsLower.map((t) => kv.put(`tag:${t}:${slug}`, "1")),
+    ]);
+
+    return json({ ok: true, article });
+  }
+
+  // ===== Admin: delete =====
+  if (action === "admin_delete") {
+    if (!requireAdmin(body, env)) return json({ ok: false, error: "Unauthorized" }, 401);
+    const slug = safeArticleSlug(body.slug);
+    if (!slug) return json({ ok: false, error: "Champ requis: slug" }, 400);
+    const raw = await kv.get(`article:${slug}`);
+    if (!raw) return json({ ok: false, error: "Article introuvable" }, 404);
+    let existing = {};
+    try { existing = JSON.parse(raw); } catch {}
+
+    const ops = [
+      kv.delete(`article:${slug}`),
+      kv.delete(`slug:${slug}`),
+    ];
+    if (existing.publishedAt) {
+      ops.push(kv.delete(`published:${existing.publishedAt}:${slug}`));
+    }
+    if (Array.isArray(existing.tags)) {
+      for (const t of existing.tags) {
+        ops.push(kv.delete(`tag:${String(t).toLowerCase()}:${slug}`));
+      }
+    }
+    await Promise.all(ops);
+    return json({ ok: true });
+  }
+
+  // ===== Admin: publish / unpublish (convenience) =====
+  if (action === "admin_publish" || action === "admin_unpublish") {
+    if (!requireAdmin(body, env)) return json({ ok: false, error: "Unauthorized" }, 401);
+    const slug = safeArticleSlug(body.slug);
+    if (!slug) return json({ ok: false, error: "Champ requis: slug" }, 400);
+    const raw = await kv.get(`article:${slug}`);
+    if (!raw) return json({ ok: false, error: "Article introuvable" }, 404);
+    let article;
+    try { article = JSON.parse(raw); }
+    catch { return json({ ok: false, error: "Article corrompu" }, 500); }
+
+    const willPublish = action === "admin_publish";
+    if (willPublish && !article.content) {
+      return json({ ok: false, error: "Le contenu est requis pour publier" }, 400);
+    }
+    const wasPub = article.status === "published" && article.publishedAt;
+    article.status = willPublish ? "published" : "draft";
+    article.updatedAt = new Date().toISOString();
+    if (willPublish && !article.publishedAt) {
+      article.publishedAt = article.updatedAt;
+    }
+    await kv.put(`article:${slug}`, JSON.stringify(article));
+    if (willPublish && article.publishedAt) {
+      await kv.put(`published:${article.publishedAt}:${slug}`, "1");
+    } else if (!willPublish && wasPub) {
+      await kv.delete(`published:${article.publishedAt}:${slug}`);
+    }
+    return json({ ok: true, article });
+  }
+
+  return json({ ok: false, error: "Unknown articles action: " + action }, 400);
+}
+
+// ============================================================
 // Admin handler (product CRUD)
 // ============================================================
 async function handleAdmin(body, env) {
@@ -962,6 +1397,14 @@ export default {
       try { body = await request.json(); }
       catch { return json({ ok: false, error: "Invalid JSON" }, 400); }
       return handleWishlist(body, env);
+    }
+
+    // ===== Articles (Journal) =====
+    if (url.pathname === "/api/articles" && request.method === "POST") {
+      let body;
+      try { body = await request.json(); }
+      catch { return json({ ok: false, error: "Invalid JSON" }, 400); }
+      return handleArticles(body, env);
     }
 
     // ===== Image upload =====
