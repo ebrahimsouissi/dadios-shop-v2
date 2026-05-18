@@ -2,14 +2,15 @@
  * DADIOS Fragrance — Cloudflare Worker v2
  *
  * Endpoints:
- *   POST /api/loyalty      — existing loyalty card system (preserved as-is)
- *   GET  /api/products     — public, returns all products (the new shop catalog reads this)
- *   POST /api/admin        — admin-only: product CRUD, image upload, customer mgmt, orders mgmt
- *   POST /api/customer     — customer auth & profile: signup, login, me, update, logout
- *   POST /api/orders       — orders: create, list (own), get (own), admin_list, admin_update
- *   POST /api/wishlist     — wishlist: list, add, remove, sync (all session-gated)
- *   POST /api/articles     — journal: list_published, get_published, related, admin_list,
- *                            admin_get, admin_upsert, admin_delete, admin_publish, admin_unpublish
+ *   POST /api/loyalty          — existing loyalty card system (VIP customers get 2× stamps)
+ *   GET  /api/products         — anonymous public catalog (hides vipOnly + wholesalePrice)
+ *   POST /api/products         — tier-aware catalog (action: list, optional sessionToken)
+ *   POST /api/admin            — admin-only: products, image upload, customers, orders, customer tiers
+ *   POST /api/customer         — customer auth & profile: signup, login, me, update, logout
+ *   POST /api/orders           — orders: create, list (own), get (own), admin_list, admin_update
+ *   POST /api/wishlist         — wishlist: list, add, remove, sync (all session-gated)
+ *   POST /api/articles         — journal: list_published, get_published, related, admin_*
+ *   POST /api/perfume-requests — VIP concierge: create, list, admin_list, admin_update
  *
  * Required bindings (set in Cloudflare dashboard → Worker → Settings):
  *   LOYALTY_KV   (KV namespace) — already configured
@@ -17,13 +18,14 @@
  *   CUSTOMERS_KV (KV namespace) — KV namespace "dadios-customers"
  *                                 (also stores wishlist:${phone} → [slugs])
  *   ORDERS_KV    (KV namespace) — KV namespace "dadios-orders"
- *   ARTICLES_KV  (KV namespace) — *** NEW for Phase 10 ***
+ *   ARTICLES_KV  (KV namespace) — KV namespace "dadios-articles"
+ *   PERFUME_REQUESTS_KV (KV namespace) — *** NEW for Phase 7a (VIP concierge) ***
  *                                  Steps:
  *                                    1. Cloudflare dashboard → Workers KV → Create namespace
- *                                       Name: "dadios-articles"
+ *                                       Name: "dadios-perfume-requests"
  *                                    2. Worker → Settings → Variables → KV Namespace Bindings
- *                                       Variable name: ARTICLES_KV
- *                                       Bind to: dadios-articles
+ *                                       Variable name: PERFUME_REQUESTS_KV
+ *                                       Bind to: dadios-perfume-requests
  *                                    3. Save & deploy the Worker
  *   IMAGES       (R2 bucket)    — R2 bucket "dadios-images"
  *
@@ -113,6 +115,13 @@ async function adminUpsertProduct(body, env) {
   if (!product.slug) {
     return json({ ok: false, error: "Could not generate slug" }, 400);
   }
+
+  // Phase 7a: normalize the two new tier fields so admin-saved products
+  // have a deterministic shape. Either explicit values from the form,
+  // or harmless defaults (vipOnly:false, wholesalePrice:null).
+  product.vipOnly = !!product.vipOnly;
+  const wp = Number(product.wholesalePrice);
+  product.wholesalePrice = (isFinite(wp) && wp > 0) ? wp : null;
 
   product.updatedAt = new Date().toISOString();
 
@@ -315,7 +324,23 @@ async function handleLoyalty(body, env) {
     const raw = await kv.get(`card:${code}`);
     if (!raw) return json({ ok: false, error: "Carte non trouvée" }, 404);
     const card = normalizeCard(JSON.parse(raw));
-    card.stamps += qty;
+
+    // Phase 7a: VIP customers earn 2× stamps per qty. Silent — the live
+    // thedadios.com loyalty UI doesn't need to know; doubled stamps just
+    // appear in the saved card. Non-VIP cards (or cards with no matching
+    // customer record) keep the original qty.
+    let effectiveQty = qty;
+    if (env.CUSTOMERS_KV && card.phone) {
+      try {
+        const normalized = normalizePhone(card.phone);
+        const custRaw = await env.CUSTOMERS_KV.get(`customer:${normalized}`);
+        if (custRaw) {
+          const c = JSON.parse(custRaw);
+          if (c && c.tier === "vip") effectiveQty = qty * 2;
+        }
+      } catch {}
+    }
+    card.stamps += effectiveQty;
     card.rewards += Math.floor(card.stamps / 8);
     card.stamps = card.stamps % 8;
 
@@ -389,6 +414,25 @@ function sanitizeCustomer(customer) {
   return rest;
 }
 
+/**
+ * Phase 7a: tier defaults for back-compat. Existing customer records
+ * from Phase 6a don't have a `tier` field — treat them as "regular".
+ * Reseller-only fields are surfaced as null when not set, so the client
+ * never gets `undefined` and can render conditionally with a single
+ * truthy check.
+ */
+const VALID_CUSTOMER_TIERS = ['regular', 'vip', 'reseller'];
+function normalizeCustomerTier(customer) {
+  if (!customer || typeof customer !== 'object') return customer;
+  if (!VALID_CUSTOMER_TIERS.includes(customer.tier)) customer.tier = 'regular';
+  if (customer.tierGrantedAt === undefined) customer.tierGrantedAt = null;
+  if (customer.tierGrantedBy === undefined) customer.tierGrantedBy = null;
+  if (customer.companyName === undefined) customer.companyName = null;
+  if (customer.matriculeFiscale === undefined) customer.matriculeFiscale = null;
+  if (customer.deliveryAddress === undefined) customer.deliveryAddress = null;
+  return customer;
+}
+
 async function getLoyaltyCardByCode(env, code) {
   if (!env.LOYALTY_KV || !code) return null;
   const raw = await env.LOYALTY_KV.get(`card:${code}`);
@@ -416,6 +460,7 @@ async function findLoyaltyCardByPhone(env, normalizedPhone) {
 }
 
 async function buildCustomerPayload(env, customer) {
+  normalizeCustomerTier(customer);
   const safe = sanitizeCustomer(customer);
   let loyalty = null;
   if (customer.loyaltyCode) {
@@ -546,15 +591,29 @@ async function handleCustomer(body, env) {
     return json({ ok: true, customer: await buildCustomerPayload(env, customer) });
   }
 
-  // ===== update profile (name, address only) =====
+  // ===== update profile (name, address; resellers may also update
+  //                       companyName/matriculeFiscale/deliveryAddress) =====
   if (action === "update") {
     const sess = await getSession(env, body.sessionToken);
     if (!sess) return json({ ok: false, error: "Session invalide" }, 401);
     const raw = await kv.get(`customer:${sess.phone}`);
     if (!raw) return json({ ok: false, error: "Compte introuvable" }, 404);
     const customer = JSON.parse(raw);
+    normalizeCustomerTier(customer);
     customer.name = String(body.name || "").trim();
     customer.address = String(body.address || "").trim();
+    // Reseller-only fields. Accept them at all tiers (no harm if stored
+    // on a regular/VIP record — never displayed to non-resellers), so a
+    // future re-grant restores the info.
+    if (body.companyName !== undefined) {
+      customer.companyName = String(body.companyName || "").trim() || null;
+    }
+    if (body.matriculeFiscale !== undefined) {
+      customer.matriculeFiscale = String(body.matriculeFiscale || "").trim() || null;
+    }
+    if (body.deliveryAddress !== undefined) {
+      customer.deliveryAddress = String(body.deliveryAddress || "").trim() || null;
+    }
     customer.updatedAt = new Date().toISOString();
     await kv.put(`customer:${sess.phone}`, JSON.stringify(customer));
     return json({ ok: true, customer: await buildCustomerPayload(env, customer) });
@@ -568,6 +627,54 @@ async function handleCustomer(body, env) {
   }
 
   return json({ ok: false, error: "Unknown customer action: " + action }, 400);
+}
+
+// ============================================================
+// PUBLIC PRODUCTS (POST /api/products) — tier-aware filtering
+//   action: "list"        — optional sessionToken
+//   Hides products marked vipOnly from non-VIP viewers.
+//   Strips wholesalePrice from non-reseller viewers (also enforced on
+//   the GET endpoint below — never trust the client).
+// ============================================================
+
+async function resolveViewerTier(env, sessionToken) {
+  if (!sessionToken || !env.CUSTOMERS_KV) return 'guest';
+  const sess = await getSession(env, sessionToken);
+  if (!sess) return 'guest';
+  const raw = await env.CUSTOMERS_KV.get(`customer:${sess.phone}`);
+  if (!raw) return 'guest';
+  try {
+    const c = JSON.parse(raw);
+    normalizeCustomerTier(c);
+    return c.tier || 'regular';
+  } catch { return 'guest'; }
+}
+
+function applyTierFilterToProducts(products, tier) {
+  const arr = Array.isArray(products) ? products : [];
+  let out = arr;
+  if (tier !== 'vip') out = out.filter((p) => !p.vipOnly);
+  if (tier !== 'reseller') {
+    out = out.map((p) => {
+      const { wholesalePrice, ...rest } = p;
+      return rest;
+    });
+  }
+  return out;
+}
+
+async function handleProductsList(body, env) {
+  const action = body?.action;
+  if (action !== 'list') {
+    return json({ ok: false, error: "Unknown products action: " + action }, 400);
+  }
+  const tier = await resolveViewerTier(env, body.sessionToken);
+  const products = await listProducts(env);
+  return json({
+    ok: true,
+    products: applyTierFilterToProducts(products, tier),
+    viewerTier: tier,
+  });
 }
 
 // ============================================================
@@ -1274,6 +1381,159 @@ async function handleArticles(body, env) {
 }
 
 // ============================================================
+// PERFUME REQUESTS (VIP concierge)
+//   KV namespace binding: PERFUME_REQUESTS_KV
+//   Keys:
+//     request:${id}                            — full request JSON
+//     phone:${normalizedPhone}:request:${id}   — marker for per-customer listing
+//
+// State machine:
+//   pending → in_progress | declined
+//   in_progress → fulfilled | declined
+//   fulfilled / declined are terminal
+// ============================================================
+
+const PERFUME_REQUEST_STATUSES = ["pending", "in_progress", "fulfilled", "declined"];
+const PERFUME_REQUEST_TRANSITIONS = {
+  pending: ["in_progress", "declined"],
+  in_progress: ["fulfilled", "declined"],
+  fulfilled: [],
+  declined: [],
+};
+
+async function handlePerfumeRequests(body, env) {
+  const kv = env.PERFUME_REQUESTS_KV;
+  if (!kv) return json({ ok: false, error: "KV not bound (PERFUME_REQUESTS_KV)" }, 500);
+
+  const action = body?.action;
+  if (!action) return json({ ok: false, error: "Missing action" }, 400);
+
+  // ===== create (VIP only) =====
+  if (action === "create") {
+    const sess = await getSession(env, body.sessionToken);
+    if (!sess) return json({ ok: false, error: "Session invalide" }, 401);
+    if (!env.CUSTOMERS_KV) {
+      return json({ ok: false, error: "KV not bound (CUSTOMERS_KV)" }, 500);
+    }
+    const custRaw = await env.CUSTOMERS_KV.get(`customer:${sess.phone}`);
+    if (!custRaw) return json({ ok: false, error: "Compte introuvable" }, 404);
+    let customer;
+    try { customer = JSON.parse(custRaw); }
+    catch { return json({ ok: false, error: "Compte corrompu" }, 500); }
+    normalizeCustomerTier(customer);
+    if (customer.tier !== "vip") {
+      return json({ ok: false, error: "Réservé aux membres VIP" }, 403);
+    }
+
+    const perfumeName = String(body.perfumeName || "").trim();
+    if (!perfumeName) {
+      return json({ ok: false, error: "Champ requis: perfumeName" }, 400);
+    }
+    const brand = String(body.brand || "").trim() || null;
+    const notes = String(body.notes || "").trim().slice(0, 1000) || null;
+
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
+    const request = {
+      id,
+      phone: sess.phone,
+      customerName: customer.name || null,
+      perfumeName,
+      brand,
+      notes,
+      status: "pending",
+      adminNotes: "",
+      createdAt: now,
+      updatedAt: now,
+    };
+    await Promise.all([
+      kv.put(`request:${id}`, JSON.stringify(request)),
+      kv.put(`phone:${sess.phone}:request:${id}`, "1"),
+    ]);
+    return json({ ok: true, requestId: id, request });
+  }
+
+  // ===== list (own) =====
+  if (action === "list") {
+    const sess = await getSession(env, body.sessionToken);
+    if (!sess) return json({ ok: false, error: "Session invalide" }, 401);
+    const list = await kv.list({ prefix: `phone:${sess.phone}:request:` });
+    const requests = [];
+    await Promise.all(
+      list.keys.map(async (k) => {
+        const id = k.name.substring(k.name.lastIndexOf(":") + 1);
+        if (!id) return;
+        const raw = await kv.get(`request:${id}`);
+        if (!raw) return;
+        try { requests.push(JSON.parse(raw)); } catch {}
+      })
+    );
+    requests.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+    return json({ ok: true, requests });
+  }
+
+  // ===== admin_list =====
+  if (action === "admin_list") {
+    if (!requireAdmin(body, env)) return json({ ok: false, error: "Unauthorized" }, 401);
+    const statusFilter = body.status;
+    if (statusFilter && !PERFUME_REQUEST_STATUSES.includes(statusFilter)) {
+      return json({ ok: false, error: "Statut invalide" }, 400);
+    }
+    const list = await kv.list({ prefix: "request:" });
+    const requests = [];
+    await Promise.all(
+      list.keys.map(async (k) => {
+        const raw = await kv.get(k.name);
+        if (!raw) return;
+        try {
+          const r = JSON.parse(raw);
+          if (!statusFilter || r.status === statusFilter) requests.push(r);
+        } catch {}
+      })
+    );
+    requests.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+    return json({ ok: true, requests });
+  }
+
+  // ===== admin_update (status + adminNotes) =====
+  if (action === "admin_update") {
+    if (!requireAdmin(body, env)) return json({ ok: false, error: "Unauthorized" }, 401);
+    const requestId = String(body.requestId || "");
+    if (!requestId) return json({ ok: false, error: "Champ requis: requestId" }, 400);
+    const raw = await kv.get(`request:${requestId}`);
+    if (!raw) return json({ ok: false, error: "Demande introuvable" }, 404);
+    let request;
+    try { request = JSON.parse(raw); }
+    catch { return json({ ok: false, error: "Demande corrompue" }, 500); }
+
+    if (body.status !== undefined && body.status !== null) {
+      const newStatus = String(body.status);
+      if (!PERFUME_REQUEST_STATUSES.includes(newStatus)) {
+        return json({ ok: false, error: "Statut invalide" }, 400);
+      }
+      if (newStatus !== request.status) {
+        const allowed = PERFUME_REQUEST_TRANSITIONS[request.status] || [];
+        if (!allowed.includes(newStatus)) {
+          return json(
+            { ok: false, error: `Transition interdite: ${request.status} → ${newStatus}` },
+            400
+          );
+        }
+        request.status = newStatus;
+      }
+    }
+    if (body.adminNotes !== undefined && body.adminNotes !== null) {
+      request.adminNotes = String(body.adminNotes || "").slice(0, 2000);
+    }
+    request.updatedAt = new Date().toISOString();
+    await kv.put(`request:${requestId}`, JSON.stringify(request));
+    return json({ ok: true, request });
+  }
+
+  return json({ ok: false, error: "Unknown perfume-requests action: " + action }, 400);
+}
+
+// ============================================================
 // Admin handler (product CRUD)
 // ============================================================
 async function handleAdmin(body, env) {
@@ -1313,6 +1573,91 @@ async function handleAdmin(body, env) {
     return json({ ok: true, customer: await buildCustomerPayload(env, customer) });
   }
 
+  // ===== Customer tier management (admin-only) =====
+  if (action === "admin_list_customers") {
+    if (!env.CUSTOMERS_KV) {
+      return json({ ok: false, error: "KV not bound (CUSTOMERS_KV)" }, 500);
+    }
+    const tierFilter = body.tier ? String(body.tier) : null;
+    if (tierFilter && !VALID_CUSTOMER_TIERS.includes(tierFilter)) {
+      return json({ ok: false, error: "Tier invalide" }, 400);
+    }
+    const search = String(body.search || "").trim().toLowerCase();
+
+    const list = await env.CUSTOMERS_KV.list({ prefix: "customer:" });
+    const customers = [];
+    await Promise.all(
+      list.keys.map(async (k) => {
+        const raw = await env.CUSTOMERS_KV.get(k.name);
+        if (!raw) return;
+        try {
+          const c = JSON.parse(raw);
+          normalizeCustomerTier(c);
+          if (tierFilter && c.tier !== tierFilter) return;
+          if (search) {
+            const hay = `${c.phone || ''} ${c.name || ''}`.toLowerCase();
+            if (!hay.includes(search)) return;
+          }
+          customers.push(sanitizeCustomer(c));
+        } catch {}
+      })
+    );
+    customers.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+    return json({ ok: true, customers });
+  }
+
+  if (action === "admin_grant_tier") {
+    if (!env.CUSTOMERS_KV) {
+      return json({ ok: false, error: "KV not bound (CUSTOMERS_KV)" }, 500);
+    }
+    const phone = normalizePhone(body.phone);
+    const tier = String(body.tier || "");
+    if (!phone) return json({ ok: false, error: "Champ requis: phone" }, 400);
+    if (!VALID_CUSTOMER_TIERS.includes(tier)) {
+      return json({ ok: false, error: "Tier invalide" }, 400);
+    }
+    const raw = await env.CUSTOMERS_KV.get(`customer:${phone}`);
+    if (!raw) return json({ ok: false, error: "Compte introuvable" }, 404);
+    const customer = JSON.parse(raw);
+    normalizeCustomerTier(customer);
+    customer.tier = tier;
+    customer.tierGrantedAt = new Date().toISOString();
+    customer.tierGrantedBy = "admin";
+    // Reseller fields are optional and only set when granting reseller
+    // — but accept them at any tier so admin can pre-fill before promote.
+    if (body.companyName !== undefined) {
+      customer.companyName = String(body.companyName || "").trim() || null;
+    }
+    if (body.matriculeFiscale !== undefined) {
+      customer.matriculeFiscale = String(body.matriculeFiscale || "").trim() || null;
+    }
+    if (body.deliveryAddress !== undefined) {
+      customer.deliveryAddress = String(body.deliveryAddress || "").trim() || null;
+    }
+    customer.updatedAt = new Date().toISOString();
+    await env.CUSTOMERS_KV.put(`customer:${phone}`, JSON.stringify(customer));
+    return json({ ok: true, customer: await buildCustomerPayload(env, customer) });
+  }
+
+  if (action === "admin_revoke_tier") {
+    if (!env.CUSTOMERS_KV) {
+      return json({ ok: false, error: "KV not bound (CUSTOMERS_KV)" }, 500);
+    }
+    const phone = normalizePhone(body.phone);
+    if (!phone) return json({ ok: false, error: "Champ requis: phone" }, 400);
+    const raw = await env.CUSTOMERS_KV.get(`customer:${phone}`);
+    if (!raw) return json({ ok: false, error: "Compte introuvable" }, 404);
+    const customer = JSON.parse(raw);
+    normalizeCustomerTier(customer);
+    customer.tier = "regular";
+    // Keep reseller fields stored — re-granting later restores the info.
+    customer.tierGrantedAt = new Date().toISOString();
+    customer.tierGrantedBy = "admin";
+    customer.updatedAt = new Date().toISOString();
+    await env.CUSTOMERS_KV.put(`customer:${phone}`, JSON.stringify(customer));
+    return json({ ok: true });
+  }
+
   if (action === "admin_reset_customer_password") {
     if (!env.CUSTOMERS_KV) {
       return json({ ok: false, error: "KV not bound (CUSTOMERS_KV)" }, 500);
@@ -1348,10 +1693,20 @@ export default {
       return new Response(null, { status: 204, headers: CORS });
     }
 
-    // ===== Public: product catalog =====
+    // ===== Public: product catalog (anonymous GET) =====
+    // Hides vipOnly products and strips wholesalePrice. Phase 7a clients
+    // that want tier-aware results should use the POST endpoint below.
     if (url.pathname === "/api/products" && request.method === "GET") {
       const products = await listProducts(env);
-      return json({ ok: true, products });
+      return json({ ok: true, products: applyTierFilterToProducts(products, 'guest') });
+    }
+
+    // ===== Public: product catalog (POST, optional sessionToken) =====
+    if (url.pathname === "/api/products" && request.method === "POST") {
+      let body;
+      try { body = await request.json(); }
+      catch { return json({ ok: false, error: "Invalid JSON" }, 400); }
+      return handleProductsList(body, env);
     }
 
     // ===== Loyalty (existing) =====
@@ -1405,6 +1760,14 @@ export default {
       try { body = await request.json(); }
       catch { return json({ ok: false, error: "Invalid JSON" }, 400); }
       return handleArticles(body, env);
+    }
+
+    // ===== Perfume requests (VIP concierge) =====
+    if (url.pathname === "/api/perfume-requests" && request.method === "POST") {
+      let body;
+      try { body = await request.json(); }
+      catch { return json({ ok: false, error: "Invalid JSON" }, 400); }
+      return handlePerfumeRequests(body, env);
     }
 
     // ===== Image upload =====

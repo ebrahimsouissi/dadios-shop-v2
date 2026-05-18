@@ -24,6 +24,7 @@ import Base from '../../layouts/Base.astro';
     <div class="dash-hero-inner">
       <div class="eyebrow">Espace client</div>
       <h1 id="greeting">Bonjour</h1>
+      <div id="tierBadge" class="tier-badge" hidden></div>
       <p id="welcomeNote" class="dash-welcome" hidden></p>
       <p id="orderedNote" class="dash-welcome ordered" hidden></p>
     </div>
@@ -94,6 +95,9 @@ import Base from '../../layouts/Base.astro';
         <div class="stamps-row" id="stampsRow" aria-label="Progression des tampons"></div>
         <p class="loyalty-progress" id="stampsLabel"></p>
         <p class="loyalty-rewards" id="rewardsLabel"></p>
+        <p id="loyaltyVipNote" class="loyalty-vip-note" hidden>
+          ✨ Vous gagnez 2× plus de tampons en tant que VIP
+        </p>
         <p class="loyalty-fine">
           Présentez votre code en boutique pour gagner un tampon à chaque
           achat. À 8 tampons, votre cadeau est offert.
@@ -112,7 +116,38 @@ import Base from '../../layouts/Base.astro';
     </article>
   </section>
 
-  <!-- ===== Quick tiles row (favoris + future) ===== -->
+  <!-- ===== Reseller info (visible only when tier === 'reseller') ===== -->
+  <section id="resellerSection" class="reseller-section" hidden>
+    <article class="dash-card reseller-card">
+      <header class="card-head">
+        <div>
+          <div class="eyebrow">Compte professionnel</div>
+          <h2>Informations Reseller</h2>
+        </div>
+      </header>
+      <form id="resellerForm" class="reseller-form">
+        <label>
+          <span>Nom de la société</span>
+          <input type="text" id="resCompany" autocomplete="organization" />
+        </label>
+        <label>
+          <span>Matricule Fiscale</span>
+          <input type="text" id="resMatricule" autocomplete="off" />
+        </label>
+        <label>
+          <span>Adresse de livraison</span>
+          <textarea id="resDelivery" rows="2" autocomplete="street-address"></textarea>
+        </label>
+        <p id="resErr" class="form-err" hidden></p>
+        <p id="resOk" class="form-ok" hidden>Informations enregistrées ✓</p>
+        <div class="edit-actions">
+          <button type="submit" id="resSave" class="btn btn-primary btn-sm">Enregistrer</button>
+        </div>
+      </form>
+    </article>
+  </section>
+
+  <!-- ===== Quick tiles row (favoris + VIP concierge) ===== -->
   <section class="dash-quick">
     <a class="quick-tile" href="/compte/favoris">
       <div class="quick-icon" aria-hidden="true">
@@ -123,6 +158,19 @@ import Base from '../../layouts/Base.astro';
       <div class="quick-text">
         <div class="quick-label">Mes favoris</div>
         <div class="quick-count" id="favorisCount">0</div>
+      </div>
+      <div class="quick-arrow" aria-hidden="true">→</div>
+    </a>
+
+    <a id="conciergeTile" class="quick-tile vip-tile" href="/compte/concierge" hidden>
+      <div class="quick-icon vip-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 7l3 10h12l3-10-5 3-4-6-4 6-5-3z"/>
+        </svg>
+      </div>
+      <div class="quick-text">
+        <div class="quick-label">Concierge VIP</div>
+        <div class="quick-sub">Demander un parfum</div>
       </div>
       <div class="quick-arrow" aria-hidden="true">→</div>
     </a>
@@ -568,6 +616,98 @@ import Base from '../../layouts/Base.astro';
     color: var(--emerald);
   }
 
+  /* ===== tier badge ===== */
+  .tier-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-family: var(--font-body);
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-top: 14px;
+    font-weight: 500;
+  }
+  .tier-badge.vip {
+    background: var(--gold);
+    color: var(--emerald-deep);
+    box-shadow: 0 4px 14px rgba(212, 175, 55, 0.3);
+  }
+  .tier-badge.reseller {
+    background: var(--emerald);
+    color: var(--gold);
+    box-shadow: 0 4px 14px rgba(14, 58, 31, 0.2);
+  }
+  .tier-badge .tier-sub {
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: none;
+    opacity: 0.85;
+    border-left: 1px solid currentColor;
+    padding-left: 10px;
+    font-weight: 400;
+  }
+
+  /* ===== reseller info card ===== */
+  .reseller-section {
+    max-width: 1280px;
+    margin: 24px auto 0;
+    padding: 0 32px;
+  }
+  .reseller-form { display: flex; flex-direction: column; gap: 14px; }
+  .reseller-form label > span {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  .reseller-form input,
+  .reseller-form textarea {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    background: var(--cream);
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--ink);
+    box-sizing: border-box;
+  }
+  .reseller-form input:focus,
+  .reseller-form textarea:focus { outline: none; border-color: var(--emerald); }
+
+  /* ===== VIP concierge tile ===== */
+  .quick-tile.vip-tile {
+    background: linear-gradient(135deg, var(--cream-soft), rgba(212, 175, 55, 0.08));
+    border-color: var(--gold-soft);
+  }
+  .quick-tile.vip-tile:hover { border-color: var(--gold); }
+  .quick-icon.vip-icon {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--emerald-deep);
+  }
+  .quick-sub {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-top: 2px;
+  }
+
+  /* ===== VIP loyalty note ===== */
+  .loyalty-vip-note {
+    background: rgba(212, 175, 55, 0.12);
+    border: 1px solid var(--gold);
+    color: var(--emerald);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 14px;
+  }
+
   /* ===== footer / soon ===== */
   .dash-soon {
     max-width: 1280px;
@@ -655,6 +795,74 @@ import Base from '../../layouts/Base.astro';
     editPhone.value = c.phone || '';
     editAddress.value = c.address || '';
   }
+
+  // ===== Tier UI =====
+  const tierBadge = document.getElementById('tierBadge') as HTMLElement;
+  const conciergeTile = document.getElementById('conciergeTile') as HTMLElement;
+  const resellerSection = document.getElementById('resellerSection') as HTMLElement;
+  const resCompany = document.getElementById('resCompany') as HTMLInputElement;
+  const resMatricule = document.getElementById('resMatricule') as HTMLInputElement;
+  const resDelivery = document.getElementById('resDelivery') as HTMLTextAreaElement;
+  const resForm = document.getElementById('resellerForm') as HTMLFormElement;
+  const resSave = document.getElementById('resSave') as HTMLButtonElement;
+  const resErr = document.getElementById('resErr') as HTMLElement;
+  const resOk = document.getElementById('resOk') as HTMLElement;
+  const loyaltyVipNote = document.getElementById('loyaltyVipNote') as HTMLElement;
+
+  function renderTier(c: any) {
+    const tier = c.tier || 'regular';
+    if (tier === 'vip') {
+      tierBadge.className = 'tier-badge vip';
+      tierBadge.innerHTML = '<span>👑 VIP</span><span class="tier-sub">Accès privilégié activé</span>';
+      tierBadge.hidden = false;
+      if (conciergeTile) conciergeTile.hidden = false;
+      if (loyaltyVipNote) loyaltyVipNote.hidden = false;
+    } else if (tier === 'reseller') {
+      tierBadge.className = 'tier-badge reseller';
+      tierBadge.innerHTML = '<span>💼 Reseller</span><span class="tier-sub">Compte professionnel</span>';
+      tierBadge.hidden = false;
+      if (resellerSection) resellerSection.hidden = false;
+      resCompany.value = c.companyName || '';
+      resMatricule.value = c.matriculeFiscale || '';
+      resDelivery.value = c.deliveryAddress || '';
+    } else {
+      tierBadge.hidden = true;
+      tierBadge.innerHTML = '';
+    }
+  }
+
+  resForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    resErr.hidden = true; resOk.hidden = true;
+    resSave.disabled = true;
+    resSave.textContent = 'Enregistrement…';
+    try {
+      const res = await updateProfile({
+        // Server preserves existing name/address if we don't pass them,
+        // but we DO pass them so the worker's payload stays consistent
+        // with the form (it sets these fields explicitly to the values
+        // we send). Read current values from the profile-view dts.
+        // @ts-ignore — these are sent through updateProfile signature
+        // even if it doesn't declare them in TypeScript.
+        name: (document.getElementById('viewName')?.textContent || '').replace(/^—$/, ''),
+        address: (document.getElementById('viewAddress')?.textContent || '').replace(/^—$/, ''),
+        companyName: resCompany.value.trim(),
+        matriculeFiscale: resMatricule.value.trim(),
+        deliveryAddress: resDelivery.value.trim(),
+      } as any);
+      if (!res.ok) {
+        if (res.error === 'Session invalide') return bounceToLogin();
+        resErr.textContent = res.error || 'Enregistrement impossible.';
+        resErr.hidden = false;
+        return;
+      }
+      resOk.hidden = false;
+      setTimeout(() => { resOk.hidden = true; }, 1800);
+    } finally {
+      resSave.disabled = false;
+      resSave.textContent = 'Enregistrer';
+    }
+  });
 
   function renderLoyalty(loyalty: any) {
     if (!loyalty || !loyalty.code) {
@@ -843,6 +1051,7 @@ import Base from '../../layouts/Base.astro';
     const res = await me();
     if (!res.ok || !res.customer) return bounceToLogin();
     renderProfile(res.customer);
+    renderTier(res.customer);
     renderLoyalty(res.customer.loyalty);
     renderFavorisCount();
     applyWelcomeFlag();

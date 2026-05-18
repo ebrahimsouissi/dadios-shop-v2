@@ -1,0 +1,355 @@
+---
+import Base from '../../layouts/Base.astro';
+---
+<Base
+  title="Concierge VIP — Dadios Fragrance"
+  description="Demandez n'importe quelle fragrance au monde. Notre concierge la trouve pour vous."
+>
+
+<div class="crumb-wrap">
+  <nav class="crumbs" aria-label="Fil d'Ariane">
+    <a href="/">Accueil</a> <span>·</span>
+    <a href="/compte/dashboard">Mon compte</a> <span>·</span>
+    <span>Concierge</span>
+  </nav>
+</div>
+
+<!-- Loading + gates -->
+<div id="concLoading" class="conc-loading">Chargement…</div>
+<section id="concNotAllowed" class="conc-gate" hidden>
+  <div class="eyebrow">Espace réservé</div>
+  <h1>Concierge VIP</h1>
+  <p>Cette section est réservée aux membres VIP.</p>
+  <a href="/compte/dashboard" class="btn btn-primary">Retour au tableau de bord</a>
+</section>
+
+<main id="concMain" class="conc-main" hidden>
+
+  <section class="conc-hero">
+    <div class="conc-hero-inner">
+      <div class="eyebrow">Service VIP</div>
+      <h1>Demander un parfum</h1>
+      <p class="conc-tagline">
+        <span class="script">Notre concierge recherche pour vous toute fragrance au monde.</span>
+      </p>
+    </div>
+  </section>
+
+  <section class="conc-form-wrap">
+    <form id="concForm" class="conc-form" novalidate>
+      <label>
+        <span>Nom du parfum *</span>
+        <input type="text" id="cfName" required maxlength="160" placeholder="ex. Tom Ford Tobacco Vanille" autocomplete="off" />
+      </label>
+      <label>
+        <span>Marque (facultatif)</span>
+        <input type="text" id="cfBrand" maxlength="120" placeholder="ex. Tom Ford" autocomplete="off" />
+      </label>
+      <label>
+        <span>Précisions (taille, budget, urgence…)</span>
+        <textarea id="cfNotes" rows="4" maxlength="500" placeholder="Toute information utile pour orienter notre recherche"></textarea>
+        <small><span id="cfNotesCount">0</span>/500</small>
+      </label>
+      <p id="cfErr" class="form-err" hidden></p>
+      <p id="cfOk" class="form-ok" hidden></p>
+      <div class="conc-actions">
+        <button type="submit" id="cfSubmit" class="btn btn-primary">Envoyer la demande</button>
+      </div>
+    </form>
+
+    <p class="conc-wa">
+      Préférez WhatsApp ?
+      <a href="https://wa.me/21656731891?text=Bonjour%20Dadios%2C%20je%20suis%20membre%20VIP%20et%20je%20souhaite%20vous%20demander%20une%20recherche%20de%20parfum%20%3A" target="_blank" rel="noopener">
+        Écrivez-nous au +216 56 731 891 →
+      </a>
+    </p>
+  </section>
+
+  <section class="conc-history" id="concHistory" hidden>
+    <h2>Vos demandes</h2>
+    <ul class="conc-list" id="concList"></ul>
+  </section>
+
+</main>
+
+</Base>
+
+<style>
+  .crumb-wrap { max-width: 1280px; margin: 0 auto; padding: 16px 32px 0; }
+  .crumbs { font-size: 12px; color: var(--ink-mute); letter-spacing: 0.06em; }
+  .crumbs a:hover { color: var(--emerald); }
+  .crumbs span { margin: 0 6px; opacity: 0.5; }
+
+  .conc-loading {
+    padding: 96px 24px;
+    text-align: center;
+    color: var(--ink-mute);
+    font-style: italic;
+  }
+
+  .conc-gate {
+    max-width: 520px;
+    margin: 64px auto;
+    padding: 40px 32px;
+    background: var(--cream-soft);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    text-align: center;
+  }
+  .conc-gate h1 {
+    font-size: clamp(28px, 4vw, 36px);
+    margin: 12px 0 14px;
+  }
+  .conc-gate p { color: var(--ink-soft); margin-bottom: 22px; }
+
+  .conc-hero {
+    background: var(--cream);
+    padding: 56px 32px 36px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .conc-hero-inner { max-width: 720px; margin: 0 auto; }
+  .conc-hero h1 { font-size: clamp(36px, 5vw, 52px); margin: 14px 0 12px; }
+  .conc-tagline .script { font-size: 26px; }
+
+  .conc-form-wrap {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 40px 24px 32px;
+  }
+  .conc-form {
+    background: var(--cream-soft);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px 28px 26px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .conc-form label > span {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  .conc-form input,
+  .conc-form textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    background: var(--cream);
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--ink);
+    box-sizing: border-box;
+  }
+  .conc-form textarea { resize: vertical; min-height: 80px; }
+  .conc-form input:focus, .conc-form textarea:focus { outline: none; border-color: var(--emerald); }
+  .conc-form small {
+    display: block;
+    font-size: 11px;
+    color: var(--ink-mute);
+    margin-top: 4px;
+  }
+  .conc-actions { display: flex; justify-content: flex-end; }
+  .form-err {
+    background: rgba(178, 58, 31, 0.08);
+    border: 1px solid #B23A1F;
+    color: #8a2a14;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin: 0;
+  }
+  .form-ok {
+    background: rgba(14, 58, 31, 0.06);
+    border: 1px solid var(--emerald);
+    color: var(--emerald);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin: 0;
+  }
+
+  .conc-wa {
+    margin-top: 14px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--ink-mute);
+  }
+  .conc-wa a {
+    color: var(--emerald);
+    text-decoration: underline;
+  }
+
+  .conc-history {
+    max-width: 640px;
+    margin: 0 auto 80px;
+    padding: 0 24px;
+  }
+  .conc-history h2 {
+    font-size: 22px;
+    margin: 18px 0 16px;
+  }
+  .conc-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px; }
+  .conc-item {
+    background: var(--cream-soft);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+  }
+  .conc-item-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+  .conc-item-name {
+    font-family: var(--font-display);
+    font-size: 16px;
+    color: var(--ink);
+  }
+  .conc-item-status {
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .conc-item-status.pending { background: var(--cream-warm); color: #A87C45; border: 1px solid #c79e62; }
+  .conc-item-status.in_progress { background: var(--gold-light); color: var(--emerald); border: 1px solid var(--gold); }
+  .conc-item-status.fulfilled { background: var(--emerald); color: var(--cream); }
+  .conc-item-status.declined { background: rgba(120, 104, 80, 0.15); color: var(--ink-mute); }
+  .conc-item-meta {
+    font-size: 12px;
+    color: var(--ink-mute);
+  }
+
+  @media (max-width: 640px) {
+    .conc-form-wrap, .conc-history { padding-left: 16px; padding-right: 16px; }
+    .conc-hero { padding: 40px 16px 28px; }
+    .crumb-wrap { padding: 12px 16px 0; }
+  }
+</style>
+
+<script>
+  import { isLoggedIn, me } from '../../scripts/customerApi.js';
+  import {
+    createPerfumeRequest,
+    listMyPerfumeRequests,
+    PERFUME_REQUEST_STATUS_LABELS,
+  } from '../../scripts/perfumeRequestsApi.js';
+
+  const loading = document.getElementById('concLoading') as HTMLElement;
+  const notAllowed = document.getElementById('concNotAllowed') as HTMLElement;
+  const main = document.getElementById('concMain') as HTMLElement;
+  const form = document.getElementById('concForm') as HTMLFormElement;
+  const nameEl = document.getElementById('cfName') as HTMLInputElement;
+  const brandEl = document.getElementById('cfBrand') as HTMLInputElement;
+  const notesEl = document.getElementById('cfNotes') as HTMLTextAreaElement;
+  const notesCount = document.getElementById('cfNotesCount') as HTMLElement;
+  const submitBtn = document.getElementById('cfSubmit') as HTMLButtonElement;
+  const errEl = document.getElementById('cfErr') as HTMLElement;
+  const okEl = document.getElementById('cfOk') as HTMLElement;
+  const historyWrap = document.getElementById('concHistory') as HTMLElement;
+  const historyList = document.getElementById('concList') as HTMLElement;
+
+  notesEl.addEventListener('input', () => {
+    notesCount.textContent = String(notesEl.value.length);
+  });
+
+  function escHtml(s: any) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    })[c]!);
+  }
+  function fmt(iso: string) {
+    if (!iso) return '';
+    try {
+      return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+    } catch { return iso; }
+  }
+
+  function renderRequests(rows: any[]) {
+    if (!rows.length) {
+      historyWrap.hidden = true;
+      historyList.innerHTML = '';
+      return;
+    }
+    historyWrap.hidden = false;
+    historyList.innerHTML = rows.map((r) => `
+      <li class="conc-item">
+        <div class="conc-item-head">
+          <span class="conc-item-name">${escHtml(r.perfumeName)}${r.brand ? ` — <em style="color:var(--ink-mute);font-style:italic">${escHtml(r.brand)}</em>` : ''}</span>
+          <span class="conc-item-status ${escHtml(r.status)}">${escHtml(PERFUME_REQUEST_STATUS_LABELS[r.status] || r.status)}</span>
+        </div>
+        <div class="conc-item-meta">${escHtml(fmt(r.createdAt))}</div>
+      </li>
+    `).join('');
+  }
+
+  async function reloadHistory() {
+    const res = await listMyPerfumeRequests();
+    if (res.ok && Array.isArray(res.requests)) renderRequests(res.requests);
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errEl.hidden = true;
+    okEl.hidden = true;
+    const perfumeName = nameEl.value.trim();
+    if (!perfumeName) {
+      errEl.textContent = 'Le nom du parfum est requis.';
+      errEl.hidden = false;
+      return;
+    }
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Envoi…';
+    try {
+      const res = await createPerfumeRequest({
+        perfumeName,
+        brand: brandEl.value.trim(),
+        notes: notesEl.value.trim(),
+      });
+      if (!res.ok) {
+        errEl.textContent = res.error || 'Échec de l’envoi.';
+        errEl.hidden = false;
+        return;
+      }
+      okEl.textContent = '✓ Demande envoyée. Notre concierge vous contactera sous 48h.';
+      okEl.hidden = false;
+      nameEl.value = '';
+      brandEl.value = '';
+      notesEl.value = '';
+      notesCount.textContent = '0';
+      reloadHistory();
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Envoyer la demande';
+    }
+  });
+
+  (async () => {
+    if (!isLoggedIn()) {
+      window.location.replace('/compte');
+      return;
+    }
+    const res = await me();
+    loading.hidden = true;
+    if (!res.ok || !res.customer) {
+      window.location.replace('/compte');
+      return;
+    }
+    if (res.customer.tier !== 'vip') {
+      notAllowed.hidden = false;
+      return;
+    }
+    main.hidden = false;
+    reloadHistory();
+  })();
+</script>

@@ -109,6 +109,44 @@ const hasImage = product.image && product.image.length > 0;
     border-radius: 999px;
     text-transform: uppercase;
   }
+  .card-vip-badge {
+    position: absolute;
+    bottom: 12px;
+    right: 14px;
+    background: var(--gold);
+    color: var(--emerald-deep);
+    font-family: var(--font-display);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-weight: 500;
+    box-shadow: 0 2px 6px rgba(212, 175, 55, 0.35);
+  }
+  .card-wholesale {
+    background: rgba(14, 58, 31, 0.06);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .card-wholesale-label {
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+  .card-wholesale-price {
+    font-family: var(--font-display);
+    font-size: 16px;
+    color: var(--emerald);
+    font-weight: 500;
+  }
   .card-heart {
     position: absolute;
     top: 10px;

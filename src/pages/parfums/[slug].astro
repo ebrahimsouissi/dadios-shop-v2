@@ -89,6 +89,14 @@ const allNotes = [...product.topNotes, ...product.heartNotes, ...product.baseNot
         </div>
       </div>
 
+      <!-- Wholesale price block, populated client-side for resellers only.
+           Server strips wholesalePrice for non-resellers so this is gated
+           by data presence, not just CSS visibility. -->
+      <div id="pdWholesale" class="pd-wholesale" hidden>
+        <div class="pd-wholesale-label">Prix grossiste · Tarif réservé aux Resellers</div>
+        <div class="pd-wholesale-price" id="pdWholesalePrice"></div>
+      </div>
+
       <div class="pd-cta">
         <button
           class="btn btn-primary"
@@ -257,6 +265,29 @@ const allNotes = [...product.topNotes, ...product.heartNotes, ...product.baseNot
     font-weight: 400;
   }
 
+  .pd-wholesale {
+    background: rgba(14, 58, 31, 0.06);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .pd-wholesale-label {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+  .pd-wholesale-price {
+    font-family: var(--font-display);
+    font-size: 24px;
+    color: var(--emerald);
+    font-weight: 500;
+  }
+  .pd-wholesale-price small { font-size: 13px; color: var(--ink-mute); margin-left: 4px; }
   .pd-cta { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 36px; }
   .pd-cta .btn { flex: 1; min-width: 200px; }
   .pd-fav-btn {
@@ -378,6 +409,33 @@ const allNotes = [...product.topNotes, ...product.heartNotes, ...product.baseNot
     .pyr-row { grid-template-columns: 1fr; gap: 12px; }
   }
 </style>
+
+<script>
+  import { addItem, showAddedToast } from '../../scripts/cart.js';
+  import { syncCatalogFromApi } from '../../scripts/catalogSync.js';
+
+  // Phase 7a: when a reseller views the detail page, the worker's
+  // /api/products (POST with sessionToken) returns this product enriched
+  // with a wholesalePrice field. We just look it up and reveal the block.
+  // Non-resellers never see this in the API response, so the block stays
+  // hidden — server-side enforcement.
+  (async () => {
+    try {
+      const wrap = document.getElementById('pdWholesale') as HTMLElement | null;
+      const priceEl = document.getElementById('pdWholesalePrice') as HTMLElement | null;
+      if (!wrap || !priceEl) return;
+      const slug = (document.getElementById('addToCartBtn') as HTMLElement | null)?.getAttribute('data-slug');
+      if (!slug) return;
+      const products = await syncCatalogFromApi();
+      if (!Array.isArray(products)) return;
+      const live = products.find((p: any) => p.slug === slug);
+      if (live && Number(live.wholesalePrice) > 0) {
+        priceEl.innerHTML = `${Number(live.wholesalePrice)} <small>DT</small>`;
+        wrap.hidden = false;
+      }
+    } catch {}
+  })();
+</script>
 
 <script>
   import { addItem, showAddedToast } from '../../scripts/cart.js';

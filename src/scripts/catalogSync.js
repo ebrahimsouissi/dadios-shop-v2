@@ -16,10 +16,30 @@
  */
 
 import { apiUrl } from './apiBase.js';
+import { getSessionToken } from './customerApi.js';
 
+/**
+ * Fetch the live catalog from the worker.
+ *
+ * Phase 7a: if the visitor has a customer session, we POST with the
+ * sessionToken so the worker can filter on tier (VIP sees vipOnly
+ * products; resellers get wholesalePrice in each item). Anonymous
+ * visitors fall back to the simple GET which always strips vipOnly +
+ * wholesalePrice server-side.
+ */
 export async function syncCatalogFromApi() {
   try {
-    const res = await fetch(apiUrl('/api/products'), { cache: 'no-cache' });
+    const token = getSessionToken();
+    let res;
+    if (token) {
+      res = await fetch(apiUrl('/api/products'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'list', sessionToken: token }),
+      });
+    } else {
+      res = await fetch(apiUrl('/api/products'), { cache: 'no-cache' });
+    }
     if (!res.ok) return null;
     const data = await res.json();
     if (data.ok && Array.isArray(data.products) && data.products.length > 0) {
@@ -131,6 +151,19 @@ export function renderProductCardHtml(product, sizes, scope = '') {
     ? `<span class="card-badge"${scope}>Bestseller</span>`
     : '';
 
+  const vipBadge = product.vipOnly
+    ? `<span class="card-vip-badge"${scope}>Exclusif VIP</span>`
+    : '';
+
+  // wholesalePrice is stripped server-side for non-resellers, so its
+  // presence is the authoritative "is this viewer a reseller?" signal.
+  const wholesaleBlock = (product.wholesalePrice && Number(product.wholesalePrice) > 0)
+    ? `<div class="card-wholesale"${scope}>
+         <span class="card-wholesale-label"${scope}>Prix grossiste</span>
+         <span class="card-wholesale-price"${scope}>${escHtml(product.wholesalePrice)} DT</span>
+       </div>`
+    : '';
+
   const heart = `<span class="card-heart"${scope} data-wishlist-toggle data-slug="${slug}" role="button" tabindex="0" aria-label="Ajouter aux favoris" aria-pressed="false"><svg class="heart-icon"${scope} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"${scope}/></svg></span>`;
 
   return `<a href="/parfums/${slug}" class="card" data-card-slug="${slug}"${scope}>
@@ -138,12 +171,14 @@ export function renderProductCardHtml(product, sizes, scope = '') {
     ${imageBlock}
     <span class="card-gender"${scope}>${gender}</span>
     ${featuredBadge}
+    ${vipBadge}
     ${heart}
   </div>
   <div class="card-body"${scope}>
     <div class="eyebrow card-family"${scope}>${family}</div>
     <h3 class="card-name"${scope}>${name}</h3>
     <div class="card-sizes"${scope}>${sizeChips}</div>
+    ${wholesaleBlock}
     <div class="card-cta"${scope}>Voir le parfum →</div>
   </div>
 </a>`;

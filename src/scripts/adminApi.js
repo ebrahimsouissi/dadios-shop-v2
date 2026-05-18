@@ -71,6 +71,31 @@ export async function adminResetCustomerPassword(customerPhone, newPassword) {
 }
 
 /**
+ * Admin: list all customers (optionally filtered by tier or phone/name
+ * search). Returns sanitized records (no passwordHash / salt).
+ */
+export async function adminListCustomers({ tier, search } = {}) {
+  return adminPost('admin_list_customers', { tier: tier || undefined, search: search || undefined });
+}
+
+/**
+ * Admin: grant a tier to a customer. For 'reseller', the optional fields
+ * (companyName / matriculeFiscale / deliveryAddress) can be sent at the
+ * same time and are stored on the record for the dashboard to surface.
+ */
+export async function adminGrantTier(phone, tier, extras = {}) {
+  return adminPost('admin_grant_tier', { phone, tier, ...extras });
+}
+
+/**
+ * Admin: revoke the customer's tier (back to 'regular'). Reseller fields
+ * stay stored so a future re-grant doesn't lose the info.
+ */
+export async function adminRevokeTier(phone) {
+  return adminPost('admin_revoke_tier', { phone });
+}
+
+/**
  * Uploads a Blob (cropped image) to the worker, returns public URL.
  * Sends the password in a header since the body is binary.
  */
