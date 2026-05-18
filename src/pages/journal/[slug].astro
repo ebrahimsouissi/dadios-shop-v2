@@ -1,453 +1,67 @@
 ---
+/**
+ * Article detail page.
+ *
+ * Phase 10 bugfix: the previous version baked the full article body into
+ * the static HTML via Astro.props. That meant any slug not enumerated at
+ * build time hit a hard 404, and during a failed build-time fetch even
+ * known slugs went missing.
+ *
+ * New strategy:
+ *   - getStaticPaths enumerates whatever slugs we can find (seed +
+ *     whatever the public list_published endpoint returns at build time).
+ *     If the Worker is unreachable during the build, we still pre-render
+ *     the seed slug so /journal/<seed> always exists.
+ *   - The page itself ships only an empty skeleton. The client script
+ *     reads the slug from the URL, fetches /api/articles get_published,
+ *     and fills in title / body / hero / meta / related.
+ *   - Slugs that were published *between* builds 404 in static, but the
+ *     404 page also mounts the same skeleton + renderer (see 404.astro),
+ *     so the user still reads the article — URL bar stays at
+ *     /journal/<slug>.
+ */
 import Base from '../../layouts/Base.astro';
-import seedData from '../../data/articles-seed.json';
+import ArticleSkeleton from '../../components/ArticleSkeleton.astro';
 
-const WORKER_URL = 'https://cold-cloud-895a.dadios-fragrances.workers.dev';
-
-// At build time, fetch the live list of published articles + each detail
-// from the public Worker endpoint. This means every "git push to main"
-// triggers a fresh Pages build that includes whatever articles the admin
-// published since the last deploy. If the Worker is unreachable, we fall
-// back to the seed so the build never fails on a transient outage.
-//
-// Public endpoints only — no admin password is sent. The 404.astro page
-// also tries the Worker at runtime to handle articles published *between*
-// builds with the same article body.
+// NOTE: getStaticPaths runs *before* and is fully isolated from the rest
+// of the frontmatter — module-level consts (imports, variables) declared
+// outside it are NOT visible inside. The Worker URL is inlined here on
+// purpose. Don't refactor it out.
 export async function getStaticPaths() {
-  const seed = (seedData.articles || []).filter((a) => a.status === 'published');
-  let live = [];
+  const WORKER_URL = 'https://cold-cloud-895a.dadios-fragrances.workers.dev';
+  let slugs = [];
   try {
-    const listRes = await fetch(`${WORKER_URL}/api/articles`, {
+    const res = await fetch(`${WORKER_URL}/api/articles`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'list_published', limit: 200 }),
     });
-    const listData = await listRes.json();
-    if (listData && listData.ok && Array.isArray(listData.articles)) {
-      const details = await Promise.all(
-        listData.articles.map(async (a) => {
-          try {
-            const r = await fetch(`${WORKER_URL}/api/articles`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ action: 'get_published', slug: a.slug }),
-            });
-            const d = await r.json();
-            return d && d.ok ? d.article : null;
-          } catch { return null; }
-        }),
-      );
-      live = details.filter(Boolean);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.ok && Array.isArray(data.articles)) {
+        slugs = [...new Set(data.articles.map((a) => a.slug).filter(Boolean))];
+      }
     }
-  } catch {}
-
-  // Live wins on slug collision so edited articles override the seed.
-  const map = new Map();
-  seed.forEach((a) => map.set(a.slug, a));
-  live.forEach((a) => map.set(a.slug, a));
-
-  return [...map.values()].map((a) => ({
-    params: { slug: a.slug },
-    props: { article: a },
-  }));
+  } catch {
+    // Build-time fetch failed (network, CORS, Access, …). 404.astro
+    // catches any /journal/<slug> hit at runtime.
+  }
+  return slugs.map((slug) => ({ params: { slug } }));
 }
-
-const { article } = Astro.props;
-const initialJson = JSON.stringify(article || null);
-
-const pageTitle = article?.seo?.metaTitle || `${article?.title || 'Article'} — Journal Dadios`;
-const pageDescription = article?.seo?.metaDescription || article?.excerpt || 'Journal Dadios Fragrance';
-const ogImage = article?.heroImage || undefined;
-
-const jsonLd = article && {
-  '@context': 'https://schema.org',
-  '@type': 'Article',
-  headline: article.title,
-  image: article.heroImage ? [article.heroImage] : undefined,
-  datePublished: article.publishedAt,
-  dateModified: article.updatedAt,
-  author: { '@type': 'Organization', name: article.author || 'Dadios Fragrances' },
-  publisher: {
-    '@type': 'Organization',
-    name: 'Dadios Fragrances',
-    logo: {
-      '@type': 'ImageObject',
-      url: 'https://thedadios.com/og-default.jpg',
-    },
-  },
-};
 ---
 <Base
-  title={pageTitle}
-  description={pageDescription}
-  ogImage={ogImage}
-  jsonLd={jsonLd || undefined}
+  title="Journal — Dadios Fragrance"
+  description="Récits, conseils et inspirations autour de la parfumerie artisanale Dadios."
 >
 
-<article class="art-page" id="artPage" data-slug={article?.slug || ''}>
-  <header class="art-page-head">
-    <a href="/journal" class="art-back">← Journal</a>
-    <div class="art-tag-row" id="artTagRow"></div>
-    <h1 id="artPageTitle">{article?.title || 'Chargement…'}</h1>
-    <p class="art-page-subtitle" id="artPageSubtitle">{article?.subtitle || ''}</p>
-    <p class="art-page-meta" id="artPageMeta"></p>
-  </header>
-
-  <div class="art-hero-wrap" id="artHeroWrap" hidden>
-    <img id="artHeroImg" src="" alt="" loading="eager"/>
-  </div>
-
-  <div class="art-body" id="artBody" set:html={article?.content || ''}></div>
-
-  <footer class="art-foot">
-    <div class="art-share">
-      <span class="art-share-label">Partager</span>
-      <a id="artShareWa" class="art-share-btn" target="_blank" rel="noopener" href="#">WhatsApp</a>
-      <button type="button" id="artShareCopy" class="art-share-btn">Copier le lien</button>
-    </div>
-  </footer>
-
-  <section class="art-related" id="artRelated" hidden>
-    <div class="ornament">
-      <span class="line"></span>
-      <svg viewBox="0 0 24 24"><path d="M12 2 L14 10 L22 12 L14 14 L12 22 L10 14 L2 12 L10 10 Z" fill="currentColor"/></svg>
-      <span class="line"></span>
-    </div>
-    <h2>Articles similaires</h2>
-    <div class="art-related-grid" id="artRelatedGrid"></div>
-  </section>
-
-  <div id="artNotFound" class="art-notfound" hidden>
-    <p>Article introuvable.</p>
-    <a href="/journal" class="btn btn-primary">Retour au Journal</a>
-  </div>
-</article>
-
-<script id="__articleInitial" type="application/json" set:html={initialJson}></script>
+<ArticleSkeleton />
 
 </Base>
 
-<style>
-  .art-page {
-    max-width: 760px;
-    margin: 0 auto;
-    padding: 32px 24px 96px;
-  }
-  .art-back {
-    display: inline-block;
-    font-size: 13px;
-    letter-spacing: 0.08em;
-    color: var(--ink-mute);
-    margin-bottom: 24px;
-  }
-  .art-back:hover { color: var(--emerald); }
-
-  .art-page-head { margin-bottom: 32px; }
-  .art-tag-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 18px;
-  }
-  .art-page-head h1 {
-    font-size: clamp(32px, 4.6vw, 48px);
-    line-height: 1.1;
-    margin: 0 0 12px;
-    color: var(--ink);
-  }
-  .art-page-subtitle {
-    font-family: var(--font-display);
-    font-style: italic;
-    font-size: clamp(18px, 2.2vw, 22px);
-    color: var(--ink-soft);
-    margin: 0 0 18px;
-    line-height: 1.4;
-  }
-  .art-page-subtitle:empty { display: none; }
-  .art-page-meta {
-    font-size: 12px;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--ink-mute);
-    margin: 0;
-  }
-  .art-tag-chip {
-    background: var(--cream-warm);
-    border: 1px solid var(--border);
-    color: var(--ink-soft);
-    font-size: 10px;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    padding: 4px 10px;
-    border-radius: 999px;
-  }
-
-  .art-hero-wrap {
-    margin: 0 -24px 32px;
-    max-width: 1200px;
-  }
-  .art-hero-wrap img {
-    width: 100%;
-    height: auto;
-    display: block;
-    border-radius: 0;
-    aspect-ratio: 16 / 9;
-    object-fit: cover;
-  }
-
-  .art-body {
-    font-family: var(--font-body);
-    font-size: 17px;
-    line-height: 1.85;
-    color: var(--ink);
-  }
-  .art-body :global(p) { margin: 0 0 1.25em; }
-  .art-body :global(h2) {
-    font-family: var(--font-display);
-    font-size: clamp(24px, 3vw, 30px);
-    color: var(--emerald);
-    margin: 1.8em 0 0.5em;
-    font-weight: 500;
-  }
-  .art-body :global(h3) {
-    font-family: var(--font-display);
-    font-size: clamp(20px, 2.4vw, 24px);
-    color: var(--ink);
-    margin: 1.6em 0 0.5em;
-    font-weight: 500;
-  }
-  .art-body :global(ul),
-  .art-body :global(ol) { padding-left: 1.5em; margin: 0 0 1.25em; }
-  .art-body :global(li) { margin: 0.3em 0; }
-  .art-body :global(blockquote) {
-    border-left: 3px solid var(--gold);
-    padding: 6px 18px;
-    margin: 1.6em 0;
-    font-style: italic;
-    color: var(--ink-soft);
-    font-family: var(--font-display);
-    font-size: 1.05em;
-  }
-  .art-body :global(a) {
-    color: var(--emerald);
-    text-decoration: underline;
-    text-decoration-color: var(--gold-soft);
-    text-underline-offset: 3px;
-  }
-  .art-body :global(img) {
-    max-width: 100%;
-    height: auto;
-    display: block;
-    margin: 1.5em auto;
-    border-radius: 8px;
-  }
-  .art-body :global(strong) { color: var(--ink); }
-  .art-body :global(em) { font-style: italic; }
-
-  .art-foot {
-    margin-top: 56px;
-    padding-top: 24px;
-    border-top: 1px solid var(--border);
-  }
-  .art-share {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-  .art-share-label {
-    font-size: 11px;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
-    color: var(--ink-mute);
-    margin-right: 6px;
-  }
-  .art-share-btn {
-    background: var(--cream-soft);
-    border: 1px solid var(--border-strong);
-    color: var(--ink);
-    padding: 8px 14px;
-    border-radius: 999px;
-    font-family: var(--font-body);
-    font-size: 12px;
-    cursor: pointer;
-    text-decoration: none;
-    transition: all .2s;
-  }
-  .art-share-btn:hover { background: var(--cream-warm); border-color: var(--emerald); color: var(--emerald); }
-  .art-share-btn.copied { background: var(--emerald); color: var(--cream); border-color: var(--emerald); }
-
-  .art-related {
-    margin-top: 72px;
-  }
-  .art-related h2 {
-    text-align: center;
-    font-size: clamp(24px, 3vw, 32px);
-    margin: 0 0 32px;
-  }
-  .art-related-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 18px;
-  }
-  .rel-card {
-    background: var(--cream-soft);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 18px 20px;
-    color: inherit;
-    transition: all .2s;
-  }
-  .rel-card:hover {
-    transform: translateY(-3px);
-    border-color: var(--border-strong);
-  }
-  .rel-card-title {
-    font-family: var(--font-display);
-    font-size: 17px;
-    color: var(--ink);
-    margin: 0 0 8px;
-  }
-  .rel-card-date {
-    font-size: 11px;
-    color: var(--ink-mute);
-    letter-spacing: 0.1em;
-  }
-
-  .art-notfound {
-    text-align: center;
-    padding: 80px 24px;
-  }
-  .art-notfound p {
-    font-style: italic;
-    color: var(--ink-mute);
-    margin-bottom: 20px;
-  }
-
-  @media (max-width: 640px) {
-    .art-page { padding: 20px 16px 72px; }
-    .art-hero-wrap { margin: 0 -16px 24px; }
-  }
-</style>
-
 <script>
-  import {
-    getPublishedArticle,
-    getRelatedArticles,
-    frenchRelativeDate,
-  } from '../../scripts/articlesApi.js';
+  import { initArticlePage, slugFromCurrentPath } from '../../scripts/articlePage.js';
 
-  const initial = JSON.parse(document.getElementById('__articleInitial')?.textContent || 'null');
-  const page = document.getElementById('artPage');
-  const titleEl = document.getElementById('artPageTitle');
-  const subtitleEl = document.getElementById('artPageSubtitle');
-  const metaEl = document.getElementById('artPageMeta');
-  const tagRow = document.getElementById('artTagRow');
-  const heroWrap = document.getElementById('artHeroWrap');
-  const heroImg = document.getElementById('artHeroImg');
-  const body = document.getElementById('artBody');
-  const notFound = document.getElementById('artNotFound');
-  const related = document.getElementById('artRelated');
-  const relatedGrid = document.getElementById('artRelatedGrid');
-  const shareWa = document.getElementById('artShareWa');
-  const shareCopy = document.getElementById('artShareCopy');
-
-  function escHtml(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
-      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;',
-    })[c]);
-  }
-
-  function render(article) {
-    if (!article) {
-      titleEl.textContent = 'Article introuvable';
-      subtitleEl.textContent = '';
-      metaEl.textContent = '';
-      tagRow.innerHTML = '';
-      body.hidden = true;
-      heroWrap.hidden = true;
-      notFound.hidden = false;
-      return;
-    }
-    notFound.hidden = true;
-    body.hidden = false;
-    titleEl.textContent = article.title || '';
-    subtitleEl.textContent = article.subtitle || '';
-    tagRow.innerHTML = (article.tags || [])
-      .map((t) => `<span class="art-tag-chip">${escHtml(t)}</span>`)
-      .join('');
-    const date = frenchRelativeDate(article.publishedAt || article.createdAt);
-    const reading = Number(article.readingTime) || 1;
-    metaEl.textContent = `${date} · ${reading} min de lecture · ${article.author || 'Dadios Fragrances'}`;
-    if (article.heroImage) {
-      heroImg.src = article.heroImage;
-      heroImg.alt = article.heroAlt || article.title || '';
-      heroWrap.hidden = false;
-    } else {
-      heroWrap.hidden = true;
-    }
-    // article.content already came through the Worker's sanitizer.
-    body.innerHTML = article.content || '';
-  }
-
-  function buildShareLinks() {
-    const url = window.location.origin + window.location.pathname;
-    shareWa.href = `https://wa.me/?text=${encodeURIComponent(url)}`;
-    shareCopy.addEventListener('click', async () => {
-      try { await navigator.clipboard.writeText(url); }
-      catch {}
-      shareCopy.textContent = '✓ Lien copié';
-      shareCopy.classList.add('copied');
-      setTimeout(() => {
-        shareCopy.textContent = 'Copier le lien';
-        shareCopy.classList.remove('copied');
-      }, 1800);
-    }, { once: true });
-  }
-
-  async function loadRelated(slug) {
-    const res = await getRelatedArticles(slug, 3);
-    if (!res.ok || !res.articles?.length) return;
-    relatedGrid.innerHTML = res.articles.map((a) => `
-      <a class="rel-card" href="/journal/${escHtml(a.slug)}">
-        <div class="rel-card-title">${escHtml(a.title)}</div>
-        <div class="rel-card-date">${escHtml(frenchRelativeDate(a.publishedAt || a.createdAt))}</div>
-      </a>
-    `).join('');
-    related.hidden = false;
-  }
-
-  (async () => {
-    // Initial paint from build-time seed (if any), then refresh from API.
-    if (initial) {
-      render(initial);
-      buildShareLinks();
-    }
-
-    const slug = page.dataset.slug || (window.location.pathname.split('/').filter(Boolean).pop());
-    if (!slug) {
-      render(null);
-      return;
-    }
-
-    // Honour ?preview=1 from the editor's "Aperçu" button for drafts.
-    const isPreview = new URLSearchParams(window.location.search).get('preview') === '1';
-    let res;
-    if (isPreview) {
-      try {
-        const { adminGetArticle } = await import('../../scripts/articlesApi.js');
-        res = await adminGetArticle(slug);
-      } catch { res = { ok: false }; }
-    } else {
-      res = await getPublishedArticle(slug);
-    }
-
-    if (res.ok && res.article) {
-      render(res.article);
-      buildShareLinks();
-      loadRelated(slug);
-    } else if (!initial) {
-      render(null);
-    }
-  })();
+  const slug = slugFromCurrentPath();
+  const isPreview = new URLSearchParams(window.location.search).get('preview') === '1';
+  initArticlePage(slug, { isPreview });
 </script>

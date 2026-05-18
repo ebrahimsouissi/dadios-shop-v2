@@ -1,0 +1,276 @@
+---
+/**
+ * Article page skeleton. Identical markup whether the host is the
+ * pre-rendered [slug] route or the 404 fallback — they share the same IDs
+ * so src/scripts/articlePage.js can fill either in.
+ *
+ * No props: the host is responsible for calling initArticlePage(slug)
+ * (and optionally hiding the skeleton until then). The skeleton starts in
+ * `loading` state.
+ */
+---
+<article class="art-page" id="artPage" hidden>
+  <header class="art-page-head">
+    <a href="/journal" class="art-back">← Journal</a>
+    <div class="art-tag-row" id="artTagRow"></div>
+    <h1 id="artPageTitle">Chargement…</h1>
+    <p class="art-page-subtitle" id="artPageSubtitle"></p>
+    <p class="art-page-meta" id="artPageMeta"></p>
+  </header>
+
+  <div class="art-hero-wrap" id="artHeroWrap" hidden>
+    <img id="artHeroImg" src="" alt="" loading="eager"/>
+  </div>
+
+  <div class="art-body" id="artBody"></div>
+
+  <footer class="art-foot" id="artFoot" hidden>
+    <div class="art-share">
+      <span class="art-share-label">Partager</span>
+      <a id="artShareWa" class="art-share-btn" target="_blank" rel="noopener" href="#">WhatsApp</a>
+      <button type="button" id="artShareCopy" class="art-share-btn">Copier le lien</button>
+    </div>
+  </footer>
+
+  <section class="art-related" id="artRelated" hidden>
+    <div class="ornament">
+      <span class="line"></span>
+      <svg viewBox="0 0 24 24"><path d="M12 2 L14 10 L22 12 L14 14 L12 22 L10 14 L2 12 L10 10 Z" fill="currentColor"/></svg>
+      <span class="line"></span>
+    </div>
+    <h2>Articles similaires</h2>
+    <div class="art-related-grid" id="artRelatedGrid"></div>
+  </section>
+
+  <div id="artNotFound" class="art-notfound" hidden>
+    <p>Article introuvable.</p>
+    <p class="art-notfound-slug" id="artNotFoundSlug"></p>
+    <a href="/journal" class="btn btn-primary">Retour au Journal</a>
+  </div>
+</article>
+
+<div id="artLoading" class="art-loading">
+  <p>Chargement de l'article…</p>
+</div>
+
+<style is:global>
+  /* Article styles are intentionally global so both /journal/[slug] and
+     the 404 fallback share them without re-emitting CSS. Keep selectors
+     prefixed with .art- to avoid leaking elsewhere. */
+  .art-page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 32px 24px 96px;
+  }
+  .art-loading {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 96px 24px;
+    text-align: center;
+    color: var(--ink-mute);
+    font-style: italic;
+  }
+  .art-back {
+    display: inline-block;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    color: var(--ink-mute);
+    margin-bottom: 24px;
+  }
+  .art-back:hover { color: var(--emerald); }
+
+  .art-page-head { margin-bottom: 32px; }
+  .art-tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 18px;
+  }
+  .art-page-head h1 {
+    font-size: clamp(32px, 4.6vw, 48px);
+    line-height: 1.1;
+    margin: 0 0 12px;
+    color: var(--ink);
+  }
+  .art-page-subtitle {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: clamp(18px, 2.2vw, 22px);
+    color: var(--ink-soft);
+    margin: 0 0 18px;
+    line-height: 1.4;
+  }
+  .art-page-subtitle:empty { display: none; }
+  .art-page-meta {
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    margin: 0;
+  }
+  .art-page-meta:empty { display: none; }
+  .art-tag-chip {
+    background: var(--cream-warm);
+    border: 1px solid var(--border);
+    color: var(--ink-soft);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+
+  .art-hero-wrap {
+    margin: 0 -24px 32px;
+    max-width: 1200px;
+  }
+  .art-hero-wrap img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 0;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+  }
+
+  .art-body {
+    font-family: var(--font-body);
+    font-size: 17px;
+    line-height: 1.85;
+    color: var(--ink);
+  }
+  .art-body p { margin: 0 0 1.25em; }
+  .art-body h2 {
+    font-family: var(--font-display);
+    font-size: clamp(24px, 3vw, 30px);
+    color: var(--emerald);
+    margin: 1.8em 0 0.5em;
+    font-weight: 500;
+  }
+  .art-body h3 {
+    font-family: var(--font-display);
+    font-size: clamp(20px, 2.4vw, 24px);
+    color: var(--ink);
+    margin: 1.6em 0 0.5em;
+    font-weight: 500;
+  }
+  .art-body ul,
+  .art-body ol { padding-left: 1.5em; margin: 0 0 1.25em; }
+  .art-body li { margin: 0.3em 0; }
+  .art-body blockquote {
+    border-left: 3px solid var(--gold);
+    padding: 6px 18px;
+    margin: 1.6em 0;
+    font-style: italic;
+    color: var(--ink-soft);
+    font-family: var(--font-display);
+    font-size: 1.05em;
+  }
+  .art-body a {
+    color: var(--emerald);
+    text-decoration: underline;
+    text-decoration-color: var(--gold-soft);
+    text-underline-offset: 3px;
+  }
+  .art-body img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 1.5em auto;
+    border-radius: 8px;
+  }
+  .art-body strong { color: var(--ink); }
+  .art-body em { font-style: italic; }
+
+  .art-foot {
+    margin-top: 56px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+  .art-share {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .art-share-label {
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    margin-right: 6px;
+  }
+  .art-share-btn {
+    background: var(--cream-soft);
+    border: 1px solid var(--border-strong);
+    color: var(--ink);
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-family: var(--font-body);
+    font-size: 12px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all .2s;
+  }
+  .art-share-btn:hover { background: var(--cream-warm); border-color: var(--emerald); color: var(--emerald); }
+  .art-share-btn.copied { background: var(--emerald); color: var(--cream); border-color: var(--emerald); }
+
+  .art-related {
+    margin-top: 72px;
+  }
+  .art-related h2 {
+    text-align: center;
+    font-size: clamp(24px, 3vw, 32px);
+    margin: 0 0 32px;
+  }
+  .art-related-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 18px;
+  }
+  .rel-card {
+    background: var(--cream-soft);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    color: inherit;
+    transition: all .2s;
+  }
+  .rel-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--border-strong);
+  }
+  .rel-card-title {
+    font-family: var(--font-display);
+    font-size: 17px;
+    color: var(--ink);
+    margin: 0 0 8px;
+  }
+  .rel-card-date {
+    font-size: 11px;
+    color: var(--ink-mute);
+    letter-spacing: 0.1em;
+  }
+
+  .art-notfound {
+    text-align: center;
+    padding: 64px 24px;
+  }
+  .art-notfound p {
+    color: var(--ink-soft);
+    margin-bottom: 12px;
+    font-size: 16px;
+  }
+  .art-notfound-slug {
+    color: var(--ink-mute);
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 13px !important;
+    margin-bottom: 22px !important;
+  }
+  .art-notfound-slug:empty { display: none; }
+
+  @media (max-width: 640px) {
+    .art-page { padding: 20px 16px 72px; }
+    .art-hero-wrap { margin: 0 -16px 24px; }
+  }
+</style>
