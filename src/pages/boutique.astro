@@ -1,5 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
+import BoutiqueScene from '../components/BoutiqueScene.astro';
 
 const STORE = {
   name: 'Dadios Fragrances',
@@ -34,32 +35,8 @@ const mapEmbedUrl = `https://maps.google.com/maps?q=${STORE.lat},${STORE.lng}&z=
       <span class="script">Un écrin pour vos sens</span>
     </p>
 
-    <div class="boutique-illustration" id="illustrationWrap">
-      <img
-        src="/images/boutique-illustration.jpg"
-        alt="L'intérieur de la boutique Dadios Fragrance à Ariana"
-        loading="lazy"
-        onerror="this.parentElement.classList.add('img-missing');this.remove();"
-      />
-      <div class="illustration-fallback" aria-hidden="true">
-        <svg viewBox="0 0 600 360" xmlns="http://www.w3.org/2000/svg">
-          <rect width="600" height="360" fill="#EFE6D3"/>
-          <rect x="40" y="110" width="520" height="210" fill="#D4C3A0"/>
-          <rect x="90" y="150" width="60" height="160" fill="#0E3A1F"/>
-          <rect x="180" y="170" width="60" height="140" fill="#0E3A1F"/>
-          <rect x="270" y="160" width="60" height="150" fill="#0E3A1F"/>
-          <rect x="360" y="180" width="60" height="130" fill="#0E3A1F"/>
-          <rect x="450" y="170" width="60" height="140" fill="#0E3A1F"/>
-          <rect x="100" y="200" width="40" height="40" fill="#D4AF37" opacity="0.25"/>
-          <rect x="190" y="220" width="40" height="40" fill="#D4AF37" opacity="0.25"/>
-          <rect x="280" y="210" width="40" height="40" fill="#D4AF37" opacity="0.25"/>
-          <rect x="370" y="230" width="40" height="40" fill="#D4AF37" opacity="0.25"/>
-          <rect x="460" y="220" width="40" height="40" fill="#D4AF37" opacity="0.25"/>
-          <line x1="40" y1="145" x2="560" y2="145" stroke="#A87C45" stroke-width="2"/>
-          <text x="300" y="340" text-anchor="middle" font-family="Allura, cursive" font-size="26" fill="rgba(168,124,69,0.65)">l'atelier</text>
-        </svg>
-      </div>
-    </div>
+    <!-- Phase 12: interactive 3D atelier scene replaces the static illustration -->
+    <BoutiqueScene />
   </div>
 </section>
 

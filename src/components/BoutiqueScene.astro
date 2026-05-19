@@ -1,0 +1,625 @@
+---
+/**
+ * Phase 12 — Interactive 3D atelier scene for /boutique.
+ *
+ * Wraps the original gist prototype (markup + CSS adapted to French and
+ * to Dadios scoping) and stitches it to our cart and live product
+ * catalogue.
+ *
+ * Loading chain:
+ *   1. <link rel="preconnect"> + Three.js + OrbitControls from cdnjs
+ *      (rel="preload" + defer so they're queued early but applied in
+ *      order).
+ *   2. After DOMContentLoaded: a small bridge script imports cart.js
+ *      and exposes window.cart = { addItem, showAddedToast }.
+ *   3. Then fetches /api/products + /products.json, maps each product
+ *      into the bottle factory's shape, and calls
+ *      DadiosBottles.setProducts(...). Fallback list inside bottles.js
+ *      kicks in if both fetches fail.
+ *   4. Then loads scene.js (the IIFE renders the scene immediately).
+ *   5. scene.js dispatches a 'dadios-scene-ready' event on #sceneWrap
+ *      — we listen for it to fade in the card and hide the loader.
+ *
+ * If Three.js never loads (e.g. CDN blocked), a 5 s watchdog hides the
+ * card and shows the static boutique-illustration.jpg fallback.
+ */
+---
+<div class="boutique-scene-root">
+  <!-- Static fallback shown only if WebGL / Three.js doesn't come up -->
+  <div class="boutique-fallback" id="boutiqueFallback" hidden>
+    <img
+      src="/images/boutique-illustration.jpg"
+      alt="L'intérieur de la boutique Dadios Fragrance à Ariana"
+      loading="lazy"
+    />
+  </div>
+
+  <main class="card boutique-card" id="boutiqueCard">
+    <div class="scene-wrap" id="sceneWrap" role="img" aria-label="Scène 3D interactive de la boutique Dadios">
+      <canvas id="scene"></canvas>
+
+      <!-- Loader overlay (hidden once the scene fires 'dadios-scene-ready') -->
+      <div class="scene-loader" id="sceneLoader" aria-live="polite">
+        <div class="loader-spinner" aria-hidden="true"></div>
+        <p class="loader-text">Préparation de l'atelier…</p>
+      </div>
+
+      <div class="scene-chrome">
+        <div class="badge"><span class="dot"></span>Visitez l'atelier</div>
+        <div class="controls">
+          <button id="btnAuto" title="Activer rotation automatique" aria-label="Activer rotation automatique">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><polyline points="21 4 21 9 16 9"/></svg>
+          </button>
+          <button id="btnReset" title="Réinitialiser la vue" aria-label="Réinitialiser la vue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><polyline points="21 3 21 8 16 8"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><polyline points="3 21 3 16 8 16"/></svg>
+          </button>
+          <button id="btnUnfold" title="Vue dépliée" aria-label="Vue dépliée (panorama des murs)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="9" width="6" height="11" rx="1"/><rect x="9" y="6" width="6" height="14" rx="1"/><rect x="15" y="9" width="6" height="11" rx="1"/></svg>
+          </button>
+        </div>
+        <div class="hint" id="hint">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 5v2M12 17v2M5 12h2M17 12h2"/></svg>
+          <span class="hint-desktop">Faites glisser pour pivoter <span class="sep">·</span> molette pour zoomer <span class="sep">·</span> cliquez sur un flacon</span>
+          <span class="hint-mobile">Faites pivoter la pièce</span>
+        </div>
+        <div class="tooltip" id="tooltip"></div>
+      </div>
+    </div>
+
+    <aside class="info">
+      <div class="brandline">Maison de Parfum &mdash; Tunis</div>
+      <div class="brand">Dadios</div>
+      <div class="tagline">Essence of Timeless Elegance</div>
+      <p class="lead">Bienvenue dans notre atelier. Prenez votre temps &mdash; tournez la pièce, approchez-vous des étagères, choisissez le flacon qui vous parle.</p>
+
+      <div class="product" id="product">
+        <div class="empty">
+          <div class="micro">Sélectionnez un flacon</div>
+          <div class="arrow">&mdash; la pièce est à vous &mdash;</div>
+          <div class="swatches" aria-hidden="true">
+            <i style="background:#e4dca8"></i>
+            <i style="background:#5f8a5a"></i>
+            <i style="background:#c88a3a"></i>
+            <i style="background:#d47894"></i>
+            <i style="background:#2a2326"></i>
+            <i style="background:#5a2a26"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <span>45 Rue De La Cité Sportive · Ariana</span>
+        <span>Lun–Sam : 9h–19h</span>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Text-only fallback: link to the catalogue for users without WebGL -->
+  <noscript>
+    <p class="boutique-noscript">
+      Vous préférez la version classique ?
+      <a href="/parfums">Voir le catalogue</a>
+    </p>
+  </noscript>
+  <p class="boutique-alt-link">
+    Vous préférez la version classique ?
+    <a href="/parfums">Voir le catalogue</a>
+  </p>
+</div>
+
+<!-- Three.js + OrbitControls. Deferred so the HTML paints first but the
+     scripts run in order. -->
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<script is:inline defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script is:inline defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/controls/OrbitControls.js"></script>
+<script is:inline defer src="/js/boutique-scene/bottles.js"></script>
+<script is:inline defer src="/js/boutique-scene/scene.js?v=2"></script>
+
+<!-- Bridge: expose window.cart so scene.js can call addItem without
+     pulling cart.js as an ES module (it's loaded via <script src>). -->
+<script>
+  import { addItem, showAddedToast } from '../scripts/cart.js';
+  // Expose under window.cart per the Phase 12 spec
+  (window as any).cart = Object.assign((window as any).cart || {}, {
+    addItem,
+    showAddedToast,
+  });
+</script>
+
+<!-- Loader + product-sync orchestration -->
+<script>
+  import { apiUrl } from '../scripts/apiBase.js';
+
+  const card = document.getElementById('boutiqueCard') as HTMLElement | null;
+  const fallback = document.getElementById('boutiqueFallback') as HTMLElement | null;
+  const loader = document.getElementById('sceneLoader') as HTMLElement | null;
+  const wrap = document.getElementById('sceneWrap');
+
+  function showFallback(reason: string) {
+    try { console.warn('[BoutiqueScene] fallback:', reason); } catch {}
+    if (card) card.hidden = true;
+    if (fallback) fallback.hidden = false;
+  }
+
+  // 5s watchdog: if scene.js hasn't fired the ready event by then,
+  // assume Three.js failed and show the static image.
+  let ready = false;
+  wrap?.addEventListener('dadios-scene-ready', () => {
+    ready = true;
+    if (loader) {
+      loader.classList.add('hide');
+      setTimeout(() => loader.remove(), 600);
+    }
+    if (card) {
+      card.classList.add('visible');
+    }
+  }, { once: true });
+
+  setTimeout(() => {
+    if (!ready && !(window as any).THREE) {
+      showFallback('Three.js failed to load (timeout)');
+    }
+  }, 5000);
+
+  // Phase 12 product sync: pull live products + global sizes, map them
+  // into the bottle factory shape, and call setProducts BEFORE scene.js
+  // reads Bot.products. Order matters: scene.js runs after this script
+  // because it's the last <script> in the document.
+  async function syncProductsBeforeScene() {
+    try {
+      const [productsRes, sizesRes] = await Promise.allSettled([
+        fetch(apiUrl('/api/products'), { cache: 'no-cache' }),
+        fetch('/products.json'),
+      ]);
+
+      let products: any[] = [];
+      if (productsRes.status === 'fulfilled' && productsRes.value.ok) {
+        const j = await productsRes.value.json();
+        if (j && j.ok && Array.isArray(j.products)) products = j.products;
+      }
+      let sizes: any[] = [];
+      if (sizesRes.status === 'fulfilled' && sizesRes.value.ok) {
+        const j = await sizesRes.value.json();
+        if (j && Array.isArray(j.sizes)) sizes = j.sizes;
+        // /products.json also has products — use as a fallback if the API
+        // returned nothing
+        if (!products.length && Array.isArray(j.products)) products = j.products;
+      }
+
+      // Defer until DadiosBottles is registered (scripts are deferred,
+      // so this script — also imported as a module — might run before
+      // them. We poll briefly).
+      const start = Date.now();
+      (function waitForBottles() {
+        const Bot = (window as any).DadiosBottles;
+        if (Bot && typeof Bot.setProducts === 'function') {
+          const mapped = products.map((p) => Bot.buildSceneProduct(p, sizes));
+          Bot.setProducts(mapped);
+          return;
+        }
+        if (Date.now() - start > 4000) return;
+        setTimeout(waitForBottles, 50);
+      })();
+    } catch (err) {
+      try { console.warn('[BoutiqueScene] product sync failed', err); } catch {}
+    }
+  }
+
+  syncProductsBeforeScene();
+</script>
+
+<style is:global>
+  /* Phase 12 — scoped under .boutique-scene-root so this won't leak. */
+  .boutique-scene-root {
+    --bo-bg: #ede4d6;
+    --bo-card: #faf4e8;
+    --bo-ink: #2a221a;
+    --bo-ink-2: #6a5c4a;
+    --bo-accent: #0E3A1F;
+    --bo-gold: #D4AF37;
+    --bo-rule: rgba(42,34,26,0.10);
+  }
+
+  .boutique-scene-root .boutique-fallback img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 14px;
+    box-shadow: 0 20px 48px rgba(5, 26, 14, 0.10);
+  }
+  .boutique-scene-root .boutique-fallback[hidden] { display: none !important; }
+
+  .boutique-scene-root .card {
+    width: min(1180px, 100%);
+    margin: 0 auto;
+    background: var(--bo-card);
+    border-radius: 24px;
+    box-shadow:
+      0 30px 60px -30px rgba(60, 40, 20, 0.30),
+      0 12px 30px -12px rgba(60, 40, 20, 0.16),
+      inset 0 0 0 1px rgba(255,255,255,0.55);
+    display: grid;
+    grid-template-columns: minmax(0, 1.45fr) minmax(280px, 1fr);
+    overflow: hidden;
+    position: relative;
+    opacity: 0;
+    transition: opacity 600ms ease-out;
+  }
+  .boutique-scene-root .card.visible { opacity: 1; }
+  @media (prefers-reduced-motion: reduce) {
+    .boutique-scene-root .card { transition: none !important; opacity: 1; }
+  }
+  @media (max-width: 860px) {
+    .boutique-scene-root .card { grid-template-columns: 1fr; }
+  }
+
+  /* Scene side */
+  .boutique-scene-root .scene-wrap {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    background:
+      radial-gradient(80% 60% at 50% 35%, #f7eedd 0%, #ecdcc1 70%, #e2cfae 100%);
+    border-right: 1px solid var(--bo-rule);
+    overflow: hidden;
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+  }
+  .boutique-scene-root .scene-wrap.grabbing { cursor: grabbing; }
+  @media (max-width: 860px) {
+    .boutique-scene-root .scene-wrap {
+      aspect-ratio: 4 / 5;
+      border-right: none;
+      border-bottom: 1px solid var(--bo-rule);
+    }
+  }
+  .boutique-scene-root #scene { width: 100%; height: 100%; display: block; }
+
+  /* Loader */
+  .boutique-scene-root .scene-loader {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    background: linear-gradient(180deg, #f7eedd 0%, #e2cfae 100%);
+    color: var(--bo-ink-2);
+    transition: opacity 600ms ease-out;
+    z-index: 4;
+  }
+  .boutique-scene-root .scene-loader.hide { opacity: 0; pointer-events: none; }
+  .boutique-scene-root .loader-spinner {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 3px solid rgba(14, 58, 31, 0.18);
+    border-top-color: var(--bo-accent);
+    animation: bo-spin 0.9s linear infinite;
+  }
+  .boutique-scene-root .loader-text {
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin: 0;
+  }
+  @keyframes bo-spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) {
+    .boutique-scene-root .loader-spinner { animation: none; }
+  }
+
+  .boutique-scene-root .scene-chrome {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .boutique-scene-root .badge {
+    position: absolute;
+    top: 18px;
+    left: 18px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px 7px 10px;
+    background: rgba(250, 244, 232, 0.78);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 999px;
+    box-shadow: inset 0 0 0 1px rgba(42,34,26,0.08);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--bo-ink-2);
+    pointer-events: auto;
+  }
+  .boutique-scene-root .badge .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--bo-accent);
+    box-shadow: 0 0 0 3px rgba(14, 58, 31, 0.18);
+  }
+
+  .boutique-scene-root .hint {
+    position: absolute;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 8px 14px;
+    background: rgba(42, 34, 26, 0.78);
+    color: #f3e9d8;
+    border-radius: 999px;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+    white-space: nowrap;
+    max-width: calc(100% - 36px);
+  }
+  .boutique-scene-root .hint.show { opacity: 1; }
+  .boutique-scene-root .hint svg { width: 12px; height: 12px; }
+  .boutique-scene-root .hint .sep { opacity: 0.5; }
+  .boutique-scene-root .hint-mobile { display: none; }
+  @media (max-width: 720px) {
+    .boutique-scene-root .hint-desktop { display: none; }
+    .boutique-scene-root .hint-mobile { display: inline; }
+  }
+
+  .boutique-scene-root .controls {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    display: flex;
+    gap: 6px;
+    pointer-events: auto;
+  }
+  .boutique-scene-root .controls button {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(250, 244, 232, 0.78);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: inset 0 0 0 1px rgba(42,34,26,0.08);
+    color: var(--bo-ink);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: background 0.2s ease;
+  }
+  .boutique-scene-root .controls button:hover { background: rgba(250, 244, 232, 1); }
+  .boutique-scene-root .controls button svg { width: 16px; height: 16px; }
+  .boutique-scene-root .controls button.active {
+    background: var(--bo-ink);
+    color: #f3e9d8;
+  }
+  @media (max-width: 720px) {
+    .boutique-scene-root .controls button { width: 42px; height: 42px; }
+    .boutique-scene-root .controls button svg { width: 20px; height: 20px; }
+  }
+
+  .boutique-scene-root .tooltip {
+    position: absolute;
+    padding: 6px 10px;
+    background: rgba(42, 34, 26, 0.92);
+    color: #f7ecd6;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border-radius: 6px;
+    transform: translate(-50%, calc(-100% - 10px));
+    pointer-events: none;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+  .boutique-scene-root .tooltip.show { opacity: 1; }
+  .boutique-scene-root .tooltip::after {
+    content: "";
+    position: absolute;
+    left: 50%; bottom: -4px;
+    transform: translateX(-50%) rotate(45deg);
+    width: 8px; height: 8px;
+    background: rgba(42, 34, 26, 0.92);
+  }
+
+  /* Info side */
+  .boutique-scene-root .info {
+    padding: 44px 40px 36px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    background: linear-gradient(180deg, #fbf6eb 0%, #f6efde 100%);
+  }
+  @media (max-width: 860px) {
+    .boutique-scene-root .info { padding: 32px 28px 32px; }
+  }
+  .boutique-scene-root .brandline {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 11px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--bo-ink-2);
+  }
+  .boutique-scene-root .brandline::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--bo-rule);
+  }
+  .boutique-scene-root .brand {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 500;
+    font-size: 38px;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    color: var(--bo-ink);
+  }
+  .boutique-scene-root .tagline {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    color: var(--bo-ink-2);
+    font-size: 17px;
+    margin-top: -8px;
+  }
+  .boutique-scene-root .lead {
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--bo-ink-2);
+    margin: 4px 0 8px;
+    max-width: 36ch;
+  }
+
+  .boutique-scene-root .product {
+    border-top: 1px solid var(--bo-rule);
+    padding-top: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 240px;
+  }
+  .boutique-scene-root .product-eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--bo-ink-2);
+  }
+  .boutique-scene-root .product-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 500;
+    font-size: 30px;
+    line-height: 1.05;
+    letter-spacing: 0.01em;
+    color: var(--bo-ink);
+  }
+  .boutique-scene-root .product-notes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .boutique-scene-root .note-chip {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #efe5d2;
+    color: #5a4a36;
+    letter-spacing: 0.04em;
+  }
+  .boutique-scene-root .product-desc {
+    font-size: 15px;
+    line-height: 1.65;
+    color: var(--bo-ink-2);
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+  }
+  .boutique-scene-root .product-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    margin-top: auto;
+    padding-top: 10px;
+  }
+  .boutique-scene-root .price {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 26px;
+    letter-spacing: 0.02em;
+    color: var(--bo-ink);
+  }
+  .boutique-scene-root .price .vol {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--bo-ink-2);
+    margin-left: 6px;
+  }
+  .boutique-scene-root .cta {
+    appearance: none;
+    border: none;
+    background: var(--bo-accent);
+    color: #f3e9d8;
+    padding: 11px 18px;
+    border-radius: 999px;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: transform 0.2s ease, background 0.2s ease;
+  }
+  .boutique-scene-root .cta:hover { transform: translateY(-1px); background: #082817; }
+  .boutique-scene-root .cta.added { background: var(--bo-gold); color: var(--bo-accent); }
+
+  .boutique-scene-root .empty {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    color: var(--bo-ink-2);
+  }
+  .boutique-scene-root .empty .arrow {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 16px;
+  }
+  .boutique-scene-root .empty .micro {
+    font-size: 11px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+  }
+  .boutique-scene-root .empty .swatches {
+    display: flex;
+    gap: 8px;
+    margin-top: 6px;
+  }
+  .boutique-scene-root .empty .swatches i {
+    display: block;
+    width: 18px; height: 26px;
+    border-radius: 4px;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08);
+  }
+  .boutique-scene-root .footer {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--bo-rule);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--bo-ink-2);
+  }
+
+  .boutique-scene-root .boutique-alt-link {
+    text-align: center;
+    margin: 18px auto 0;
+    font-size: 12px;
+    color: var(--bo-ink-2);
+  }
+  .boutique-scene-root .boutique-alt-link a {
+    color: var(--bo-accent);
+    text-decoration: underline;
+  }
+  .boutique-scene-root .boutique-noscript {
+    text-align: center;
+    margin: 18px auto 0;
+    font-size: 13px;
+  }
+
+  .boutique-scene-root .product > * { animation: bo-rise 0.4s ease; }
+  @keyframes bo-rise {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .boutique-scene-root .product > * { animation: none !important; }
+  }
+</style>
