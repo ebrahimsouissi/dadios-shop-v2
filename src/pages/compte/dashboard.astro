@@ -95,21 +95,30 @@ import Base from '../../layouts/Base.astro';
         <div class="fid-card-wrap">
           <div class="fid-card" id="fidCard" data-stamps="0">
             <div class="fid-noise" aria-hidden="true"></div>
-            <div class="fid-content">
-              <header class="fid-head">
-                <div class="fid-brand">
-                  <div class="fid-logo">DADIOS</div>
-                  <div class="fid-tagline">Essence of Timeless Elegance</div>
-                </div>
-                <div class="fid-vip vip-badge-pulse" id="fidVip" hidden aria-label="Bonus VIP : 2 tampons par achat">× 2 tampons</div>
-              </header>
-              <div class="fid-stamps" id="fidStamps" role="list" aria-label="Progression des tampons"></div>
-              <footer class="fid-foot">
-                <div class="fid-count" id="fidCount">0 / 8 tampons</div>
-                <div class="fid-name" id="fidName"></div>
-              </footer>
+            <!-- Header: brand + optional VIP pill -->
+            <header class="fid-head">
+              <div class="fid-brand">
+                <div class="fid-logo">DADIOS</div>
+                <div class="fid-tagline">Essence of Timeless Elegance</div>
+              </div>
+              <div class="fid-vip vip-badge-pulse" id="fidVip" hidden aria-label="Bonus VIP : 2 tampons par achat">× 2 tampons</div>
+            </header>
+
+            <!-- Stamps grid sits in the middle band. Explicit width on each
+                 cell so it always paints (no aspect-ratio fragility). -->
+            <div class="fid-stamps" id="fidStamps" role="list" aria-label="Progression des tampons"></div>
+
+            <!-- Name + counter just above the magnetic stripe -->
+            <div class="fid-foot">
+              <div class="fid-name" id="fidName"></div>
+              <div class="fid-count" id="fidCount">0 / 8 tampons</div>
             </div>
+
+            <!-- Thin magnetic stripe at the very bottom of the card -->
+            <div class="fid-stripe" aria-hidden="true"></div>
           </div>
+
+          <!-- Meta block below the card: code, conditional reward message -->
           <div class="fid-meta">
             <p class="fid-code">Code : <strong id="loyaltyCode"></strong></p>
             <p id="stampsLabel" class="fid-progress"></p>
@@ -117,7 +126,9 @@ import Base from '../../layouts/Base.astro';
             <p id="loyaltyVipNote" class="loyalty-vip-note" hidden>
               ✨ Vous gagnez 2× plus de tampons en tant que VIP
             </p>
-            <p class="fid-fine">
+            <!-- Message switches between: welcome (0 stamps), progress
+                 (1–7), and reward-ready (8 = cadeau gagné non réclamé). -->
+            <p id="fidFine" class="fid-fine">
               Présentez votre code en boutique pour gagner un tampon à chaque
               achat. À 8 tampons, votre cadeau est offert.
             </p>
@@ -384,36 +395,42 @@ import Base from '../../layouts/Base.astro';
     margin: 0;
   }
 
-  /* ===== loyalty card (Phase 11 refonte) ===== */
+  /* ===== loyalty card (Phase 11 — bugfix layout) ===== */
   .fid-card-wrap {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 22px;
   }
-  /* The card itself — 1.586:1 ratio, capped at 420px wide. perspective on
-     the wrap so the 3D hover tilt is rendered correctly. */
+  /*
+   * Card layout: switched to CSS grid with explicit rows so the stamp
+   * grid is guaranteed to occupy the middle band (1fr) and never
+   * collapses. The bottom magnetic stripe is its own row, capped at a
+   * thin 28px height as the spec requires.
+   */
   .fid-card {
     position: relative;
     width: 100%;
     max-width: 420px;
     aspect-ratio: 1.586 / 1;
     border-radius: 16px;
-    border: 2px solid var(--gold, #D4AF37);
+    border: 2px solid #D4AF37;
     background: linear-gradient(135deg, #0F5132 0%, #1B7340 100%);
     color: #F5EDDC;
     overflow: hidden;
     box-shadow: 0 14px 40px rgba(5, 26, 14, 0.25);
-    transform-style: preserve-3d;
-    transition: transform 200ms ease-out;
-    will-change: transform;
-    /* CSS vars updated on mousemove for the tilt effect. Defaults = no tilt. */
+    display: grid;
+    grid-template-rows: auto 1fr auto 28px;
+    /* extra column padding so stamps + name breathe at the edges */
+    padding: 16px 20px 0;
+    box-sizing: border-box;
+
     --tilt-x: 0deg;
     --tilt-y: 0deg;
     transform: perspective(1000px) rotateY(var(--tilt-y)) rotateX(var(--tilt-x));
+    transition: transform 200ms ease-out;
+    will-change: transform;
   }
-  /* SVG fractalNoise overlay — opacity 0.05, multiply blend so it darkens
-     just slightly without washing out the gradient. */
   .fid-noise {
     position: absolute;
     inset: 0;
@@ -422,17 +439,10 @@ import Base from '../../layouts/Base.astro';
     mix-blend-mode: overlay;
     background-image: url("data:image/svg+xml;utf8,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     background-size: 200px 200px;
+    z-index: 0;
   }
-  .fid-content {
-    position: relative;
-    z-index: 1;
-    height: 100%;
-    padding: 18px 20px 16px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    gap: 10px;
-  }
+  /* All children sit above the noise overlay */
+  .fid-card > :not(.fid-noise) { position: relative; z-index: 1; }
 
   .fid-head {
     display: flex;
@@ -440,11 +450,7 @@ import Base from '../../layouts/Base.astro';
     align-items: flex-start;
     gap: 12px;
   }
-  .fid-brand {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
+  .fid-brand { display: flex; flex-direction: column; gap: 2px; }
   .fid-logo {
     font-family: var(--font-display);
     color: #D4AF37;
@@ -473,19 +479,23 @@ import Base from '../../layouts/Base.astro';
     box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.6);
   }
 
-  /* Stamps grid — 4×2, 8 cells max */
+  /*
+   * 4×2 stamps grid. Each cell is a fixed-size circle (40px desktop,
+   * 32px on narrow cards) so the row height is deterministic and the
+   * stamps always paint. No aspect-ratio.
+   */
   .fid-stamps {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px 12px;
-    place-items: center;
-    flex-grow: 1;
+    grid-template-columns: repeat(4, 40px);
+    grid-template-rows: repeat(2, 40px);
+    gap: 12px;
     align-content: center;
+    justify-content: center;
+    padding: 10px 0;
   }
   .fid-stamp {
-    width: 100%;
-    max-width: 38px;
-    aspect-ratio: 1;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -494,25 +504,41 @@ import Base from '../../layouts/Base.astro';
     box-sizing: border-box;
   }
   .fid-stamp.empty {
-    background: transparent;
-    border: 2px dashed rgba(212, 175, 55, 0.85);
-    color: transparent;
+    background: rgba(212, 175, 55, 0.05);
+    border: 2px dashed #D4AF37;
   }
   .fid-stamp.filled {
-    background: #D4AF37;
-    border: 2px solid #D4AF37;
+    background: linear-gradient(135deg, #D4AF37 0%, #F4D77A 100%);
+    border: 1px solid #F4D77A;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   }
   .fid-stamp .sceau {
-    width: 60%;
-    height: 60%;
+    width: 22px;
+    height: 22px;
+    pointer-events: none;
   }
   .fid-stamp .sceau path { fill: #0F5132; }
 
+  /* Name + counter row, between stamps and the magnetic stripe */
   .fid-foot {
     display: flex;
     justify-content: space-between;
-    align-items: flex-end;
+    align-items: baseline;
     gap: 12px;
+    padding: 4px 0 10px;
+  }
+  .fid-name {
+    font-family: var(--font-display);
+    color: #D4AF37;
+    font-size: 13px;
+    font-style: italic;
+    letter-spacing: 0.08em;
+    line-height: 1.1;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .fid-count {
     color: #D4AF37;
@@ -520,16 +546,17 @@ import Base from '../../layouts/Base.astro';
     font-size: 11px;
     letter-spacing: 0.18em;
     text-transform: uppercase;
+    flex-shrink: 0;
   }
-  .fid-name {
-    font-family: var(--font-display);
-    color: #D4AF37;
-    font-size: 18px;
-    font-style: italic;
-    text-align: right;
-    line-height: 1.1;
+
+  /* Thin magnetic stripe — pure decoration, near-black, full bleed.
+     The grid row gives it a deterministic 28px height. */
+  .fid-stripe {
+    margin: 0 -20px;
+    background: linear-gradient(180deg, #0a0a0a 0%, #1a1a1a 50%, #0a0a0a 100%);
+    border-top: 1px solid rgba(0, 0, 0, 0.4);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
   }
-  .fid-name:empty::before { content: ''; }
 
   /* Meta block below the card — same data we used to show in dots */
   .fid-meta {
@@ -614,12 +641,43 @@ import Base from '../../layouts/Base.astro';
     .fid-card { transform: none !important; }
   }
 
+  /* Reward-ready callout under the card when stamps === 8 */
+  .fid-fine.reward-ready {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.12), rgba(212, 175, 55, 0.04));
+    border: 1px solid #D4AF37;
+    color: var(--emerald);
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.5;
+    animation: fid-reward-pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes fid-reward-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.45); }
+    50%      { box-shadow: 0 0 0 8px rgba(212, 175, 55, 0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fid-fine.reward-ready { animation: none !important; }
+  }
+
   @media (max-width: 480px) {
-    .fid-card { max-width: 100%; }
+    .fid-card { max-width: 100%; padding: 14px 16px 0; }
     .fid-logo { font-size: 19px; }
-    .fid-name { font-size: 16px; }
+    .fid-tagline { font-size: 10px; }
+    .fid-name { font-size: 12px; }
     .fid-count { font-size: 10px; }
-    .fid-stamp { max-width: 32px; }
+    /* Smaller circles on narrow cards so the 4-col grid still fits with
+       generous side padding. */
+    .fid-stamps {
+      grid-template-columns: repeat(4, 34px);
+      grid-template-rows: repeat(2, 34px);
+      gap: 10px;
+    }
+    .fid-stamp { width: 34px; height: 34px; }
+    .fid-stamp .sceau { width: 18px; height: 18px; }
+    .fid-stripe { margin: 0 -16px; }
   }
 
   /* ===== quick tile (favoris) ===== */
@@ -1073,6 +1131,7 @@ import Base from '../../layouts/Base.astro';
   const fidCount = document.getElementById('fidCount') as HTMLElement;
   const fidName = document.getElementById('fidName') as HTMLElement;
   const fidVip = document.getElementById('fidVip') as HTMLElement;
+  const fidFine = document.getElementById('fidFine') as HTMLElement;
 
   const LOYALTY_PREV_KEY = 'loyalty-last-count';
   const PREFERS_REDUCED = typeof matchMedia === 'function'
@@ -1152,6 +1211,23 @@ import Base from '../../layouts/Base.astro';
       : rewards === 1
         ? '1 cadeau gagné'
         : `${rewards} cadeaux gagnés`;
+
+    // Conditional message under the card. Three states:
+    //   - 0 stamps + 0 rewards = brand-new card → welcome copy
+    //   - 8 stamps                              = reward ready to claim
+    //   - otherwise                             = standard progress copy
+    if (fidFine) {
+      fidFine.classList.remove('reward-ready');
+      if (stamps === 8) {
+        const code = loyalty.code || '';
+        fidFine.textContent = `🎁 Félicitations ! Votre cadeau vous attend. Présentez votre code ${code} en boutique pour le récupérer.`;
+        fidFine.classList.add('reward-ready');
+      } else if (stamps === 0 && rewards === 0) {
+        fidFine.textContent = 'Bienvenue dans le programme fidélité Dadios ! Collectez 8 tampons et recevez un cadeau exclusif.';
+      } else {
+        fidFine.textContent = 'Présentez votre code en boutique pour gagner un tampon à chaque achat. À 8 tampons, votre cadeau est offert.';
+      }
+    }
 
     // Card name = customer.name from the most recent renderProfile call.
     // viewName is updated synchronously in renderProfile before us.
