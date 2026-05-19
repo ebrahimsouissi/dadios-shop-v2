@@ -95,6 +95,18 @@ import Base from '../../layouts/Base.astro';
         <div class="fid-card-wrap">
           <div class="fid-card" id="fidCard" data-stamps="0">
             <div class="fid-noise" aria-hidden="true"></div>
+            <!-- One shared gold gradient referenced by every stamp sceau via
+                 url(#dadiosGold). Lives inside a zero-size SVG so it doesn't
+                 take any layout space. -->
+            <svg class="fid-defs" width="0" height="0" aria-hidden="true" focusable="false">
+              <defs>
+                <linearGradient id="dadiosGold" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#FFD700"/>
+                  <stop offset="50%" stop-color="#F4D77A"/>
+                  <stop offset="100%" stop-color="#B8860B"/>
+                </linearGradient>
+              </defs>
+            </svg>
             <!-- Header: brand + optional VIP pill -->
             <header class="fid-head">
               <div class="fid-brand">
@@ -517,7 +529,15 @@ import Base from '../../layouts/Base.astro';
     height: 22px;
     pointer-events: none;
   }
-  .fid-stamp .sceau path { fill: #0F5132; }
+  /* Filled stamps: gold gradient fill comes from the SVG itself
+     (fill="url(#dadiosGold)"). We add a soft drop-shadow on the icon
+     so it lifts off the gold disc background without losing the
+     gold-on-gold visual identity. No CSS fill override — that would
+     beat the inline SVG attribute and revert the icon to a flat
+     colour. */
+  .fid-stamp.filled .sceau {
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+  }
 
   /* Name + counter row, between stamps and the magnetic stripe */
   .fid-foot {
@@ -1137,10 +1157,14 @@ import Base from '../../layouts/Base.astro';
   const PREFERS_REDUCED = typeof matchMedia === 'function'
     && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // SEAU shape — a simple 4-pointed compass star, fills the stamp circle.
+  // SEAU shape — 4-pointed compass star. Phase 11 bugfix #2: explicit
+  // fill="url(#dadiosGold)" so the path picks up the shared gradient
+  // defined once at the top of the card. Also keeps the gradient out of
+  // any stylesheet-overridable property (the CSS that used to force
+  // fill:#0F5132 has been removed below).
   function seauSvg() {
     return `<svg class="sceau" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <path d="M12 1 L14.4 9.6 L23 12 L14.4 14.4 L12 23 L9.6 14.4 L1 12 L9.6 9.6 Z"/>
+      <path d="M12 1 L14.4 9.6 L23 12 L14.4 14.4 L12 23 L9.6 14.4 L1 12 L9.6 9.6 Z" fill="url(#dadiosGold)"/>
     </svg>`;
   }
 
