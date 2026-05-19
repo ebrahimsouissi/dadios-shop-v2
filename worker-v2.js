@@ -893,7 +893,7 @@ function sanitizeCustomer(customer) {
  * never gets `undefined` and can render conditionally with a single
  * truthy check.
  */
-const VALID_CUSTOMER_TIERS = ['regular', 'vip', 'reseller'];
+const VALID_CUSTOMER_TIERS = ['regular', 'vip', 'reseller', 'admin'];
 function normalizeCustomerTier(customer) {
   if (!customer || typeof customer !== 'object') return customer;
   if (!VALID_CUSTOMER_TIERS.includes(customer.tier)) customer.tier = 'regular';
