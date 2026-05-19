@@ -99,6 +99,21 @@ const EMERGENCY_SESSION_TTL = 60 * 60;        // 1h
 const ADMIN_LOG_TTL = 90 * 24 * 60 * 60;      // 90 days
 
 function isValidPermission(p) { return ADMIN_PERMISSIONS.includes(p); }
+
+/**
+ * Synchronous shortcut for "does this admin customer already have this
+ * permission?". Used inside handleAdmin's action dispatch where the
+ * outer gate already validated `tier === 'admin'` and we just need a
+ * cheap per-action check. The 'all' wildcard always passes.
+ */
+function hasPermission(customer, perm) {
+  if (!customer || !perm) return false;
+  const perms = Array.isArray(customer.adminPermissions) ? customer.adminPermissions : [];
+  return perms.includes('all') || perms.includes(perm);
+}
+function permError(perm) {
+  return { ok: false, error: `Permission "${perm}" requise` };
+}
 function sanitizePermissions(arr) {
   if (!Array.isArray(arr)) return [];
   const seen = new Set();
@@ -675,13 +690,19 @@ async function handleLoyalty(body, env, request) {
   const kv = env.LOYALTY_KV;
   if (!kv) return json({ ok: false, error: "KV not bound (LOYALTY_KV)" }, 500);
 
+  // Phase 13: every admin_* action in this handler requires the
+  // "loyalty" permission (or "all"). The legacy ADMIN_PASSWORD path
+  // synthesises a customer with adminPermissions=['all'] so password
+  // callers continue to pass.
+  const _PERM = "loyalty";
+
   const action = body.action;
   if (!action) return json({ ok: false, error: "Missing action" }, 400);
 
   // Admin endpoints
   if (action.startsWith("admin_")) {
     {
-      const _a = await requireAdminAuth(body, env, request, null);
+      const _a = await requireAdminAuth(body, env, request, _PERM);
       if (!_a.ok) return json({ ok: false, error: _a.error }, _a.status);
     }
 
@@ -1166,6 +1187,9 @@ async function handleOrders(body, env, request) {
   const kv = env.ORDERS_KV;
   if (!kv) return json({ ok: false, error: "KV not bound (ORDERS_KV)" }, 500);
 
+  // Phase 13: every admin_* action in this handler requires "orders".
+  const _PERM = "orders";
+
   const action = body?.action;
   if (!action) return json({ ok: false, error: "Missing action" }, 400);
 
@@ -1269,7 +1293,7 @@ async function handleOrders(body, env, request) {
   // ===== admin_list (with optional status filter) =====
   if (action === "admin_list") {
     {
-      const _a = await requireAdminAuth(body, env, request, null);
+      const _a = await requireAdminAuth(body, env, request, _PERM);
       if (!_a.ok) return json({ ok: false, error: _a.error }, _a.status);
     }
     const status = body.status;
@@ -1295,7 +1319,7 @@ async function handleOrders(body, env, request) {
   // ===== admin_update (status and/or notes) =====
   if (action === "admin_update") {
     {
-      const _a = await requireAdminAuth(body, env, request, null);
+      const _a = await requireAdminAuth(body, env, request, _PERM);
       if (!_a.ok) return json({ ok: false, error: _a.error }, _a.status);
     }
     const orderId = String(body.orderId || "");
@@ -1545,6 +1569,8 @@ function articleListingPayload(a) {
 async function handleArticles(body, env, request) {
   const kv = env.ARTICLES_KV;
   if (!kv) return json({ ok: false, error: "KV not bound (ARTICLES_KV)" }, 500);
+  // Phase 13: every admin_* action in this handler requires "articles".
+  const _PERM = "articles";
   const action = body?.action;
   if (!action) return json({ ok: false, error: "Missing action" }, 400);
 
@@ -1644,7 +1670,7 @@ async function handleArticles(body, env, request) {
   // ===== Admin: list (drafts + published) =====
   if (action === "admin_list") {
     {
-      const _a = await requireAdminAuth(body, env, request, null);
+      const _a = await requireAdminAuth(body, env, request, _PERM);
       if (!_a.ok) return json({ ok: false, error: _a.error }, _a.status);
     }
     const statusFilter = body.status;
@@ -1673,7 +1699,7 @@ async function handleArticles(body, env, request) {
   // ===== Admin: single article (drafts allowed) =====
   if (action === "admin_get") {
     {
-      const _a = await requireAdminAuth(body, env, request, null);
+      const _a = await requireAdminAuth(body, env, request, _PERM);
       if (!_a.ok) return json({ ok: false, error: _a.error }, _a.status);
     }
     const slug = safeArticleSlug(body.slug);
@@ -1687,7 +1713,7 @@ async function handleArticles(body, env, request) {
   // ===== Admin: upsert =====
   if (action === "admin_upsert") {
     {
-      const _a = await requireAdminAuth(body, env, request, null);
+      const _a = await requireAdminAuth(body, env, request, _PERM);
       if (!_a.ok) return json({ ok: false, error: _a.error }, _a.status);
     }
     const incoming = body.article;
@@ -1790,7 +1816,7 @@ async function handleArticles(body, env, request) {
   // ===== Admin: delete =====
   if (action === "admin_delete") {
     {
-      const _a = await requireAdminAuth(body, env, request, null);
+      const _a = await requireAdminAuth(body, env, request, _PERM);
       if (!_a.ok) return json({ ok: false, error: _a.error }, _a.status);
     }
     const slug = safeArticleSlug(body.slug);
@@ -1819,7 +1845,7 @@ async function handleArticles(body, env, request) {
   // ===== Admin: publish / unpublish (convenience) =====
   if (action === "admin_publish" || action === "admin_unpublish") {
     {
-      const _a = await requireAdminAuth(body, env, request, null);
+      const _a = await requireAdminAuth(body, env, request, _PERM);
       if (!_a.ok) return json({ ok: false, error: _a.error }, _a.status);
     }
     const slug = safeArticleSlug(body.slug);
@@ -1876,6 +1902,9 @@ const PERFUME_REQUEST_TRANSITIONS = {
 async function handlePerfumeRequests(body, env, request) {
   const kv = env.PERFUME_REQUESTS_KV;
   if (!kv) return json({ ok: false, error: "KV not bound (PERFUME_REQUESTS_KV)" }, 500);
+
+  // Phase 13: admin_* actions in this handler require "perfume-requests".
+  const _PERM = "perfume-requests";
 
   const action = body?.action;
   if (!action) return json({ ok: false, error: "Missing action" }, 400);
@@ -1947,7 +1976,7 @@ async function handlePerfumeRequests(body, env, request) {
   // ===== admin_list =====
   if (action === "admin_list") {
     {
-      const _a = await requireAdminAuth(body, env, request, null);
+      const _a = await requireAdminAuth(body, env, request, _PERM);
       if (!_a.ok) return json({ ok: false, error: _a.error }, _a.status);
     }
     const statusFilter = body.status;
@@ -1973,7 +2002,7 @@ async function handlePerfumeRequests(body, env, request) {
   // ===== admin_update (status + adminNotes) =====
   if (action === "admin_update") {
     {
-      const _a = await requireAdminAuth(body, env, request, null);
+      const _a = await requireAdminAuth(body, env, request, _PERM);
       if (!_a.ok) return json({ ok: false, error: _a.error }, _a.status);
     }
     const requestId = String(body.requestId || "");
@@ -2093,6 +2122,9 @@ function safeReviewSlug(s) {
 async function handleReviews(body, env, request) {
   const kv = env.REVIEWS_KV;
   if (!kv) return json({ ok: false, error: "KV not bound (REVIEWS_KV)" }, 500);
+
+  // Phase 13: admin_* actions in this handler require "reviews".
+  const _PERM = "reviews";
 
   const action = body?.action;
   if (!action) return json({ ok: false, error: "Missing action" }, 400);
@@ -2245,7 +2277,7 @@ async function handleReviews(body, env, request) {
   // ===== Admin: list pending =====
   if (action === "admin_pending") {
     {
-      const _a = await requireAdminAuth(body, env, request, null);
+      const _a = await requireAdminAuth(body, env, request, _PERM);
       if (!_a.ok) return json({ ok: false, error: _a.error }, _a.status);
     }
     const pending = await readJsonArray(kv, 'review-pending');
@@ -2283,7 +2315,7 @@ async function handleReviews(body, env, request) {
   // ===== Admin: list all (status filter) =====
   if (action === "admin_list") {
     {
-      const _a = await requireAdminAuth(body, env, request, null);
+      const _a = await requireAdminAuth(body, env, request, _PERM);
       if (!_a.ok) return json({ ok: false, error: _a.error }, _a.status);
     }
     const statusFilter = body.status ? String(body.status) : null;
@@ -2315,7 +2347,7 @@ async function handleReviews(body, env, request) {
   // ===== Admin: approve / reject =====
   if (action === "admin_approve" || action === "admin_reject") {
     {
-      const _a = await requireAdminAuth(body, env, request, null);
+      const _a = await requireAdminAuth(body, env, request, _PERM);
       if (!_a.ok) return json({ ok: false, error: _a.error }, _a.status);
     }
     const reviewId = String(body.reviewId || '');
@@ -2357,7 +2389,7 @@ async function handleReviews(body, env, request) {
   // ===== Admin: delete =====
   if (action === "admin_delete") {
     {
-      const _a = await requireAdminAuth(body, env, request, null);
+      const _a = await requireAdminAuth(body, env, request, _PERM);
       if (!_a.ok) return json({ ok: false, error: _a.error }, _a.status);
     }
     const reviewId = String(body.reviewId || '');
@@ -2420,7 +2452,7 @@ async function handleReviews(body, env, request) {
   // ===== Admin: pending count (handy for the admin badge) =====
   if (action === "admin_pending_count") {
     {
-      const _a = await requireAdminAuth(body, env, request, null);
+      const _a = await requireAdminAuth(body, env, request, _PERM);
       if (!_a.ok) return json({ ok: false, error: _a.error }, _a.status);
     }
     const pending = await readJsonArray(kv, 'review-pending');
@@ -2451,7 +2483,10 @@ async function handleAdmin(body, env, request) {
   }
 
   // ===== Normal admin gate: session admin OR legacy password =====
-  const _outerAuth = await requireAdminAuth(body, env, request, null);
+  // No specific permission required here — each action below does its
+  // own hasPermission(adminCust, '<perm>') check. The outer gate just
+  // ensures the caller is authenticated AS an admin (any flavour).
+  const _outerAuth = await requireAdminAuth(body, env, request);
   if (!_outerAuth.ok) {
     return json({ ok: false, error: _outerAuth.error }, _outerAuth.status);
   }
@@ -2491,10 +2526,12 @@ async function handleAdmin(body, env, request) {
   }
 
   if (action === "list_products") {
+    if (!hasPermission(adminCust, "products")) return json(permError("products"), 403);
     return json({ ok: true, products: await listProducts(env) });
   }
 
   if (action === "upsert_product") {
+    if (!hasPermission(adminCust, "products")) return json(permError("products"), 403);
     const res = await adminUpsertProduct(body, env);
     // Attempt to log; we don't await/throw on log failures.
     try {
@@ -2511,6 +2548,7 @@ async function handleAdmin(body, env, request) {
   }
 
   if (action === "delete_product") {
+    if (!hasPermission(adminCust, "products")) return json(permError("products"), 403);
     const slug = body.slug;
     const res = await adminDeleteProduct(body, env);
     try {
@@ -2529,6 +2567,7 @@ async function handleAdmin(body, env, request) {
 
   // ===== Customer management (admin-only) =====
   if (action === "admin_get_customer") {
+    if (!hasPermission(adminCust, "customers")) return json(permError("customers"), 403);
     if (!env.CUSTOMERS_KV) {
       return json({ ok: false, error: "KV not bound (CUSTOMERS_KV)" }, 500);
     }
@@ -2542,6 +2581,7 @@ async function handleAdmin(body, env, request) {
 
   // ===== Customer tier management (admin-only) =====
   if (action === "admin_list_customers") {
+    if (!hasPermission(adminCust, "customers")) return json(permError("customers"), 403);
     if (!env.CUSTOMERS_KV) {
       return json({ ok: false, error: "KV not bound (CUSTOMERS_KV)" }, 500);
     }
@@ -2574,6 +2614,7 @@ async function handleAdmin(body, env, request) {
   }
 
   if (action === "admin_grant_tier") {
+    if (!hasPermission(adminCust, "tiers")) return json(permError("tiers"), 403);
     if (!env.CUSTOMERS_KV) {
       return json({ ok: false, error: "KV not bound (CUSTOMERS_KV)" }, 500);
     }
@@ -2613,6 +2654,7 @@ async function handleAdmin(body, env, request) {
   }
 
   if (action === "admin_revoke_tier") {
+    if (!hasPermission(adminCust, "tiers")) return json(permError("tiers"), 403);
     if (!env.CUSTOMERS_KV) {
       return json({ ok: false, error: "KV not bound (CUSTOMERS_KV)" }, 500);
     }
@@ -2637,6 +2679,7 @@ async function handleAdmin(body, env, request) {
   }
 
   if (action === "admin_reset_customer_password") {
+    if (!hasPermission(adminCust, "customers")) return json(permError("customers"), 403);
     if (!env.CUSTOMERS_KV) {
       return json({ ok: false, error: "KV not bound (CUSTOMERS_KV)" }, 500);
     }

@@ -9,12 +9,33 @@ const sizes = data.sizes;
   description="Espace administration"
 >
 
+<!-- ============ NOT-ADMIN EMPTY STATE (Phase 13) ============ -->
+<!-- Shown when a customer is logged in but has no admin tier — better
+     than dropping them back at the password gate. -->
+<section id="notAdminGate" class="login-gate" hidden>
+  <div class="login-box">
+    <div class="eyebrow">Accès refusé</div>
+    <h2>Compte non administrateur</h2>
+    <p>Votre compte n'a pas les droits d'administration.</p>
+    <p style="font-size:13px;color:var(--ink-mute);margin-bottom:18px">
+      Si vous pensez qu'il s'agit d'une erreur, contactez un super-administrateur.
+    </p>
+    <a href="/compte/dashboard" class="btn btn-primary" style="width:100%">
+      ← Retour à mon compte
+    </a>
+  </div>
+</section>
+
 <!-- ============ LOGIN GATE ============ -->
 <section id="loginGate" class="login-gate">
   <div class="login-box">
     <div class="eyebrow">Espace privé</div>
     <h2>Administration</h2>
     <p>Entrez le mot de passe administrateur pour continuer.</p>
+    <p style="font-size:12px;color:var(--ink-mute);margin-bottom:12px">
+      Vous avez un compte administrateur ?
+      <a href="/compte" style="color:var(--emerald);text-decoration:underline">Connectez-vous</a>.
+    </p>
     <form id="loginForm">
       <input
         type="password"
@@ -1848,20 +1869,21 @@ const sizes = data.sizes;
     attemptLogin(getPassword());
   }
 
-  // Phase 13: also auto-skip the password gate if the visitor's
-  // customer session has tier === 'admin' (or if they came in via
-  // /admin/emergency and have a 1h emergency token stashed).
+  // Phase 13: auto-skip the password gate based on customer session.
+  //   - tier === 'admin'    → show adminMain, hide login + not-admin
+  //   - authenticated but not admin → show "compte non admin" screen
+  //   - emergency session   → same as admin (synthetic tier='admin')
+  //   - guest               → leave the password gate visible
   (async () => {
     try {
       const meRes = await (await import('../scripts/adminApi.js')).adminMe();
-      if (meRes && meRes.ok && meRes.isAdmin) {
+      if (!meRes || !meRes.ok) return;
+      const notAdminGate = document.getElementById('notAdminGate');
+      if (meRes.isAdmin) {
         loginGate?.classList.add('hidden');
+        if (notAdminGate) (notAdminGate as HTMLElement).hidden = true;
         adminMain?.classList.remove('hidden');
         loadProducts();
-        // Hide tabs the user doesn't have permission for. The 'all'
-        // permission shows everything. Currently we just hide the
-        // Administrateurs admin-management section unless the user
-        // has 'all'.
         const perms = meRes.permissions || [];
         const isSuper = perms.includes('all');
         document.querySelectorAll<HTMLElement>('[data-requires-permission]').forEach((el) => {
@@ -1869,6 +1891,11 @@ const sizes = data.sizes;
           const hide = !isSuper && need && !perms.includes(need);
           if (hide) el.style.display = 'none';
         });
+      } else if (meRes.isAuthenticated) {
+        // Logged in but no admin tier — replace the password gate with
+        // a clearer message.
+        loginGate?.classList.add('hidden');
+        if (notAdminGate) (notAdminGate as HTMLElement).hidden = false;
       }
     } catch {}
   })();
