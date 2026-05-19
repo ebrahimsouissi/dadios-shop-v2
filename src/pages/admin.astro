@@ -60,39 +60,50 @@ const sizes = data.sizes;
     </div>
     <div style="display:flex;gap:12px;align-items:center">
       <button class="btn btn-outline btn-sm" id="logoutBtn">Déconnexion</button>
-      <button class="btn btn-primary" id="newBtn">+ Nouveau parfum</button>
+      <button class="btn btn-primary" id="newBtn" data-requires-permission="products">+ Nouveau parfum</button>
     </div>
   </div>
 
-  <div class="admin-tabs">
-    <button class="tab-btn active" data-filter="all">Tous</button>
-    <button class="tab-btn" data-filter="homme">Homme</button>
-    <button class="tab-btn" data-filter="femme">Femme</button>
-    <button class="tab-btn" data-filter="mixte">Mixte</button>
-    <button class="tab-btn" data-filter="featured">Best-sellers</button>
+  <div id="noPermsEmpty" class="no-perms-empty" hidden>
+    <div class="no-perms-icon" aria-hidden="true">🔒</div>
+    <h2>Aucune permission active</h2>
+    <p>
+      Votre compte administrateur n'a aucune permission active.
+      Contactez un super-administrateur pour obtenir un accès.
+    </p>
   </div>
 
-  <table class="admin-table">
-    <thead>
-      <tr>
-        <th></th>
-        <th>Nom</th>
-        <th>Inspiré par</th>
-        <th>Famille</th>
-        <th>Genre</th>
-        <th>Best-seller</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody id="rows">
-      <tr><td colspan="7" style="text-align:center;padding:48px">Chargement des parfums...</td></tr>
-    </tbody>
-  </table>
+  <div class="products-block" data-requires-permission="products">
+    <div class="admin-tabs">
+      <button class="tab-btn active" data-filter="all">Tous</button>
+      <button class="tab-btn" data-filter="homme">Homme</button>
+      <button class="tab-btn" data-filter="femme">Femme</button>
+      <button class="tab-btn" data-filter="mixte">Mixte</button>
+      <button class="tab-btn" data-filter="featured">Best-sellers</button>
+    </div>
 
-  <div id="statusMsg" class="status-msg hidden"></div>
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th></th>
+          <th>Nom</th>
+          <th>Inspiré par</th>
+          <th>Famille</th>
+          <th>Genre</th>
+          <th>Best-seller</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="rows">
+        <tr><td colspan="7" style="text-align:center;padding:48px">Chargement des parfums...</td></tr>
+      </tbody>
+    </table>
+
+    <div id="statusMsg" class="status-msg hidden"></div>
+  </div>
 
   <!-- ============ CUSTOMER MANAGEMENT ============ -->
-  <div class="customers-block">
+  <div class="customers-block" data-requires-permission="customers">
     <div class="customers-head">
       <div class="eyebrow">Gestion des comptes clients</div>
       <h2>Recherche &amp; mot de passe</h2>
@@ -141,7 +152,7 @@ const sizes = data.sizes;
   </div>
 
   <!-- ============ ORDERS MANAGEMENT ============ -->
-  <div class="orders-block">
+  <div class="orders-block" data-requires-permission="orders">
     <div class="orders-head">
       <div>
         <div class="eyebrow">Commandes</div>
@@ -184,7 +195,7 @@ const sizes = data.sizes;
   </div>
 
   <!-- ============ JOURNAL (articles) ============ -->
-  <div class="articles-block">
+  <div class="articles-block" data-requires-permission="articles">
     <div class="articles-head">
       <div>
         <div class="eyebrow">Journal</div>
@@ -225,7 +236,7 @@ const sizes = data.sizes;
   </div>
 
   <!-- ============ CLIENTS (tier management) ============ -->
-  <div class="clients-block">
+  <div class="clients-block" data-requires-permission="tiers">
     <div class="clients-head">
       <div>
         <div class="eyebrow">Clientèle</div>
@@ -267,7 +278,7 @@ const sizes = data.sizes;
   </div>
 
   <!-- ============ PERFUME REQUESTS (concierge) ============ -->
-  <div class="perfreq-block">
+  <div class="perfreq-block" data-requires-permission="perfume-requests">
     <div class="perfreq-head">
       <div>
         <div class="eyebrow">Concierge</div>
@@ -308,7 +319,7 @@ const sizes = data.sizes;
   </div>
 
   <!-- ============ REVIEWS (avis clients) ============ -->
-  <div class="reviews-block">
+  <div class="reviews-block" data-requires-permission="reviews">
     <div class="reviews-head">
       <div>
         <div class="eyebrow">Avis</div>
@@ -846,6 +857,18 @@ const sizes = data.sizes;
     flex-wrap: wrap;
   }
   .admin h1 { font-size: clamp(28px, 4vw, 40px); margin-top: 8px; }
+  .no-perms-empty {
+    max-width: 560px;
+    margin: 48px auto;
+    padding: 40px 32px;
+    text-align: center;
+    background: var(--cream-soft);
+    border: 1px solid var(--border-strong);
+    border-radius: 14px;
+  }
+  .no-perms-icon { font-size: 40px; margin-bottom: 12px; }
+  .no-perms-empty h2 { font-size: 22px; margin: 4px 0 12px; }
+  .no-perms-empty p { color: var(--ink-soft); line-height: 1.6; font-size: 14px; margin: 0; }
   .admin-tabs {
     display: flex;
     gap: 8px;
@@ -1883,14 +1906,37 @@ const sizes = data.sizes;
         loginGate?.classList.add('hidden');
         if (notAdminGate) (notAdminGate as HTMLElement).hidden = true;
         adminMain?.classList.remove('hidden');
-        loadProducts();
+
         const perms = meRes.permissions || [];
         const isSuper = perms.includes('all');
-        document.querySelectorAll<HTMLElement>('[data-requires-permission]').forEach((el) => {
+        const allowed = (need: string) =>
+          !need || isSuper || perms.includes(need);
+
+        // Filter every section/button tagged with a permission requirement.
+        // Worker also enforces — this just hides the UI cleanly.
+        const tagged = document.querySelectorAll<HTMLElement>('[data-requires-permission]');
+        let visibleCount = 0;
+        tagged.forEach((el) => {
           const need = el.getAttribute('data-requires-permission') || '';
-          const hide = !isSuper && need && !perms.includes(need);
-          if (hide) el.style.display = 'none';
+          if (allowed(need)) {
+            el.removeAttribute('hidden');
+            el.removeAttribute('aria-hidden');
+            visibleCount++;
+          } else {
+            el.setAttribute('hidden', '');
+            el.setAttribute('aria-hidden', 'true');
+          }
         });
+
+        // Edge case: empty permissions array → nothing visible.
+        // Show a centered empty-state instead of a silently-blank panel.
+        const emptyEl = document.getElementById('noPermsEmpty');
+        if (visibleCount === 0 && emptyEl) {
+          (emptyEl as HTMLElement).hidden = false;
+        }
+
+        // Only fetch products if the admin can actually see them.
+        if (allowed('products')) loadProducts();
       } else if (meRes.isAuthenticated) {
         // Logged in but no admin tier — replace the password gate with
         // a clearer message.
