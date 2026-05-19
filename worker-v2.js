@@ -11,6 +11,7 @@
  *   POST /api/wishlist         — wishlist: list, add, remove, sync (all session-gated)
  *   POST /api/articles         — journal: list_published, get_published, related, admin_*
  *   POST /api/perfume-requests — VIP concierge: create, list, admin_list, admin_update
+ *   POST /api/reviews          — produit reviews: list, stats, submit (client), admin_*
  *
  * Required bindings (set in Cloudflare dashboard → Worker → Settings):
  *   LOYALTY_KV   (KV namespace) — already configured
@@ -19,13 +20,14 @@
  *                                 (also stores wishlist:${phone} → [slugs])
  *   ORDERS_KV    (KV namespace) — KV namespace "dadios-orders"
  *   ARTICLES_KV  (KV namespace) — KV namespace "dadios-articles"
- *   PERFUME_REQUESTS_KV (KV namespace) — *** NEW for Phase 7a (VIP concierge) ***
+ *   PERFUME_REQUESTS_KV (KV namespace) — KV namespace "dadios-perfume-requests"
+ *   REVIEWS_KV   (KV namespace) — *** NEW for Phase 9 (avis clients) ***
  *                                  Steps:
  *                                    1. Cloudflare dashboard → Workers KV → Create namespace
- *                                       Name: "dadios-perfume-requests"
+ *                                       Name: "dadios-reviews"
  *                                    2. Worker → Settings → Variables → KV Namespace Bindings
- *                                       Variable name: PERFUME_REQUESTS_KV
- *                                       Bind to: dadios-perfume-requests
+ *                                       Variable name: REVIEWS_KV
+ *                                       Bind to: dadios-reviews
  *                                    3. Save & deploy the Worker
  *   IMAGES       (R2 bucket)    — R2 bucket "dadios-images"
  *
@@ -1534,6 +1536,410 @@ async function handlePerfumeRequests(body, env) {
 }
 
 // ============================================================
+// REVIEWS (avis clients)
+//   KV namespace binding: REVIEWS_KV
+//   Keys:
+//     review:${productId}:${reviewId}        — full review JSON
+//     review-index:${productId}              — array of reviewIds for the product
+//     review-pending                         — array of reviewIds awaiting moderation
+//     review-by-user:${phone}                — array of {reviewId, productId, createdAt}
+//                                              (anti-doublon + 5/day quota lookup)
+//     ratelimit:review:${phone}              — {count, windowStart} with 24h TTL
+//
+// productId == product slug (matches what's stored in orders[].items[].slug).
+// ============================================================
+
+const REVIEW_MAX_TEXT = 300;
+const REVIEW_DAILY_QUOTA = 5;
+const REVIEW_DAY_MS = 24 * 60 * 60 * 1000;
+
+function sanitizeReviewText(s) {
+  // Plain text only — strip HTML tags, control chars, collapse whitespace.
+  // Display sites should use textContent (we never want this to roundtrip
+  // as HTML).
+  return String(s == null ? '' : s)
+    .replace(/<[^>]*>/g, '')
+    .replace(/[ -]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, REVIEW_MAX_TEXT);
+}
+
+function clampRating(n) {
+  const r = Math.round(Number(n));
+  if (!isFinite(r)) return 0;
+  return Math.max(1, Math.min(5, r));
+}
+
+async function readJsonArray(kv, key) {
+  const raw = await kv.get(key);
+  if (!raw) return [];
+  try {
+    const v = JSON.parse(raw);
+    return Array.isArray(v) ? v : [];
+  } catch { return []; }
+}
+
+async function customerHasDeliveredOrderFor(env, phone, productSlug) {
+  if (!env.ORDERS_KV || !phone || !productSlug) return false;
+  const idx = await env.ORDERS_KV.list({ prefix: `phone:${phone}:order:` });
+  let verified = false;
+  await Promise.all(
+    idx.keys.map(async (k) => {
+      if (verified) return;
+      const id = k.name.substring(k.name.lastIndexOf(':') + 1);
+      if (!id) return;
+      const raw = await env.ORDERS_KV.get(`order:${id}`);
+      if (!raw) return;
+      try {
+        const o = JSON.parse(raw);
+        if (o.status !== 'delivered') return;
+        if (Array.isArray(o.items) && o.items.some((i) => i && i.slug === productSlug)) {
+          verified = true;
+        }
+      } catch {}
+    })
+  );
+  return verified;
+}
+
+function safeReviewSlug(s) {
+  // productId is a product slug — keep the same shape we already use.
+  return String(s || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+    .slice(0, 96);
+}
+
+async function handleReviews(body, env) {
+  const kv = env.REVIEWS_KV;
+  if (!kv) return json({ ok: false, error: "KV not bound (REVIEWS_KV)" }, 500);
+
+  const action = body?.action;
+  if (!action) return json({ ok: false, error: "Missing action" }, 400);
+
+  // ===== Public: stats =====
+  if (action === "stats") {
+    const productId = safeReviewSlug(body.productId);
+    if (!productId) return json({ ok: false, error: "Champ requis: productId" }, 400);
+    const index = await readJsonArray(kv, `review-index:${productId}`);
+    let count = 0;
+    let sum = 0;
+    await Promise.all(
+      index.map(async (rid) => {
+        const raw = await kv.get(`review:${productId}:${rid}`);
+        if (!raw) return;
+        try {
+          const r = JSON.parse(raw);
+          if (r.status === 'approved') {
+            count += 1;
+            sum += clampRating(r.rating);
+          }
+        } catch {}
+      })
+    );
+    const average = count > 0 ? Math.round((sum / count) * 10) / 10 : 0;
+    return json({ ok: true, average, count });
+  }
+
+  // ===== Public: list approved reviews for a product =====
+  if (action === "list") {
+    const productId = safeReviewSlug(body.productId);
+    if (!productId) return json({ ok: false, error: "Champ requis: productId" }, 400);
+    const index = await readJsonArray(kv, `review-index:${productId}`);
+    const reviews = [];
+    await Promise.all(
+      index.map(async (rid) => {
+        const raw = await kv.get(`review:${productId}:${rid}`);
+        if (!raw) return;
+        try {
+          const r = JSON.parse(raw);
+          if (r.status === 'approved') reviews.push(r);
+        } catch {}
+      })
+    );
+    reviews.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+    // Strip customerId from public payload — keep customerName + rating + text.
+    const safe = reviews.map(({ customerId, ...rest }) => rest);
+    return json({ ok: true, reviews: safe });
+  }
+
+  // ===== Customer: submit =====
+  if (action === "submit") {
+    const sess = await getSession(env, body.sessionToken);
+    if (!sess) return json({ ok: false, error: "Session invalide" }, 401);
+    if (!env.CUSTOMERS_KV) {
+      return json({ ok: false, error: "KV not bound (CUSTOMERS_KV)" }, 500);
+    }
+    const productId = safeReviewSlug(body.productId);
+    if (!productId) return json({ ok: false, error: "Champ requis: productId" }, 400);
+    const rating = clampRating(body.rating);
+    if (!rating) return json({ ok: false, error: "Note invalide (1 à 5)" }, 400);
+    const text = sanitizeReviewText(body.text);
+    if (text.length < 1) return json({ ok: false, error: "Champ requis: text" }, 400);
+
+    const phone = sess.phone;
+
+    // Anti-doublon: did this customer already review this product?
+    const userIndex = await readJsonArray(kv, `review-by-user:${phone}`);
+    if (userIndex.some((e) => e && e.productId === productId)) {
+      return json({ ok: false, error: "Vous avez déjà laissé un avis pour ce parfum" }, 409);
+    }
+
+    // Daily quota: 5 reviews / customer / 24h
+    const rlKey = `ratelimit:review:${phone}`;
+    const nowMs = Date.now();
+    let rl = { count: 0, windowStart: nowMs };
+    const rlRaw = await kv.get(rlKey);
+    if (rlRaw) {
+      try {
+        const p = JSON.parse(rlRaw);
+        if (nowMs - p.windowStart < REVIEW_DAY_MS) rl = p;
+      } catch {}
+    }
+    if (rl.count >= REVIEW_DAILY_QUOTA) {
+      return json(
+        { ok: false, error: "Limite atteinte : 5 avis maximum par jour" },
+        429
+      );
+    }
+
+    // Resolve customer name from CUSTOMERS_KV (don't trust client-supplied)
+    let customerName = null;
+    const custRaw = await env.CUSTOMERS_KV.get(`customer:${phone}`);
+    if (custRaw) {
+      try {
+        const c = JSON.parse(custRaw);
+        if (c.name) customerName = String(c.name).trim() || null;
+      } catch {}
+    }
+
+    // Auto-verify: customer has a delivered order containing this product.
+    const verified = await customerHasDeliveredOrderFor(env, phone, productId);
+
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
+    const review = {
+      id,
+      productId,
+      customerId: phone,
+      customerName: customerName || 'Client Dadios',
+      rating,
+      text,
+      status: verified ? 'approved' : 'pending',
+      verified,
+      createdAt: now,
+      moderatedAt: verified ? now : null,
+      moderatedBy: verified ? 'auto-verified' : null,
+    };
+
+    // Update the three indexes:
+    //   review-index:${productId}     (always)
+    //   review-pending                 (only if pending)
+    //   review-by-user:${phone}        (always — anti-doublon source of truth)
+    const productIndex = await readJsonArray(kv, `review-index:${productId}`);
+    productIndex.push(id);
+
+    const ops = [
+      kv.put(`review:${productId}:${id}`, JSON.stringify(review)),
+      kv.put(`review-index:${productId}`, JSON.stringify(productIndex)),
+      kv.put(
+        `review-by-user:${phone}`,
+        JSON.stringify([...userIndex, { reviewId: id, productId, createdAt: now }]),
+      ),
+      kv.put(
+        rlKey,
+        JSON.stringify({ count: rl.count + 1, windowStart: rl.windowStart }),
+        { expirationTtl: 24 * 60 * 60 },
+      ),
+    ];
+    if (!verified) {
+      const pending = await readJsonArray(kv, 'review-pending');
+      pending.push(id);
+      ops.push(kv.put('review-pending', JSON.stringify(pending)));
+    }
+    await Promise.all(ops);
+
+    return json({ ok: true, review });
+  }
+
+  // ===== Admin: list pending =====
+  if (action === "admin_pending") {
+    if (!requireAdmin(body, env)) return json({ ok: false, error: "Unauthorized" }, 401);
+    const pending = await readJsonArray(kv, 'review-pending');
+    const reviews = [];
+    await Promise.all(
+      pending.map(async (rid) => {
+        // Pending entries don't tell us which product they belong to, so we
+        // try every product index. With small N this is fine; if it ever
+        // gets large we can switch to a flat review:${id} layout.
+        // Faster path: each pending entry came from /submit which always
+        // wrote the review at `review:${productId}:${reviewId}`. We scan
+        // by listing review:*:reviewId — but KV doesn't suffix-match. Use
+        // a small lookup table: the submit handler also wrote
+        // review-by-user:* which we won't iterate here. Easier: walk
+        // review-index:* via list({prefix:'review-index:'}) and find which
+        // product contains this id.
+        const idxList = await kv.list({ prefix: 'review-index:' });
+        for (const k of idxList.keys) {
+          const arr = await readJsonArray(kv, k.name);
+          if (arr.includes(rid)) {
+            const productId = k.name.substring('review-index:'.length);
+            const raw = await kv.get(`review:${productId}:${rid}`);
+            if (raw) {
+              try { reviews.push(JSON.parse(raw)); } catch {}
+            }
+            break;
+          }
+        }
+      })
+    );
+    reviews.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+    return json({ ok: true, reviews });
+  }
+
+  // ===== Admin: list all (status filter) =====
+  if (action === "admin_list") {
+    if (!requireAdmin(body, env)) return json({ ok: false, error: "Unauthorized" }, 401);
+    const statusFilter = body.status ? String(body.status) : null;
+    const productFilter = body.productId ? safeReviewSlug(body.productId) : null;
+    const idxList = productFilter
+      ? [{ name: `review-index:${productFilter}` }]
+      : (await kv.list({ prefix: 'review-index:' })).keys;
+    const reviews = [];
+    await Promise.all(
+      idxList.map(async (k) => {
+        const productId = k.name.substring('review-index:'.length);
+        const arr = await readJsonArray(kv, k.name);
+        await Promise.all(
+          arr.map(async (rid) => {
+            const raw = await kv.get(`review:${productId}:${rid}`);
+            if (!raw) return;
+            try {
+              const r = JSON.parse(raw);
+              if (!statusFilter || r.status === statusFilter) reviews.push(r);
+            } catch {}
+          })
+        );
+      })
+    );
+    reviews.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+    return json({ ok: true, reviews });
+  }
+
+  // ===== Admin: approve / reject =====
+  if (action === "admin_approve" || action === "admin_reject") {
+    if (!requireAdmin(body, env)) return json({ ok: false, error: "Unauthorized" }, 401);
+    const reviewId = String(body.reviewId || '');
+    if (!reviewId) return json({ ok: false, error: "Champ requis: reviewId" }, 400);
+
+    // Find the product that owns this review.
+    const idxList = await kv.list({ prefix: 'review-index:' });
+    let productId = null;
+    for (const k of idxList.keys) {
+      const arr = await readJsonArray(kv, k.name);
+      if (arr.includes(reviewId)) {
+        productId = k.name.substring('review-index:'.length);
+        break;
+      }
+    }
+    if (!productId) return json({ ok: false, error: "Avis introuvable" }, 404);
+
+    const raw = await kv.get(`review:${productId}:${reviewId}`);
+    if (!raw) return json({ ok: false, error: "Avis introuvable" }, 404);
+    let review;
+    try { review = JSON.parse(raw); }
+    catch { return json({ ok: false, error: "Avis corrompu" }, 500); }
+
+    const now = new Date().toISOString();
+    review.status = action === "admin_approve" ? 'approved' : 'rejected';
+    review.moderatedAt = now;
+    review.moderatedBy = 'admin';
+
+    const pending = await readJsonArray(kv, 'review-pending');
+    const filtered = pending.filter((x) => x !== reviewId);
+    const ops = [kv.put(`review:${productId}:${reviewId}`, JSON.stringify(review))];
+    if (filtered.length !== pending.length) {
+      ops.push(kv.put('review-pending', JSON.stringify(filtered)));
+    }
+    await Promise.all(ops);
+    return json({ ok: true, review });
+  }
+
+  // ===== Admin: delete =====
+  if (action === "admin_delete") {
+    if (!requireAdmin(body, env)) return json({ ok: false, error: "Unauthorized" }, 401);
+    const reviewId = String(body.reviewId || '');
+    if (!reviewId) return json({ ok: false, error: "Champ requis: reviewId" }, 400);
+
+    // Find product owning the review
+    const idxList = await kv.list({ prefix: 'review-index:' });
+    let productId = null;
+    for (const k of idxList.keys) {
+      const arr = await readJsonArray(kv, k.name);
+      if (arr.includes(reviewId)) {
+        productId = k.name.substring('review-index:'.length);
+        break;
+      }
+    }
+    if (!productId) return json({ ok: false, error: "Avis introuvable" }, 404);
+
+    // Load to find the customer (for review-by-user cleanup)
+    const raw = await kv.get(`review:${productId}:${reviewId}`);
+    let customerId = null;
+    if (raw) {
+      try { customerId = JSON.parse(raw).customerId || null; } catch {}
+    }
+
+    const ops = [kv.delete(`review:${productId}:${reviewId}`)];
+
+    // Remove from product index
+    const productIndex = await readJsonArray(kv, `review-index:${productId}`);
+    const remaining = productIndex.filter((x) => x !== reviewId);
+    if (remaining.length !== productIndex.length) {
+      ops.push(
+        remaining.length
+          ? kv.put(`review-index:${productId}`, JSON.stringify(remaining))
+          : kv.delete(`review-index:${productId}`),
+      );
+    }
+    // Remove from pending
+    const pending = await readJsonArray(kv, 'review-pending');
+    const fp = pending.filter((x) => x !== reviewId);
+    if (fp.length !== pending.length) {
+      ops.push(kv.put('review-pending', JSON.stringify(fp)));
+    }
+    // Remove from user index (so the customer can leave another review for
+    // this product if the admin asks them to).
+    if (customerId) {
+      const userIndex = await readJsonArray(kv, `review-by-user:${customerId}`);
+      const fu = userIndex.filter((e) => !e || e.reviewId !== reviewId);
+      if (fu.length !== userIndex.length) {
+        ops.push(
+          fu.length
+            ? kv.put(`review-by-user:${customerId}`, JSON.stringify(fu))
+            : kv.delete(`review-by-user:${customerId}`),
+        );
+      }
+    }
+    await Promise.all(ops);
+    return json({ ok: true });
+  }
+
+  // ===== Admin: pending count (handy for the admin badge) =====
+  if (action === "admin_pending_count") {
+    if (!requireAdmin(body, env)) return json({ ok: false, error: "Unauthorized" }, 401);
+    const pending = await readJsonArray(kv, 'review-pending');
+    return json({ ok: true, count: pending.length });
+  }
+
+  return json({ ok: false, error: "Unknown reviews action: " + action }, 400);
+}
+
+// ============================================================
 // Admin handler (product CRUD)
 // ============================================================
 async function handleAdmin(body, env) {
@@ -1768,6 +2174,14 @@ export default {
       try { body = await request.json(); }
       catch { return json({ ok: false, error: "Invalid JSON" }, 400); }
       return handlePerfumeRequests(body, env);
+    }
+
+    // ===== Reviews (avis clients) =====
+    if (url.pathname === "/api/reviews" && request.method === "POST") {
+      let body;
+      try { body = await request.json(); }
+      catch { return json({ ok: false, error: "Invalid JSON" }, 400); }
+      return handleReviews(body, env);
     }
 
     // ===== Image upload =====

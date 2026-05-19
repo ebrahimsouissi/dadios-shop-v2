@@ -73,6 +73,11 @@ const allNotes = [...product.topNotes, ...product.heartNotes, ...product.baseNot
     <div class="pd-info">
       <div class="eyebrow">{product.family} · {product.gender}</div>
       <h1>{product.name}</h1>
+      <!-- Review stats, populated client-side from /api/reviews stats -->
+      <div class="pd-stars-row" id="pdStarsRow" hidden>
+        <span class="pd-stars" id="pdStarsAvg"></span>
+        <span class="pd-stars-count" id="pdStarsCount"></span>
+      </div>
       <p class="pd-inspiration">Inspiré par <em>{product.inspiredBy}</em></p>
       <p class="pd-desc">{product.shortDescription}</p>
 
@@ -178,6 +183,54 @@ const allNotes = [...product.topNotes, ...product.heartNotes, ...product.baseNot
     </div>
   </section>
 )}
+
+<!-- ============ AVIS CLIENTS ============ -->
+<section class="rev-section" id="revSection">
+  <div class="ornament">
+    <span class="line"></span>
+    <svg viewBox="0 0 24 24"><path d="M12 2 L14 10 L22 12 L14 14 L12 22 L10 14 L2 12 L10 10 Z" fill="currentColor"/></svg>
+    <span class="line"></span>
+  </div>
+  <div class="section-head">
+    <div class="eyebrow">Avis clients</div>
+    <h2>Ce qu'on en dit</h2>
+  </div>
+
+  <div id="revList" class="rev-list" aria-live="polite">
+    <p class="rev-empty" id="revEmpty">Soyez le premier à laisser un avis sur ce parfum.</p>
+  </div>
+
+  <!-- Submit form (or login prompt). Visibility decided client-side -->
+  <div class="rev-form-wrap" id="revFormWrap" hidden>
+    <h3>Laisser un avis</h3>
+    <p class="rev-form-help" id="revVerifyHint" hidden>Votre avis sera vérifié avant publication.</p>
+    <form id="revForm" novalidate>
+      <fieldset class="rev-stars-field" aria-label="Votre note">
+        <legend>Votre note *</legend>
+        <div class="rev-stars-input" id="revStarsInput" role="radiogroup">
+          <!-- 5 buttons rendered by JS so they share state cleanly -->
+        </div>
+      </fieldset>
+      <label class="rev-text-field">
+        <span>Votre avis *</span>
+        <textarea id="revText" rows="4" maxlength="300" placeholder="Quelles sont vos impressions ? (300 caractères max)"></textarea>
+        <small><span id="revTextCount">0</span>/300</small>
+      </label>
+      <p id="revErr" class="rev-err" hidden></p>
+      <p id="revOk" class="rev-ok" hidden></p>
+      <div class="rev-form-actions">
+        <button type="submit" id="revSubmit" class="btn btn-primary btn-sm">Publier mon avis</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="rev-login-wrap" id="revLoginWrap" hidden>
+    <p>
+      <a href="/compte" class="rev-login-link">Connectez-vous</a>
+      pour laisser un avis sur ce parfum.
+    </p>
+  </div>
+</section>
 
 </Base>
 
@@ -408,6 +461,207 @@ const allNotes = [...product.topNotes, ...product.heartNotes, ...product.baseNot
     .pd-img { padding: 28px; }
     .pyr-row { grid-template-columns: 1fr; gap: 12px; }
   }
+
+  /* ===== stars under title ===== */
+  .pd-stars-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 6px 0 14px;
+  }
+  .pd-stars { display: inline-flex; gap: 2px; }
+  .pd-stars-count {
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    color: var(--ink-mute);
+  }
+
+  /* shared star styling — both header and review cards */
+  :global(.rev-star) { vertical-align: middle; }
+  :global(.rev-star.filled path) { fill: #D4AF37; }
+  :global(.rev-star.empty path) { fill: none; }
+
+  /* ===== avis section ===== */
+  .rev-section {
+    max-width: 760px;
+    margin: 0 auto 96px;
+    padding: 0 32px;
+  }
+  .rev-section .section-head { margin-bottom: 32px; }
+  .rev-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+  .rev-empty {
+    text-align: center;
+    color: var(--ink-mute);
+    font-style: italic;
+    padding: 24px;
+  }
+  .rev-card {
+    background: var(--cream-soft);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 22px;
+  }
+  .rev-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+  .rev-card-author {
+    font-family: var(--font-display);
+    font-size: 17px;
+    color: var(--ink);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .rev-card-verified {
+    background: rgba(14, 58, 31, 0.08);
+    color: var(--emerald);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--emerald);
+  }
+  .rev-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .rev-card-stars { display: inline-flex; gap: 2px; }
+  .rev-card-date {
+    font-size: 12px;
+    color: var(--ink-mute);
+  }
+  .rev-card-text {
+    color: var(--ink-soft);
+    line-height: 1.65;
+    font-size: 15px;
+    margin: 0;
+  }
+
+  /* ===== submit form ===== */
+  .rev-form-wrap {
+    background: var(--cream-soft);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 26px 22px;
+  }
+  .rev-form-wrap h3 {
+    font-size: 20px;
+    margin: 0 0 8px;
+  }
+  .rev-form-help {
+    color: var(--ink-mute);
+    font-size: 13px;
+    margin: 0 0 18px;
+  }
+  .rev-stars-field {
+    border: none;
+    padding: 0;
+    margin: 0 0 16px;
+  }
+  .rev-stars-field legend {
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 8px;
+    padding: 0;
+  }
+  .rev-stars-input {
+    display: inline-flex;
+    gap: 6px;
+  }
+  .rev-star-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    line-height: 0;
+    border-radius: 4px;
+    transition: transform .15s ease-out;
+  }
+  .rev-star-btn:hover { transform: scale(1.1); }
+  .rev-star-btn:focus-visible { outline: 2px solid var(--emerald); outline-offset: 2px; }
+  .rev-text-field { display: block; margin-bottom: 14px; }
+  .rev-text-field > span {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  .rev-text-field textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    background: var(--cream);
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--ink);
+    resize: vertical;
+    min-height: 90px;
+    box-sizing: border-box;
+  }
+  .rev-text-field textarea:focus { outline: none; border-color: var(--emerald); }
+  .rev-text-field small {
+    display: block;
+    font-size: 11px;
+    color: var(--ink-mute);
+    margin-top: 4px;
+  }
+  .rev-err {
+    background: rgba(178, 58, 31, 0.08);
+    border: 1px solid #B23A1F;
+    color: #8a2a14;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin: 0 0 10px;
+  }
+  .rev-ok {
+    background: rgba(14, 58, 31, 0.06);
+    border: 1px solid var(--emerald);
+    color: var(--emerald);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin: 0 0 10px;
+  }
+  .rev-form-actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .rev-login-wrap {
+    background: var(--cream-warm);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 22px;
+    text-align: center;
+    color: var(--ink-soft);
+  }
+  .rev-login-link {
+    color: var(--emerald);
+    text-decoration: underline;
+    font-weight: 500;
+  }
+
+  @media (max-width: 640px) {
+    .rev-section { padding: 0 16px; }
+  }
 </style>
 
 <script>
@@ -470,4 +724,190 @@ const allNotes = [...product.topNotes, ...product.heartNotes, ...product.baseNot
     });
     showAddedToast(`Ajouté · ${addBtn.getAttribute('data-name')} (${sizeLabel || sizeCode})`);
   });
+</script>
+
+<script>
+  // ============ AVIS CLIENTS ============
+  import { isLoggedIn } from '../../scripts/customerApi.js';
+  import {
+    getReviewStats,
+    listReviewsForProduct,
+    submitReview,
+    starsHtml,
+    formatReviewDate,
+  } from '../../scripts/reviewsApi.js';
+
+  const slugAttr = (document.getElementById('addToCartBtn') as HTMLElement | null)?.getAttribute('data-slug') || '';
+  const productSlug = slugAttr;
+
+  function esc(s: any) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    })[c]!);
+  }
+
+  // ===== stats in the header =====
+  (async () => {
+    if (!productSlug) return;
+    const res = await getReviewStats(productSlug);
+    if (!res.ok || !res.count) return;
+    const row = document.getElementById('pdStarsRow') as HTMLElement;
+    const avg = document.getElementById('pdStarsAvg') as HTMLElement;
+    const count = document.getElementById('pdStarsCount') as HTMLElement;
+    avg.innerHTML = starsHtml(res.average, 18);
+    count.textContent = `${res.average} · ${res.count} avis`;
+    row.hidden = false;
+  })();
+
+  // ===== list approved reviews =====
+  const revList = document.getElementById('revList') as HTMLElement;
+  const revEmpty = document.getElementById('revEmpty') as HTMLElement;
+
+  function renderReviewCards(reviews: any[]) {
+    if (!reviews.length) {
+      revEmpty.hidden = false;
+      // Remove any previously rendered cards
+      revList.querySelectorAll('.rev-card').forEach((n) => n.remove());
+      return;
+    }
+    revEmpty.hidden = true;
+    revList.querySelectorAll('.rev-card').forEach((n) => n.remove());
+    const frag = document.createDocumentFragment();
+    reviews.forEach((r) => {
+      const card = document.createElement('article');
+      card.className = 'rev-card';
+      card.innerHTML = `
+        <div class="rev-card-head">
+          <span class="rev-card-author">
+            <span class="rev-card-author-name"></span>
+            ${r.verified ? '<span class="rev-card-verified">Achat vérifié</span>' : ''}
+          </span>
+          <div class="rev-card-meta">
+            <span class="rev-card-stars">${starsHtml(r.rating, 14)}</span>
+            <span class="rev-card-date">${esc(formatReviewDate(r.createdAt))}</span>
+          </div>
+        </div>
+        <p class="rev-card-text"></p>
+      `;
+      // Inject author + text via textContent to guarantee no HTML
+      (card.querySelector('.rev-card-author-name') as HTMLElement).textContent =
+        r.customerName || 'Client Dadios';
+      (card.querySelector('.rev-card-text') as HTMLElement).textContent = r.text || '';
+      frag.appendChild(card);
+    });
+    revList.appendChild(frag);
+  }
+
+  async function loadReviews() {
+    if (!productSlug) return;
+    const res = await listReviewsForProduct(productSlug);
+    if (!res.ok) return;
+    renderReviewCards(res.reviews || []);
+  }
+  loadReviews();
+
+  // ===== Submit form / login prompt =====
+  const formWrap = document.getElementById('revFormWrap') as HTMLElement;
+  const loginWrap = document.getElementById('revLoginWrap') as HTMLElement;
+  const starsInput = document.getElementById('revStarsInput') as HTMLElement;
+  const revText = document.getElementById('revText') as HTMLTextAreaElement;
+  const revTextCount = document.getElementById('revTextCount') as HTMLElement;
+  const revSubmit = document.getElementById('revSubmit') as HTMLButtonElement;
+  const revErr = document.getElementById('revErr') as HTMLElement;
+  const revOk = document.getElementById('revOk') as HTMLElement;
+  const revVerifyHint = document.getElementById('revVerifyHint') as HTMLElement;
+  const revForm = document.getElementById('revForm') as HTMLFormElement;
+
+  let currentRating = 0;
+
+  function renderStarButtons() {
+    starsInput.innerHTML = '';
+    for (let i = 1; i <= 5; i++) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'rev-star-btn';
+      b.setAttribute('role', 'radio');
+      b.setAttribute('aria-label', `${i} étoile${i > 1 ? 's' : ''}`);
+      b.setAttribute('data-rating', String(i));
+      b.setAttribute('aria-checked', i === currentRating ? 'true' : 'false');
+      b.innerHTML = starsHtml(i <= currentRating ? 5 : 0, 26).split('</svg>')[0] + '</svg>';
+      // (We use a single star icon per button; the helper renders 5 — slice
+      // to the first one.) Simpler: render manually.
+      b.innerHTML = `<svg class="rev-star ${i <= currentRating ? 'filled' : 'empty'}" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">
+        <path d="M12 2 L14.39 8.96 L21.8 9.27 L15.96 13.97 L17.91 21.02 L12 17.06 L6.09 21.02 L8.04 13.97 L2.2 9.27 L9.61 8.96 Z"
+          fill="${i <= currentRating ? '#D4AF37' : 'none'}" stroke="#D4AF37" stroke-width="1.4" stroke-linejoin="round"/>
+      </svg>`;
+      starsInput.appendChild(b);
+    }
+  }
+  starsInput.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest('.rev-star-btn') as HTMLElement | null;
+    if (!btn) return;
+    currentRating = Number(btn.getAttribute('data-rating')) || 0;
+    renderStarButtons();
+  });
+  renderStarButtons();
+
+  revText.addEventListener('input', () => {
+    revTextCount.textContent = String(revText.value.length);
+  });
+
+  revForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    revErr.hidden = true; revOk.hidden = true;
+    if (!currentRating) {
+      revErr.textContent = 'Sélectionnez une note (1 à 5 étoiles).';
+      revErr.hidden = false;
+      return;
+    }
+    const text = revText.value.trim();
+    if (!text) {
+      revErr.textContent = 'Écrivez votre avis avant de publier.';
+      revErr.hidden = false;
+      return;
+    }
+    revSubmit.disabled = true;
+    revSubmit.textContent = 'Envoi…';
+    try {
+      const res = await submitReview({ productId: productSlug, rating: currentRating, text });
+      if (!res.ok) {
+        revErr.textContent = res.error || 'Impossible de publier votre avis.';
+        revErr.hidden = false;
+        return;
+      }
+      if (res.review && res.review.status === 'approved') {
+        revOk.textContent = '✓ Votre avis a été publié. Merci !';
+      } else {
+        revOk.textContent = '✓ Votre avis a bien été envoyé et sera publié après vérification.';
+      }
+      revOk.hidden = false;
+      currentRating = 0;
+      revText.value = '';
+      revTextCount.textContent = '0';
+      renderStarButtons();
+      // Refresh visible list + stats so an auto-approved review appears now
+      loadReviews();
+      const stats = await getReviewStats(productSlug);
+      if (stats.ok && stats.count) {
+        (document.getElementById('pdStarsAvg') as HTMLElement).innerHTML = starsHtml(stats.average, 18);
+        (document.getElementById('pdStarsCount') as HTMLElement).textContent = `${stats.average} · ${stats.count} avis`;
+        (document.getElementById('pdStarsRow') as HTMLElement).hidden = false;
+      }
+    } finally {
+      revSubmit.disabled = false;
+      revSubmit.textContent = 'Publier mon avis';
+    }
+  });
+
+  // ===== Decide which CTA to show (login link or form) =====
+  if (isLoggedIn()) {
+    formWrap.hidden = false;
+    // Best-effort: tell the user up-front whether their review will be
+    // auto-approved or held for moderation. We can't know without asking
+    // the worker (the verified check happens server-side), so we just show
+    // the generic hint — keeps the page snappy and copy clear.
+    revVerifyHint.hidden = false;
+  } else {
+    loginWrap.hidden = false;
+  }
 </script>
