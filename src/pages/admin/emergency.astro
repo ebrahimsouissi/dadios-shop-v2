@@ -1,0 +1,170 @@
+---
+/**
+ * Phase 13 — emergency admin recovery.
+ *
+ * URL: /admin/emergency. Not linked from anywhere — accessed directly
+ * when the user has lost session-based admin access. Accepts the legacy
+ * ADMIN_PASSWORD env, creates a 1-hour session token tagged
+ * isEmergency=true on the worker, stores it in localStorage so /admin
+ * picks it up.
+ *
+ * The emergency session has super-admin read access but is blocked from
+ * promote/demote/update-permissions on the worker side — so an attacker
+ * with the password can't permanently elevate themselves to a real
+ * admin record.
+ */
+import Base from '../../layouts/Base.astro';
+---
+<Base
+  title="Connexion d'urgence — Dadios"
+  description="Récupération d'accès administrateur"
+>
+
+<section class="emergency-wrap">
+  <div class="emergency-card">
+    <div class="emergency-icon" aria-hidden="true">🛡️</div>
+    <div class="eyebrow">Récupération d'accès</div>
+    <h1>Connexion d'urgence</h1>
+    <p class="emergency-help">
+      À utiliser uniquement pour récupérer un accès administrateur perdu.
+      La session ouverte ici dure <strong>1 heure</strong> et ne permet pas
+      de promouvoir ou rétrograder d'autres administrateurs.
+    </p>
+    <form id="emergencyForm" novalidate>
+      <label>
+        <span>Mot de passe administrateur</span>
+        <input
+          type="password"
+          id="emergencyPwd"
+          autocomplete="current-password"
+          required
+        />
+      </label>
+      <p id="emergencyErr" class="emergency-err" hidden></p>
+      <p id="emergencyOk" class="emergency-ok" hidden></p>
+      <button type="submit" id="emergencyBtn" class="btn btn-primary emergency-cta">
+        Connexion d'urgence
+      </button>
+    </form>
+    <p class="emergency-foot">
+      Une fois connecté, vous serez redirigé vers le panneau d'administration.
+    </p>
+  </div>
+</section>
+
+</Base>
+
+<style>
+  .emergency-wrap {
+    min-height: 70vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px;
+  }
+  .emergency-card {
+    max-width: 480px;
+    width: 100%;
+    background: var(--cream-soft);
+    border: 1px solid var(--border-strong);
+    border-radius: 14px;
+    padding: 40px 32px;
+    text-align: center;
+  }
+  .emergency-icon {
+    font-size: 36px;
+    margin-bottom: 14px;
+  }
+  .emergency-card h1 {
+    font-size: clamp(28px, 4vw, 36px);
+    margin: 8px 0 14px;
+  }
+  .emergency-help {
+    color: var(--ink-soft);
+    line-height: 1.65;
+    margin-bottom: 24px;
+    font-size: 14px;
+  }
+  .emergency-card form { text-align: left; }
+  .emergency-card label > span {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 8px;
+  }
+  .emergency-card input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    background: var(--cream);
+    font-family: var(--font-body);
+    font-size: 14px;
+    box-sizing: border-box;
+    margin-bottom: 12px;
+  }
+  .emergency-card input:focus { outline: none; border-color: var(--emerald); }
+  .emergency-cta { width: 100%; margin-top: 12px; }
+  .emergency-err {
+    background: rgba(178, 58, 31, 0.08);
+    border: 1px solid #B23A1F;
+    color: #8a2a14;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin: 0 0 10px;
+  }
+  .emergency-ok {
+    background: rgba(14, 58, 31, 0.06);
+    border: 1px solid var(--emerald);
+    color: var(--emerald);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin: 0 0 10px;
+  }
+  .emergency-foot {
+    margin-top: 22px;
+    font-size: 11px;
+    color: var(--ink-mute);
+  }
+</style>
+
+<script>
+  import { adminEmergencyLogin } from '../../scripts/adminApi.js';
+
+  const form = document.getElementById('emergencyForm') as HTMLFormElement;
+  const pwd  = document.getElementById('emergencyPwd') as HTMLInputElement;
+  const err  = document.getElementById('emergencyErr') as HTMLElement;
+  const ok   = document.getElementById('emergencyOk') as HTMLElement;
+  const btn  = document.getElementById('emergencyBtn') as HTMLButtonElement;
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    err.hidden = true; ok.hidden = true;
+    const p = pwd.value;
+    if (!p) {
+      err.textContent = 'Le mot de passe est requis.';
+      err.hidden = false;
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'Connexion…';
+    try {
+      const res = await adminEmergencyLogin(p);
+      if (!res.ok) {
+        err.textContent = res.error || 'Mot de passe incorrect.';
+        err.hidden = false;
+        return;
+      }
+      ok.textContent = '✓ Session d\'urgence ouverte (1 heure). Redirection…';
+      ok.hidden = false;
+      setTimeout(() => { window.location.assign('/admin'); }, 800);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Connexion d\'urgence';
+    }
+  });
+</script>

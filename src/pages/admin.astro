@@ -326,7 +326,162 @@ const sizes = data.sizes;
 
     <p id="reviewsStatus" class="status-msg hidden"></p>
   </div>
+
+  <!-- ============ ADMINISTRATEURS (super-admin only) ============ -->
+  <div class="admins-block" data-requires-permission="all">
+    <div class="admins-head">
+      <div>
+        <div class="eyebrow">Administration</div>
+        <h2>Administrateurs &amp; journal d'audit</h2>
+        <p class="admins-help">
+          Gérez les autres administrateurs et consultez l'historique des actions.
+          Toutes vos actions ici sont également tracées.
+        </p>
+      </div>
+      <button type="button" id="adminsAddBtn" class="btn btn-primary btn-sm">+ Promouvoir un client</button>
+    </div>
+
+    <div class="admins-tablewrap">
+      <table class="admin-table admins-admin-table">
+        <thead>
+          <tr>
+            <th>Nom</th>
+            <th>Téléphone</th>
+            <th>Permissions</th>
+            <th>Promu le</th>
+            <th>Par</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="adminsRows">
+          <tr><td colspan="6" style="text-align:center;padding:24px">Chargement…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p id="adminsStatus" class="status-msg hidden"></p>
+
+    <div class="logs-section">
+      <h3 style="margin-top: 28px;font-size: 18px;">Journal d'audit (90 jours)</h3>
+      <div class="logs-filters">
+        <input type="text" id="logActionFilter" placeholder="Filtrer par action (ex. tier.grant)" />
+        <input type="text" id="logCustomerFilter" placeholder="Filtrer par téléphone admin" />
+        <button type="button" id="logsRefreshBtn" class="btn btn-outline btn-sm">Recharger</button>
+      </div>
+      <div class="logs-tablewrap">
+        <table class="admin-table logs-admin-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Admin</th>
+              <th>Action</th>
+              <th>Détails</th>
+              <th>IP</th>
+            </tr>
+          </thead>
+          <tbody id="logsRows">
+            <tr><td colspan="5" style="text-align:center;padding:24px">Chargement…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 </section>
+
+<!-- ============ PROMOTE ADMIN MODAL ============ -->
+<div class="modal hidden" id="promoteAdminModal">
+  <div class="modal-overlay" id="promoteAdminOverlay"></div>
+  <div class="modal-box">
+    <button type="button" class="modal-close" id="promoteAdminClose" aria-label="Fermer">×</button>
+    <div class="eyebrow">Nouvel administrateur</div>
+    <h2 id="promoteAdminTitle">Promouvoir un client</h2>
+    <p style="color:var(--ink-soft);margin-bottom:16px">
+      Cherchez le client par son numéro de téléphone, puis cochez les permissions.
+    </p>
+    <form id="promoteAdminForm">
+      <label>
+        <span>Téléphone du client *</span>
+        <input type="tel" id="promotePhone" required placeholder="+216 56 731 891" autocomplete="off" />
+      </label>
+      <div class="perm-groups">
+        <fieldset>
+          <legend>📦 Catalogue</legend>
+          <label class="perm-checkbox"><input type="checkbox" name="perm" value="products"/> Produits</label>
+          <label class="perm-checkbox"><input type="checkbox" name="perm" value="articles"/> Articles blog</label>
+        </fieldset>
+        <fieldset>
+          <legend>🛒 Ventes</legend>
+          <label class="perm-checkbox"><input type="checkbox" name="perm" value="orders"/> Commandes</label>
+          <label class="perm-checkbox"><input type="checkbox" name="perm" value="reviews"/> Avis clients</label>
+        </fieldset>
+        <fieldset>
+          <legend>👥 Clients</legend>
+          <label class="perm-checkbox"><input type="checkbox" name="perm" value="customers"/> Voir profils</label>
+          <label class="perm-checkbox"><input type="checkbox" name="perm" value="tiers"/> Changer tier VIP</label>
+          <label class="perm-checkbox"><input type="checkbox" name="perm" value="loyalty"/> Tampons fidélité</label>
+          <label class="perm-checkbox"><input type="checkbox" name="perm" value="perfume-requests"/> Conciergerie VIP</label>
+        </fieldset>
+        <fieldset>
+          <legend>🔒 Administration</legend>
+          <label class="perm-checkbox perm-all"><input type="checkbox" name="perm" value="all"/> TOUTES PERMISSIONS (super-admin)</label>
+        </fieldset>
+      </div>
+      <div class="preset-row">
+        <span class="preset-label">Préréglages :</span>
+        <button type="button" class="link-btn" data-preset="boutique">Employé Boutique</button>
+        <button type="button" class="link-btn" data-preset="marketing">Marketing</button>
+        <button type="button" class="link-btn" data-preset="manager">Manager</button>
+        <button type="button" class="link-btn" data-preset="super">Super-admin</button>
+      </div>
+      <p id="promoteErr" class="status-msg error hidden" style="margin-top:12px"></p>
+      <div class="form-actions">
+        <button type="button" class="btn btn-outline" id="promoteCancel">Annuler</button>
+        <button type="submit" class="btn btn-primary" id="promoteSave">Promouvoir</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ EDIT ADMIN PERMISSIONS MODAL ============ -->
+<div class="modal hidden" id="editAdminModal">
+  <div class="modal-overlay" id="editAdminOverlay"></div>
+  <div class="modal-box">
+    <button type="button" class="modal-close" id="editAdminClose" aria-label="Fermer">×</button>
+    <div class="eyebrow">Administrateur</div>
+    <h2 id="editAdminTitle">Modifier les permissions</h2>
+    <form id="editAdminForm">
+      <p style="color:var(--ink-soft);margin-bottom:14px" id="editAdminSub"></p>
+      <div class="perm-groups" id="editPermGroups">
+        <fieldset>
+          <legend>📦 Catalogue</legend>
+          <label class="perm-checkbox"><input type="checkbox" name="eperm" value="products"/> Produits</label>
+          <label class="perm-checkbox"><input type="checkbox" name="eperm" value="articles"/> Articles blog</label>
+        </fieldset>
+        <fieldset>
+          <legend>🛒 Ventes</legend>
+          <label class="perm-checkbox"><input type="checkbox" name="eperm" value="orders"/> Commandes</label>
+          <label class="perm-checkbox"><input type="checkbox" name="eperm" value="reviews"/> Avis clients</label>
+        </fieldset>
+        <fieldset>
+          <legend>👥 Clients</legend>
+          <label class="perm-checkbox"><input type="checkbox" name="eperm" value="customers"/> Voir profils</label>
+          <label class="perm-checkbox"><input type="checkbox" name="eperm" value="tiers"/> Changer tier VIP</label>
+          <label class="perm-checkbox"><input type="checkbox" name="eperm" value="loyalty"/> Tampons fidélité</label>
+          <label class="perm-checkbox"><input type="checkbox" name="eperm" value="perfume-requests"/> Conciergerie VIP</label>
+        </fieldset>
+        <fieldset>
+          <legend>🔒 Administration</legend>
+          <label class="perm-checkbox perm-all"><input type="checkbox" name="eperm" value="all"/> TOUTES PERMISSIONS</label>
+        </fieldset>
+      </div>
+      <p id="editAdminErr" class="status-msg error hidden" style="margin-top:12px"></p>
+      <div class="form-actions">
+        <button type="button" class="btn btn-outline" id="editAdminCancel">Annuler</button>
+        <button type="submit" class="btn btn-primary" id="editAdminSave">Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <!-- ============ CLIENT TIER MODAL ============ -->
 <div class="modal hidden" id="tierModal">
@@ -1399,6 +1554,149 @@ const sizes = data.sizes;
   }
   #tierForm select:focus, #tierForm input:focus, #tierForm textarea:focus { outline: none; border-color: var(--emerald); }
 
+  /* ====== ADMINS / LOGS BLOCK (Phase 13) ====== */
+  .admins-block {
+    margin-top: 48px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border);
+  }
+  .admins-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+  .admins-head h2 {
+    font-size: clamp(22px, 3vw, 28px);
+    margin-top: 6px;
+  }
+  .admins-help {
+    color: var(--ink-soft);
+    margin-top: 8px;
+    max-width: 560px;
+    font-size: 14px;
+  }
+  .admins-tablewrap, .logs-tablewrap {
+    overflow-x: auto;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+  .admins-admin-table, .logs-admin-table {
+    width: 100%;
+    border: none;
+    border-radius: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  .admins-admin-table .perm-pill {
+    display: inline-block;
+    background: var(--cream-warm);
+    border: 1px solid var(--border);
+    color: var(--ink-soft);
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin: 1px;
+  }
+  .admins-admin-table .perm-pill.all {
+    background: var(--gold);
+    color: var(--emerald-deep);
+    border-color: var(--gold);
+  }
+  .logs-section { margin-top: 24px; }
+  .logs-filters {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .logs-filters input {
+    flex: 1;
+    min-width: 220px;
+    padding: 8px 12px;
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    background: var(--cream-soft);
+    font-family: var(--font-body);
+    font-size: 13px;
+  }
+  .logs-filters input:focus { outline: none; border-color: var(--emerald); }
+  .logs-admin-table { font-size: 12px; }
+  .logs-admin-table .log-action {
+    font-family: 'Consolas', 'Monaco', monospace;
+    background: var(--cream-warm);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+  }
+  .logs-admin-table .log-details {
+    color: var(--ink-mute);
+    font-size: 11px;
+    word-break: break-word;
+    max-width: 360px;
+  }
+
+  /* Permission groups (in promote/edit modals) */
+  .perm-groups {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 18px 0 8px;
+  }
+  .perm-groups fieldset {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin: 0;
+  }
+  .perm-groups legend {
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--gold-soft);
+    padding: 0 6px;
+  }
+  .perm-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--ink);
+    padding: 4px 0;
+    cursor: pointer;
+  }
+  .perm-checkbox.perm-all {
+    background: rgba(212, 175, 55, 0.1);
+    border: 1px solid var(--gold);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-weight: 600;
+    color: var(--emerald);
+  }
+  .perm-checkbox input { margin: 0; }
+  .preset-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border);
+  }
+  .preset-label {
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+  @media (max-width: 720px) {
+    .perm-groups { grid-template-columns: 1fr; }
+  }
+
   /* ====== REVIEWS BLOCK ====== */
   .reviews-block {
     margin-top: 48px;
@@ -1488,6 +1786,7 @@ const sizes = data.sizes;
   import { adminListCustomers, adminGrantTier, adminRevokeTier } from '../scripts/adminApi.js';
   import { adminListPerfumeRequests, adminUpdatePerfumeRequest, PERFUME_REQUEST_STATUS_LABELS, PERFUME_REQUEST_TRANSITIONS } from '../scripts/perfumeRequestsApi.js';
   import { adminListReviews, adminListPendingReviews, adminPendingReviewsCount, adminApproveReview, adminRejectReview, adminDeleteReview, starsHtml as revStarsHtml, formatReviewDate } from '../scripts/reviewsApi.js';
+  import { adminListAdmins, adminPromoteAdmin, adminDemoteAdmin, adminUpdateAdminPermissions, adminListLogs } from '../scripts/adminApi.js';
 
   // ============ STATE ============
   let products = [];
@@ -1548,6 +1847,31 @@ const sizes = data.sizes;
   if (getPassword()) {
     attemptLogin(getPassword());
   }
+
+  // Phase 13: also auto-skip the password gate if the visitor's
+  // customer session has tier === 'admin' (or if they came in via
+  // /admin/emergency and have a 1h emergency token stashed).
+  (async () => {
+    try {
+      const meRes = await (await import('../scripts/adminApi.js')).adminMe();
+      if (meRes && meRes.ok && meRes.isAdmin) {
+        loginGate?.classList.add('hidden');
+        adminMain?.classList.remove('hidden');
+        loadProducts();
+        // Hide tabs the user doesn't have permission for. The 'all'
+        // permission shows everything. Currently we just hide the
+        // Administrateurs admin-management section unless the user
+        // has 'all'.
+        const perms = meRes.permissions || [];
+        const isSuper = perms.includes('all');
+        document.querySelectorAll<HTMLElement>('[data-requires-permission]').forEach((el) => {
+          const need = el.getAttribute('data-requires-permission') || '';
+          const hide = !isSuper && need && !perms.includes(need);
+          if (hide) el.style.display = 'none';
+        });
+      }
+    } catch {}
+  })();
 
   // ============ LOAD PRODUCTS ============
   async function loadProducts() {
@@ -2885,6 +3209,260 @@ const sizes = data.sizes;
   });
   if (adminMain) reviewsObserver.observe(adminMain, { attributes: true, attributeFilter: ['class'] });
   if (adminMain && !adminMain.classList.contains('hidden')) loadReviews(currentReviewFilter);
+
+  // ============ PHASE 13: ADMINISTRATEURS + JOURNAL D'AUDIT ============
+  const adminsRowsEl    = document.getElementById('adminsRows') as HTMLElement | null;
+  const adminsStatusEl  = document.getElementById('adminsStatus') as HTMLElement | null;
+  const adminsAddBtn    = document.getElementById('adminsAddBtn') as HTMLButtonElement | null;
+  const promoteModal    = document.getElementById('promoteAdminModal') as HTMLElement | null;
+  const promoteOverlay  = document.getElementById('promoteAdminOverlay') as HTMLElement | null;
+  const promoteClose    = document.getElementById('promoteAdminClose') as HTMLButtonElement | null;
+  const promoteCancel   = document.getElementById('promoteCancel') as HTMLButtonElement | null;
+  const promoteForm     = document.getElementById('promoteAdminForm') as HTMLFormElement | null;
+  const promotePhone    = document.getElementById('promotePhone') as HTMLInputElement | null;
+  const promoteErr      = document.getElementById('promoteErr') as HTMLElement | null;
+  const promoteSave     = document.getElementById('promoteSave') as HTMLButtonElement | null;
+  const editAdminModal  = document.getElementById('editAdminModal') as HTMLElement | null;
+  const editAdminOverlay = document.getElementById('editAdminOverlay') as HTMLElement | null;
+  const editAdminClose  = document.getElementById('editAdminClose') as HTMLButtonElement | null;
+  const editAdminCancel = document.getElementById('editAdminCancel') as HTMLButtonElement | null;
+  const editAdminForm   = document.getElementById('editAdminForm') as HTMLFormElement | null;
+  const editAdminSub    = document.getElementById('editAdminSub') as HTMLElement | null;
+  const editAdminErr    = document.getElementById('editAdminErr') as HTMLElement | null;
+  const editAdminSave   = document.getElementById('editAdminSave') as HTMLButtonElement | null;
+  const logActionFilter = document.getElementById('logActionFilter') as HTMLInputElement | null;
+  const logCustomerFilter = document.getElementById('logCustomerFilter') as HTMLInputElement | null;
+  const logsRefreshBtn  = document.getElementById('logsRefreshBtn') as HTMLButtonElement | null;
+  const logsRowsEl      = document.getElementById('logsRows') as HTMLElement | null;
+
+  let editingAdminPhone: string = '';
+
+  const PRESETS: Record<string, string[]> = {
+    boutique: ['orders', 'loyalty'],
+    marketing: ['articles', 'products'],
+    manager: ['products', 'orders', 'customers', 'articles', 'reviews', 'loyalty', 'tiers', 'perfume-requests'],
+    super: ['all'],
+  };
+
+  function escAdm(s: any) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
+      '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;',
+    })[c]!);
+  }
+
+  function permPills(perms: string[]) {
+    if (!perms || !perms.length) return '<span style="color:var(--ink-mute);font-style:italic">aucune</span>';
+    return perms.map((p) =>
+      `<span class="perm-pill${p === 'all' ? ' all' : ''}">${escAdm(p)}</span>`
+    ).join('');
+  }
+
+  function adminStatus(msg: string, kind: 'success'|'error'|'' = '') {
+    if (!adminsStatusEl) return;
+    adminsStatusEl.textContent = msg;
+    adminsStatusEl.className = 'status-msg ' + (kind || '');
+    adminsStatusEl.classList.remove('hidden');
+    setTimeout(() => adminsStatusEl.classList.add('hidden'), 4000);
+  }
+
+  async function loadAdmins() {
+    if (!adminsRowsEl) return;
+    adminsRowsEl.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px">Chargement…</td></tr>`;
+    const res = await adminListAdmins();
+    if (!res.ok) {
+      adminsRowsEl.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#B23A1F;padding:24px">${escAdm(res.error || 'Erreur')}</td></tr>`;
+      return;
+    }
+    const admins = res.admins || [];
+    if (!admins.length) {
+      adminsRowsEl.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--ink-mute);font-style:italic;padding:24px">Aucun administrateur enregistré. Promouvez le premier ci-dessus.</td></tr>`;
+      return;
+    }
+    adminsRowsEl.innerHTML = admins.map((a: any) => `
+      <tr data-phone="${escAdm(a.phone)}">
+        <td><strong>${escAdm(a.name || '—')}</strong></td>
+        <td>${escAdm(a.phone)}</td>
+        <td>${permPills(a.adminPermissions || [])}</td>
+        <td class="art-date-cell">${escAdm(frenchRelativeDate(a.promotedAt))}</td>
+        <td>${escAdm(a.promotedBy || '—')}</td>
+        <td>
+          <button type="button" class="link-btn" data-action="edit-perms" data-phone="${escAdm(a.phone)}" data-name="${escAdm(a.name || '')}" data-perms="${escAdm(JSON.stringify(a.adminPermissions || []))}">Modifier</button>
+          <button type="button" class="link-btn danger" data-action="demote" data-phone="${escAdm(a.phone)}">Rétrograder</button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  adminsRowsEl?.addEventListener('click', async (e) => {
+    const btn = (e.target as HTMLElement).closest('button[data-action]') as HTMLElement | null;
+    if (!btn) return;
+    const phone = btn.dataset.phone!;
+    const action = btn.dataset.action!;
+    if (action === 'edit-perms') {
+      const perms = JSON.parse(btn.dataset.perms || '[]');
+      openEditAdmin(phone, btn.dataset.name || '', perms);
+    } else if (action === 'demote') {
+      if (!confirm(`Rétrograder ${phone} ? Le client redeviendra "regular".`)) return;
+      const res = await adminDemoteAdmin(phone);
+      if (!res.ok) { adminStatus(res.error || 'Échec', 'error'); return; }
+      adminStatus('✓ Rétrogradé', 'success');
+      loadAdmins();
+      loadLogs();
+    }
+  });
+
+  // Promote modal
+  function openPromote() {
+    if (!promoteModal || !promoteForm) return;
+    promoteForm.reset();
+    if (promoteErr) promoteErr.classList.add('hidden');
+    promoteModal.classList.remove('hidden');
+    setTimeout(() => promotePhone?.focus(), 50);
+  }
+  function closePromote() { promoteModal?.classList.add('hidden'); }
+  adminsAddBtn?.addEventListener('click', openPromote);
+  promoteClose?.addEventListener('click', closePromote);
+  promoteCancel?.addEventListener('click', closePromote);
+  promoteOverlay?.addEventListener('click', closePromote);
+
+  // 'all' checkbox disables (visually) the others. Worker enforces too.
+  function bindAllToggle(formEl: HTMLElement, name: string) {
+    const allCb = formEl.querySelector(`input[name="${name}"][value="all"]`) as HTMLInputElement | null;
+    if (!allCb) return;
+    const others = formEl.querySelectorAll<HTMLInputElement>(`input[name="${name}"]:not([value="all"])`);
+    const sync = () => {
+      others.forEach((cb) => {
+        cb.disabled = allCb.checked;
+        if (allCb.checked) cb.checked = false;
+      });
+    };
+    allCb.addEventListener('change', sync);
+    sync();
+  }
+  if (promoteForm) bindAllToggle(promoteForm, 'perm');
+  if (editAdminForm) bindAllToggle(editAdminForm, 'eperm');
+
+  // Presets in the promote modal
+  promoteForm?.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest('button[data-preset]') as HTMLElement | null;
+    if (!btn) return;
+    const preset = btn.dataset.preset!;
+    const perms = PRESETS[preset] || [];
+    const inputs = promoteForm.querySelectorAll<HTMLInputElement>('input[name="perm"]');
+    inputs.forEach((cb) => { cb.checked = perms.includes(cb.value); });
+    // Trigger the 'all' toggle in case 'all' was selected
+    const allCb = promoteForm.querySelector('input[name="perm"][value="all"]') as HTMLInputElement | null;
+    allCb?.dispatchEvent(new Event('change'));
+  });
+
+  promoteForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!promotePhone || !promoteSave || !promoteErr) return;
+    promoteErr.classList.add('hidden');
+    const phone = promotePhone.value.trim();
+    if (!phone) { promoteErr.textContent = 'Téléphone requis'; promoteErr.classList.remove('hidden'); return; }
+    const perms = Array.from(promoteForm.querySelectorAll<HTMLInputElement>('input[name="perm"]:checked')).map((cb) => cb.value);
+    if (!perms.length) { promoteErr.textContent = 'Sélectionnez au moins une permission'; promoteErr.classList.remove('hidden'); return; }
+    promoteSave.disabled = true; promoteSave.textContent = 'Promotion…';
+    const res = await adminPromoteAdmin(phone, perms);
+    promoteSave.disabled = false; promoteSave.textContent = 'Promouvoir';
+    if (!res.ok) {
+      promoteErr.textContent = res.error || 'Échec';
+      promoteErr.classList.remove('hidden');
+      return;
+    }
+    closePromote();
+    adminStatus('✓ Client promu administrateur', 'success');
+    loadAdmins();
+    loadLogs();
+  });
+
+  // Edit perms modal
+  function openEditAdmin(phone: string, name: string, perms: string[]) {
+    if (!editAdminModal || !editAdminForm) return;
+    editingAdminPhone = phone;
+    if (editAdminSub) editAdminSub.textContent = `${name || phone}`;
+    editAdminErr?.classList.add('hidden');
+    const inputs = editAdminForm.querySelectorAll<HTMLInputElement>('input[name="eperm"]');
+    inputs.forEach((cb) => { cb.checked = perms.includes(cb.value); });
+    // Refresh 'all' toggle state
+    const allCb = editAdminForm.querySelector('input[name="eperm"][value="all"]') as HTMLInputElement | null;
+    allCb?.dispatchEvent(new Event('change'));
+    editAdminModal.classList.remove('hidden');
+  }
+  function closeEditAdmin() { editAdminModal?.classList.add('hidden'); editingAdminPhone = ''; }
+  editAdminClose?.addEventListener('click', closeEditAdmin);
+  editAdminCancel?.addEventListener('click', closeEditAdmin);
+  editAdminOverlay?.addEventListener('click', closeEditAdmin);
+
+  editAdminForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!editingAdminPhone || !editAdminSave || !editAdminErr || !editAdminForm) return;
+    editAdminErr.classList.add('hidden');
+    const perms = Array.from(editAdminForm.querySelectorAll<HTMLInputElement>('input[name="eperm"]:checked')).map((cb) => cb.value);
+    if (!perms.length) { editAdminErr.textContent = 'Sélectionnez au moins une permission'; editAdminErr.classList.remove('hidden'); return; }
+    editAdminSave.disabled = true; editAdminSave.textContent = 'Enregistrement…';
+    const res = await adminUpdateAdminPermissions(editingAdminPhone, perms);
+    editAdminSave.disabled = false; editAdminSave.textContent = 'Enregistrer';
+    if (!res.ok) {
+      editAdminErr.textContent = res.error || 'Échec';
+      editAdminErr.classList.remove('hidden');
+      return;
+    }
+    closeEditAdmin();
+    adminStatus('✓ Permissions mises à jour', 'success');
+    loadAdmins();
+    loadLogs();
+  });
+
+  // Logs
+  async function loadLogs() {
+    if (!logsRowsEl) return;
+    logsRowsEl.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:24px">Chargement…</td></tr>`;
+    const action = (logActionFilter?.value || '').trim();
+    const customerId = (logCustomerFilter?.value || '').trim();
+    const res = await adminListLogs({ page: 1, limit: 100, action, customerId });
+    if (!res.ok) {
+      logsRowsEl.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#B23A1F;padding:24px">${escAdm(res.error || 'Erreur')}</td></tr>`;
+      return;
+    }
+    const logs = res.logs || [];
+    if (!logs.length) {
+      logsRowsEl.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--ink-mute);font-style:italic;padding:24px">Aucune action correspondante.</td></tr>`;
+      return;
+    }
+    logsRowsEl.innerHTML = logs.map((l: any) => `
+      <tr>
+        <td>${escAdm((l.timestamp || '').replace('T',' ').substring(0, 19))}</td>
+        <td>${escAdm(l.customerName || l.customerId || '—')}</td>
+        <td><span class="log-action">${escAdm(l.action)}</span></td>
+        <td class="log-details">${escAdm(JSON.stringify(l.details || {}))}</td>
+        <td>${escAdm(l.ip || '—')}</td>
+      </tr>
+    `).join('');
+  }
+  logsRefreshBtn?.addEventListener('click', loadLogs);
+  let logFilterDeb: any;
+  [logActionFilter, logCustomerFilter].forEach((el) => {
+    el?.addEventListener('input', () => {
+      clearTimeout(logFilterDeb);
+      logFilterDeb = setTimeout(loadLogs, 250);
+    });
+  });
+
+  // Load admins + logs once the main panel becomes visible (or now if already visible).
+  const adminsObserver = new MutationObserver(() => {
+    if (!adminMain?.classList.contains('hidden')) {
+      adminsObserver.disconnect();
+      loadAdmins();
+      loadLogs();
+    }
+  });
+  if (adminMain) adminsObserver.observe(adminMain, { attributes: true, attributeFilter: ['class'] });
+  if (adminMain && !adminMain.classList.contains('hidden')) {
+    loadAdmins();
+    loadLogs();
+  }
 </script>
 
 <!-- Seed data for first load when KV is empty -->

@@ -5,8 +5,13 @@
  */
 
 import { apiUrl } from './apiBase.js';
+import { getSessionToken } from './customerApi.js';
 
 const PASSWORD_KEY = 'dadios_admin_password';
+// Phase 13 — store emergency-login token separately from a regular
+// customer session token, so emergency access doesn't clobber a
+// customer's normal /compte session.
+const EMERGENCY_TOKEN_KEY = 'dadios_admin_emergency';
 
 export function getPassword() {
   return sessionStorage.getItem(PASSWORD_KEY) || '';
@@ -20,13 +25,47 @@ export function clearPassword() {
   sessionStorage.removeItem(PASSWORD_KEY);
 }
 
+/**
+ * Phase 13: send BOTH the customer session token (preferred — enables
+ * tier=admin auth + per-permission gating) AND the legacy admin
+ * password (back-compat — works for unmigrated admin pages and the
+ * worker's emergency fallback). Worker tries session first.
+ *
+ * Emergency token: if the user came in via /admin/emergency, their
+ * session token lives under EMERGENCY_TOKEN_KEY and overrides the
+ * regular customer session for /api/admin calls.
+ */
+function getAdminSessionToken() {
+  try {
+    return localStorage.getItem(EMERGENCY_TOKEN_KEY) || getSessionToken();
+  } catch {
+    return getSessionToken();
+  }
+}
+
 async function adminPost(action, extra = {}) {
   const res = await fetch(apiUrl('/api/admin'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action, password: getPassword(), ...extra }),
+    body: JSON.stringify({
+      action,
+      password: getPassword(),
+      sessionToken: getAdminSessionToken(),
+      ...extra,
+    }),
   });
   return res.json();
+}
+
+/** Phase 13: persist emergency login token + clear it on logout */
+export function setEmergencyAdminToken(token) {
+  try { if (token) localStorage.setItem(EMERGENCY_TOKEN_KEY, token); } catch {}
+}
+export function clearEmergencyAdminToken() {
+  try { localStorage.removeItem(EMERGENCY_TOKEN_KEY); } catch {}
+}
+export function getEmergencyAdminToken() {
+  try { return localStorage.getItem(EMERGENCY_TOKEN_KEY) || ''; } catch { return ''; }
 }
 
 export async function checkPassword(pw) {
@@ -93,6 +132,48 @@ export async function adminGrantTier(phone, tier, extras = {}) {
  */
 export async function adminRevokeTier(phone) {
   return adminPost('admin_revoke_tier', { phone });
+}
+
+// ===== Phase 13: multi-admin management =====
+
+/** Whether the current session belongs to an admin + their permissions. */
+export async function adminMe() {
+  return adminPost('admin_me');
+}
+
+/** Emergency login using ADMIN_PASSWORD env. Returns {sessionToken}. */
+export async function adminEmergencyLogin(password) {
+  // Sends a dedicated payload — no need for any other auth.
+  try {
+    const res = await fetch(apiUrl('/api/admin'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'admin_emergency_login', password }),
+    });
+    const data = await res.json();
+    if (data && data.ok && data.sessionToken) {
+      setEmergencyAdminToken(data.sessionToken);
+    }
+    return data;
+  } catch {
+    return { ok: false, error: 'Erreur réseau' };
+  }
+}
+
+export async function adminListAdmins() {
+  return adminPost('admin_list_admins');
+}
+export async function adminPromoteAdmin(customerPhone, permissions) {
+  return adminPost('admin_promote_admin', { customerPhone, permissions });
+}
+export async function adminDemoteAdmin(customerPhone) {
+  return adminPost('admin_demote_admin', { customerPhone });
+}
+export async function adminUpdateAdminPermissions(customerPhone, permissions) {
+  return adminPost('admin_update_admin_permissions', { customerPhone, permissions });
+}
+export async function adminListLogs({ page = 1, limit = 50, action, customerId, from, to } = {}) {
+  return adminPost('admin_logs', { page, limit, action, customerId, from, to });
 }
 
 /**

@@ -21,13 +21,14 @@
  *   ORDERS_KV    (KV namespace) — KV namespace "dadios-orders"
  *   ARTICLES_KV  (KV namespace) — KV namespace "dadios-articles"
  *   PERFUME_REQUESTS_KV (KV namespace) — KV namespace "dadios-perfume-requests"
- *   REVIEWS_KV   (KV namespace) — *** NEW for Phase 9 (avis clients) ***
+ *   REVIEWS_KV   (KV namespace) — KV namespace "dadios-reviews"
+ *   ADMIN_LOGS_KV (KV namespace) — *** NEW for Phase 13 (admin multi-utilisateurs) ***
  *                                  Steps:
  *                                    1. Cloudflare dashboard → Workers KV → Create namespace
- *                                       Name: "dadios-reviews"
+ *                                       Name: "dadios-admin-logs"
  *                                    2. Worker → Settings → Variables → KV Namespace Bindings
- *                                       Variable name: REVIEWS_KV
- *                                       Bind to: dadios-reviews
+ *                                       Variable name: ADMIN_LOGS_KV
+ *                                       Bind to: dadios-admin-logs
  *                                    3. Save & deploy the Worker
  *   IMAGES       (R2 bucket)    — R2 bucket "dadios-images"
  *
@@ -76,12 +77,457 @@ function isValidImageType(contentType) {
 }
 
 // Auth helper - checks admin password from JSON body
+// Legacy: still used as a fallback inside requireAdminAuth below.
 function requireAdmin(body, env) {
   const password = body?.password;
   if (!password || password !== env.ADMIN_PASSWORD) {
     return false;
   }
   return true;
+}
+
+// ============================================================
+// PHASE 13 — multi-admin: per-customer admin tier with permissions
+// ============================================================
+
+const ADMIN_PERMISSIONS = [
+  'products', 'orders', 'customers', 'articles', 'reviews',
+  'loyalty', 'tiers', 'perfume-requests', 'all',
+];
+const EMERGENCY_ADMIN_PHONE = 'emergency-admin';
+const EMERGENCY_SESSION_TTL = 60 * 60;        // 1h
+const ADMIN_LOG_TTL = 90 * 24 * 60 * 60;      // 90 days
+
+function isValidPermission(p) { return ADMIN_PERMISSIONS.includes(p); }
+function sanitizePermissions(arr) {
+  if (!Array.isArray(arr)) return [];
+  const seen = new Set();
+  for (const p of arr) {
+    if (typeof p === 'string' && isValidPermission(p)) seen.add(p);
+  }
+  return [...seen];
+}
+
+/**
+ * Resolve the customer attached to this request's session token. Looks at
+ * body.sessionToken first (our normal client pattern), then the Cookie
+ * header (forward-compatible with cookie-based sessions). Returns null
+ * for any failure; synthesises a stub customer record for emergency
+ * sessions so callers can treat it uniformly.
+ */
+async function getCurrentCustomer(body, request, env) {
+  if (!env.CUSTOMERS_KV) return null;
+  let token = body && body.sessionToken;
+  if (!token && request && request.headers) {
+    const cookie = request.headers.get('Cookie') || '';
+    const m = cookie.match(/dadios_session=([^;]+)/);
+    if (m) token = m[1];
+  }
+  if (!token) return null;
+  const sessRaw = await env.CUSTOMERS_KV.get(`session:${token}`);
+  if (!sessRaw) return null;
+  let sess;
+  try { sess = JSON.parse(sessRaw); } catch { return null; }
+
+  // Emergency sessions don't have a real customer record behind them.
+  // Build a synthetic stub with all-permissions so the rest of the
+  // codepath treats it the same as a real admin.
+  if (sess.isEmergency) {
+    return {
+      phone: EMERGENCY_ADMIN_PHONE,
+      name: 'Emergency Access',
+      tier: 'admin',
+      adminPermissions: ['all'],
+      isEmergency: true,
+    };
+  }
+
+  const custRaw = await env.CUSTOMERS_KV.get(`customer:${sess.phone}`);
+  if (!custRaw) return null;
+  try {
+    const c = JSON.parse(custRaw);
+    normalizeCustomerTier(c);
+    if (!Array.isArray(c.adminPermissions)) c.adminPermissions = [];
+    return c;
+  } catch { return null; }
+}
+
+/**
+ * Gate that returns either { ok: true, customer } or { ok: false,
+ * status, error }. Tries session auth first (preferred); falls back
+ * to the legacy ADMIN_PASSWORD in body so the unmigrated admin UI
+ * keeps working during Phase 13's rollout.
+ *
+ * For permission-gated actions, the customer must have either the
+ * requested permission OR the 'all' super-admin permission.
+ */
+async function requireAdminAuth(body, env, request, requiredPermission = null) {
+  // 1) Session-based: customer with tier === 'admin'
+  const customer = await getCurrentCustomer(body, request, env);
+  if (customer && customer.tier === 'admin') {
+    if (requiredPermission) {
+      const perms = Array.isArray(customer.adminPermissions) ? customer.adminPermissions : [];
+      if (!perms.includes('all') && !perms.includes(requiredPermission)) {
+        return { ok: false, status: 403, error: `Permission "${requiredPermission}" requise` };
+      }
+    }
+    return { ok: true, customer };
+  }
+  // 2) Legacy: ADMIN_PASSWORD in body. Treated as super-admin (no
+  //    per-permission check) so existing admin UI keeps working until
+  //    fully migrated to session-based auth. Tagged isLegacy=true so
+  //    logs distinguish password-based access.
+  if (body && body.password && body.password === env.ADMIN_PASSWORD) {
+    return {
+      ok: true,
+      customer: {
+        phone: 'legacy-admin',
+        name: 'Legacy Admin Password',
+        tier: 'admin',
+        adminPermissions: ['all'],
+        isLegacy: true,
+      },
+    };
+  }
+  // 3) Session present but not admin tier
+  if (customer && customer.tier !== 'admin') {
+    return { ok: false, status: 403, error: 'Accès administrateur requis' };
+  }
+  return { ok: false, status: 401, error: 'Non authentifié' };
+}
+
+/**
+ * Append an audit log entry to ADMIN_LOGS_KV. Returns silently if the
+ * binding is missing so the calling action still succeeds. Keys are
+ * prefixed with the ISO timestamp so KV's lexical list order matches
+ * chronological order — list({prefix:'log:'}) then reverse for newest
+ * first.
+ */
+// ============================================================
+// PHASE 13 — admin management actions
+// ============================================================
+
+/**
+ * Returns whether the caller is logged in + whether they have admin tier.
+ * Used by /admin to decide whether to even show the admin panel.
+ */
+async function adminMe(body, env, request) {
+  const customer = await getCurrentCustomer(body, request, env);
+  if (!customer) {
+    return json({ ok: true, isAuthenticated: false, isAdmin: false, customer: null });
+  }
+  const safe = sanitizeCustomer(customer);
+  const isAdmin = customer.tier === 'admin';
+  return json({
+    ok: true,
+    isAuthenticated: true,
+    isAdmin,
+    permissions: isAdmin ? (customer.adminPermissions || []) : [],
+    isEmergency: !!customer.isEmergency,
+    customer: safe,
+  });
+}
+
+/**
+ * Emergency login using the legacy ADMIN_PASSWORD env. Creates a 1h
+ * session flagged isEmergency=true. The synthetic emergency-admin
+ * customer can read everything (super-admin) but cannot promote /
+ * demote / change admin permissions — those are blocked in handleAdmin
+ * for emergency sessions specifically.
+ */
+async function adminEmergencyLogin(body, env, request) {
+  const password = String(body.password || "");
+  if (!password || password !== env.ADMIN_PASSWORD) {
+    return json({ ok: false, error: "Mot de passe incorrect" }, 401);
+  }
+  if (!env.CUSTOMERS_KV) {
+    return json({ ok: false, error: "KV not bound (CUSTOMERS_KV)" }, 500);
+  }
+  const token = crypto.randomUUID();
+  await env.CUSTOMERS_KV.put(
+    `session:${token}`,
+    JSON.stringify({
+      phone: EMERGENCY_ADMIN_PHONE,
+      isEmergency: true,
+      createdAt: new Date().toISOString(),
+    }),
+    { expirationTtl: EMERGENCY_SESSION_TTL },
+  );
+  // Log this with the synthetic customer so audit trail shows it.
+  await logAdminAction(
+    env,
+    { phone: EMERGENCY_ADMIN_PHONE, name: "Emergency Access", isEmergency: true },
+    "auth.emergency_login",
+    { ttlSeconds: EMERGENCY_SESSION_TTL },
+    request,
+  );
+  return json({ ok: true, sessionToken: token, expiresIn: EMERGENCY_SESSION_TTL });
+}
+
+/**
+ * List every customer with tier === 'admin'. Sanitized payload (no
+ * passwordHash / salt). Sorted by promotion date desc.
+ */
+async function adminListAdmins(env) {
+  if (!env.CUSTOMERS_KV) {
+    return json({ ok: false, error: "KV not bound (CUSTOMERS_KV)" }, 500);
+  }
+  const list = await env.CUSTOMERS_KV.list({ prefix: "customer:" });
+  const admins = [];
+  await Promise.all(
+    list.keys.map(async (k) => {
+      const raw = await env.CUSTOMERS_KV.get(k.name);
+      if (!raw) return;
+      try {
+        const c = JSON.parse(raw);
+        normalizeCustomerTier(c);
+        if (c.tier === "admin") {
+          admins.push({
+            ...sanitizeCustomer(c),
+            adminPermissions: Array.isArray(c.adminPermissions) ? c.adminPermissions : [],
+            promotedAt: c.promotedAt || c.tierGrantedAt || null,
+            promotedBy: c.promotedBy || null,
+          });
+        }
+      } catch {}
+    }),
+  );
+  admins.sort((a, b) =>
+    (b.promotedAt || b.createdAt || "").localeCompare(a.promotedAt || a.createdAt || ""),
+  );
+  return json({ ok: true, admins });
+}
+
+/**
+ * Promote an existing customer to admin with the supplied permissions.
+ * Caller already verified to have 'all'. The new admin record stores
+ * who promoted them and when.
+ */
+async function adminPromoteAdmin(body, env, request, actingAdmin) {
+  if (!env.CUSTOMERS_KV) {
+    return json({ ok: false, error: "KV not bound (CUSTOMERS_KV)" }, 500);
+  }
+  const phone = normalizePhone(body.customerPhone || body.phone);
+  if (!phone) return json({ ok: false, error: "Champ requis: customerPhone" }, 400);
+  if (phone === EMERGENCY_ADMIN_PHONE) {
+    return json({ ok: false, error: "Identifiant réservé" }, 400);
+  }
+  const permissions = sanitizePermissions(body.permissions);
+  if (!permissions.length) {
+    return json({ ok: false, error: "Au moins une permission est requise" }, 400);
+  }
+  const raw = await env.CUSTOMERS_KV.get(`customer:${phone}`);
+  if (!raw) return json({ ok: false, error: "Compte introuvable" }, 404);
+  let customer;
+  try { customer = JSON.parse(raw); } catch {
+    return json({ ok: false, error: "Compte corrompu" }, 500);
+  }
+  normalizeCustomerTier(customer);
+  if (customer.tier === "admin") {
+    return json({ ok: false, error: "Ce client est déjà administrateur" }, 409);
+  }
+  const previousTier = customer.tier;
+  customer.tier = "admin";
+  customer.adminPermissions = permissions;
+  customer.promotedAt = new Date().toISOString();
+  customer.promotedBy = actingAdmin.phone || null;
+  customer.tierGrantedAt = customer.promotedAt;
+  customer.tierGrantedBy = actingAdmin.phone || "admin";
+  customer.updatedAt = customer.promotedAt;
+  await env.CUSTOMERS_KV.put(`customer:${phone}`, JSON.stringify(customer));
+  await logAdminAction(env, actingAdmin, "admin.promote", {
+    targetPhone: phone, from: previousTier, permissions,
+  }, request);
+  return json({
+    ok: true,
+    customer: { ...sanitizeCustomer(customer), adminPermissions: customer.adminPermissions },
+  });
+}
+
+/**
+ * Demote an admin back to "regular". Refuses if:
+ *   - target is the caller (no self-demotion),
+ *   - target is not currently an admin,
+ *   - target holds 'all' and is the LAST remaining 'all' admin,
+ *   - target is the emergency-admin (synthetic).
+ */
+async function adminDemoteAdmin(body, env, request, actingAdmin) {
+  if (!env.CUSTOMERS_KV) {
+    return json({ ok: false, error: "KV not bound (CUSTOMERS_KV)" }, 500);
+  }
+  const phone = normalizePhone(body.customerPhone || body.phone);
+  if (!phone) return json({ ok: false, error: "Champ requis: customerPhone" }, 400);
+  if (phone === EMERGENCY_ADMIN_PHONE) {
+    return json({ ok: false, error: "Session d'urgence : non rétrogradable" }, 400);
+  }
+  if (phone === actingAdmin.phone) {
+    return json({ ok: false, error: "Vous ne pouvez pas vous rétrograder vous-même" }, 400);
+  }
+  const raw = await env.CUSTOMERS_KV.get(`customer:${phone}`);
+  if (!raw) return json({ ok: false, error: "Compte introuvable" }, 404);
+  let customer;
+  try { customer = JSON.parse(raw); }
+  catch { return json({ ok: false, error: "Compte corrompu" }, 500); }
+  normalizeCustomerTier(customer);
+  if (customer.tier !== "admin") {
+    return json({ ok: false, error: "Ce client n'est pas administrateur" }, 400);
+  }
+  // Count 'all' admins. Refuse to remove the last one.
+  const targetPerms = Array.isArray(customer.adminPermissions) ? customer.adminPermissions : [];
+  if (targetPerms.includes("all")) {
+    const list = await env.CUSTOMERS_KV.list({ prefix: "customer:" });
+    let allCount = 0;
+    await Promise.all(list.keys.map(async (k) => {
+      const r = await env.CUSTOMERS_KV.get(k.name);
+      if (!r) return;
+      try {
+        const c = JSON.parse(r);
+        if (c.tier === "admin" && Array.isArray(c.adminPermissions) && c.adminPermissions.includes("all")) {
+          allCount += 1;
+        }
+      } catch {}
+    }));
+    if (allCount <= 1) {
+      return json({
+        ok: false,
+        error: "Impossible de rétrograder le dernier super-administrateur",
+      }, 400);
+    }
+  }
+  const previousPerms = customer.adminPermissions || [];
+  customer.tier = "regular";
+  customer.adminPermissions = [];
+  customer.promotedAt = null;
+  customer.promotedBy = null;
+  customer.tierGrantedAt = new Date().toISOString();
+  customer.tierGrantedBy = actingAdmin.phone || "admin";
+  customer.updatedAt = customer.tierGrantedAt;
+  await env.CUSTOMERS_KV.put(`customer:${phone}`, JSON.stringify(customer));
+  await logAdminAction(env, actingAdmin, "admin.demote", {
+    targetPhone: phone, previousPermissions: previousPerms,
+  }, request);
+  return json({ ok: true });
+}
+
+async function adminUpdateAdminPermissions(body, env, request, actingAdmin) {
+  if (!env.CUSTOMERS_KV) {
+    return json({ ok: false, error: "KV not bound (CUSTOMERS_KV)" }, 500);
+  }
+  const phone = normalizePhone(body.customerPhone || body.phone);
+  if (!phone) return json({ ok: false, error: "Champ requis: customerPhone" }, 400);
+  const permissions = sanitizePermissions(body.permissions);
+  if (!permissions.length) {
+    return json({ ok: false, error: "Au moins une permission est requise" }, 400);
+  }
+  const raw = await env.CUSTOMERS_KV.get(`customer:${phone}`);
+  if (!raw) return json({ ok: false, error: "Compte introuvable" }, 404);
+  let customer;
+  try { customer = JSON.parse(raw); }
+  catch { return json({ ok: false, error: "Compte corrompu" }, 500); }
+  normalizeCustomerTier(customer);
+  if (customer.tier !== "admin") {
+    return json({ ok: false, error: "Ce client n'est pas administrateur" }, 400);
+  }
+  // Block removing 'all' from the last super-admin (same check as demote)
+  const wasAll = Array.isArray(customer.adminPermissions) && customer.adminPermissions.includes("all");
+  const willBeAll = permissions.includes("all");
+  if (wasAll && !willBeAll) {
+    const list = await env.CUSTOMERS_KV.list({ prefix: "customer:" });
+    let allCount = 0;
+    await Promise.all(list.keys.map(async (k) => {
+      const r = await env.CUSTOMERS_KV.get(k.name);
+      if (!r) return;
+      try {
+        const c = JSON.parse(r);
+        if (c.tier === "admin" && Array.isArray(c.adminPermissions) && c.adminPermissions.includes("all")) {
+          allCount += 1;
+        }
+      } catch {}
+    }));
+    if (allCount <= 1) {
+      return json({
+        ok: false,
+        error: "Impossible de retirer 'all' au dernier super-administrateur",
+      }, 400);
+    }
+  }
+  const previousPerms = customer.adminPermissions || [];
+  customer.adminPermissions = permissions;
+  customer.updatedAt = new Date().toISOString();
+  await env.CUSTOMERS_KV.put(`customer:${phone}`, JSON.stringify(customer));
+  await logAdminAction(env, actingAdmin, "admin.update_permissions", {
+    targetPhone: phone, from: previousPerms, to: permissions,
+  }, request);
+  return json({
+    ok: true,
+    customer: { ...sanitizeCustomer(customer), adminPermissions: permissions },
+  });
+}
+
+/**
+ * Read the audit log. Keys are `log:${iso}:${uuid}` — KV's lexical list
+ * order matches chronological order, so we list + reverse + slice for
+ * newest-first pagination. Filters: action substring, customerId
+ * (phone), from/to (ISO timestamps).
+ */
+async function adminListLogs(body, env) {
+  if (!env.ADMIN_LOGS_KV) {
+    return json({ ok: false, error: "KV not bound (ADMIN_LOGS_KV)" }, 500);
+  }
+  const page = Math.max(1, Number(body.page) || 1);
+  const limit = Math.max(1, Math.min(100, Number(body.limit) || 50));
+  const actionFilter = body.action ? String(body.action) : null;
+  const customerFilter = body.customerId ? String(body.customerId) : null;
+  const from = body.from ? String(body.from) : null;
+  const to = body.to ? String(body.to) : null;
+
+  const list = await env.ADMIN_LOGS_KV.list({ prefix: "log:", limit: 1000 });
+  // Newest first
+  const keys = list.keys.slice().sort((a, b) => b.name.localeCompare(a.name));
+  const entries = [];
+  for (const k of keys) {
+    // Quick prefix-level filters before reading the value
+    const ts = k.name.substring(4, 4 + 24); // "log:" + ISO
+    if (from && ts < from) continue;
+    if (to && ts > to) continue;
+    const raw = await env.ADMIN_LOGS_KV.get(k.name);
+    if (!raw) continue;
+    try {
+      const e = JSON.parse(raw);
+      if (actionFilter && !String(e.action || "").includes(actionFilter)) continue;
+      if (customerFilter && String(e.customerId || "") !== customerFilter) continue;
+      entries.push(e);
+    } catch {}
+  }
+  const total = entries.length;
+  const start = (page - 1) * limit;
+  return json({ ok: true, total, page, limit, logs: entries.slice(start, start + limit) });
+}
+
+async function logAdminAction(env, customer, action, details, request) {
+  if (!env.ADMIN_LOGS_KV || !customer) return;
+  try {
+    const logId = crypto.randomUUID();
+    const ts = new Date().toISOString();
+    const ip = request && request.headers ? (request.headers.get('CF-Connecting-IP') || 'unknown') : 'unknown';
+    const ua = request && request.headers ? (request.headers.get('User-Agent') || 'unknown') : 'unknown';
+    const entry = {
+      id: logId,
+      timestamp: ts,
+      customerId: customer.phone || null,
+      customerName: customer.name || null,
+      customerPhone: customer.phone || null,
+      isEmergency: !!customer.isEmergency,
+      isLegacy: !!customer.isLegacy,
+      action,
+      details: details || null,
+      ip,
+      userAgent: ua,
+    };
+    await env.ADMIN_LOGS_KV.put(`log:${ts}:${logId}`, JSON.stringify(entry), {
+      expirationTtl: ADMIN_LOG_TTL,
+    });
+  } catch {}
 }
 
 // ============================================================
@@ -225,7 +671,7 @@ function normalizeCard(card) {
   return card;
 }
 
-async function handleLoyalty(body, env) {
+async function handleLoyalty(body, env, request) {
   const kv = env.LOYALTY_KV;
   if (!kv) return json({ ok: false, error: "KV not bound (LOYALTY_KV)" }, 500);
 
@@ -234,7 +680,10 @@ async function handleLoyalty(body, env) {
 
   // Admin endpoints
   if (action.startsWith("admin_")) {
-    if (!requireAdmin(body, env)) return json({ ok: false, error: "Unauthorized" }, 401);
+    {
+      const _a = await requireAdminAuth(body, env, request, null);
+      if (!_a.ok) return json({ ok: false, error: _a.error }, _a.status);
+    }
 
     if (action === "admin_list") {
       const list = await kv.list({ prefix: "card:" });
@@ -713,7 +1162,7 @@ function sanitizeOrderItems(items) {
     .filter((i) => i.slug && i.name);
 }
 
-async function handleOrders(body, env) {
+async function handleOrders(body, env, request) {
   const kv = env.ORDERS_KV;
   if (!kv) return json({ ok: false, error: "KV not bound (ORDERS_KV)" }, 500);
 
@@ -819,7 +1268,10 @@ async function handleOrders(body, env) {
 
   // ===== admin_list (with optional status filter) =====
   if (action === "admin_list") {
-    if (!requireAdmin(body, env)) return json({ ok: false, error: "Unauthorized" }, 401);
+    {
+      const _a = await requireAdminAuth(body, env, request, null);
+      if (!_a.ok) return json({ ok: false, error: _a.error }, _a.status);
+    }
     const status = body.status;
     if (status && !ALLOWED_ORDER_STATUSES.includes(status)) {
       return json({ ok: false, error: "Statut invalide" }, 400);
@@ -842,7 +1294,10 @@ async function handleOrders(body, env) {
 
   // ===== admin_update (status and/or notes) =====
   if (action === "admin_update") {
-    if (!requireAdmin(body, env)) return json({ ok: false, error: "Unauthorized" }, 401);
+    {
+      const _a = await requireAdminAuth(body, env, request, null);
+      if (!_a.ok) return json({ ok: false, error: _a.error }, _a.status);
+    }
     const orderId = String(body.orderId || "");
     if (!orderId) return json({ ok: false, error: "Champ requis: orderId" }, 400);
     const raw = await kv.get(`order:${orderId}`);
@@ -1087,7 +1542,7 @@ function articleListingPayload(a) {
   return rest;
 }
 
-async function handleArticles(body, env) {
+async function handleArticles(body, env, request) {
   const kv = env.ARTICLES_KV;
   if (!kv) return json({ ok: false, error: "KV not bound (ARTICLES_KV)" }, 500);
   const action = body?.action;
@@ -1188,7 +1643,10 @@ async function handleArticles(body, env) {
 
   // ===== Admin: list (drafts + published) =====
   if (action === "admin_list") {
-    if (!requireAdmin(body, env)) return json({ ok: false, error: "Unauthorized" }, 401);
+    {
+      const _a = await requireAdminAuth(body, env, request, null);
+      if (!_a.ok) return json({ ok: false, error: _a.error }, _a.status);
+    }
     const statusFilter = body.status;
     const list = await kv.list({ prefix: "article:" });
     const articles = [];
@@ -1214,7 +1672,10 @@ async function handleArticles(body, env) {
 
   // ===== Admin: single article (drafts allowed) =====
   if (action === "admin_get") {
-    if (!requireAdmin(body, env)) return json({ ok: false, error: "Unauthorized" }, 401);
+    {
+      const _a = await requireAdminAuth(body, env, request, null);
+      if (!_a.ok) return json({ ok: false, error: _a.error }, _a.status);
+    }
     const slug = safeArticleSlug(body.slug);
     if (!slug) return json({ ok: false, error: "Champ requis: slug" }, 400);
     const raw = await kv.get(`article:${slug}`);
@@ -1225,7 +1686,10 @@ async function handleArticles(body, env) {
 
   // ===== Admin: upsert =====
   if (action === "admin_upsert") {
-    if (!requireAdmin(body, env)) return json({ ok: false, error: "Unauthorized" }, 401);
+    {
+      const _a = await requireAdminAuth(body, env, request, null);
+      if (!_a.ok) return json({ ok: false, error: _a.error }, _a.status);
+    }
     const incoming = body.article;
     if (!incoming) return json({ ok: false, error: "Champ requis: article" }, 400);
 
@@ -1325,7 +1789,10 @@ async function handleArticles(body, env) {
 
   // ===== Admin: delete =====
   if (action === "admin_delete") {
-    if (!requireAdmin(body, env)) return json({ ok: false, error: "Unauthorized" }, 401);
+    {
+      const _a = await requireAdminAuth(body, env, request, null);
+      if (!_a.ok) return json({ ok: false, error: _a.error }, _a.status);
+    }
     const slug = safeArticleSlug(body.slug);
     if (!slug) return json({ ok: false, error: "Champ requis: slug" }, 400);
     const raw = await kv.get(`article:${slug}`);
@@ -1351,7 +1818,10 @@ async function handleArticles(body, env) {
 
   // ===== Admin: publish / unpublish (convenience) =====
   if (action === "admin_publish" || action === "admin_unpublish") {
-    if (!requireAdmin(body, env)) return json({ ok: false, error: "Unauthorized" }, 401);
+    {
+      const _a = await requireAdminAuth(body, env, request, null);
+      if (!_a.ok) return json({ ok: false, error: _a.error }, _a.status);
+    }
     const slug = safeArticleSlug(body.slug);
     if (!slug) return json({ ok: false, error: "Champ requis: slug" }, 400);
     const raw = await kv.get(`article:${slug}`);
@@ -1403,7 +1873,7 @@ const PERFUME_REQUEST_TRANSITIONS = {
   declined: [],
 };
 
-async function handlePerfumeRequests(body, env) {
+async function handlePerfumeRequests(body, env, request) {
   const kv = env.PERFUME_REQUESTS_KV;
   if (!kv) return json({ ok: false, error: "KV not bound (PERFUME_REQUESTS_KV)" }, 500);
 
@@ -1476,7 +1946,10 @@ async function handlePerfumeRequests(body, env) {
 
   // ===== admin_list =====
   if (action === "admin_list") {
-    if (!requireAdmin(body, env)) return json({ ok: false, error: "Unauthorized" }, 401);
+    {
+      const _a = await requireAdminAuth(body, env, request, null);
+      if (!_a.ok) return json({ ok: false, error: _a.error }, _a.status);
+    }
     const statusFilter = body.status;
     if (statusFilter && !PERFUME_REQUEST_STATUSES.includes(statusFilter)) {
       return json({ ok: false, error: "Statut invalide" }, 400);
@@ -1499,7 +1972,10 @@ async function handlePerfumeRequests(body, env) {
 
   // ===== admin_update (status + adminNotes) =====
   if (action === "admin_update") {
-    if (!requireAdmin(body, env)) return json({ ok: false, error: "Unauthorized" }, 401);
+    {
+      const _a = await requireAdminAuth(body, env, request, null);
+      if (!_a.ok) return json({ ok: false, error: _a.error }, _a.status);
+    }
     const requestId = String(body.requestId || "");
     if (!requestId) return json({ ok: false, error: "Champ requis: requestId" }, 400);
     const raw = await kv.get(`request:${requestId}`);
@@ -1614,7 +2090,7 @@ function safeReviewSlug(s) {
     .slice(0, 96);
 }
 
-async function handleReviews(body, env) {
+async function handleReviews(body, env, request) {
   const kv = env.REVIEWS_KV;
   if (!kv) return json({ ok: false, error: "KV not bound (REVIEWS_KV)" }, 500);
 
@@ -1768,7 +2244,10 @@ async function handleReviews(body, env) {
 
   // ===== Admin: list pending =====
   if (action === "admin_pending") {
-    if (!requireAdmin(body, env)) return json({ ok: false, error: "Unauthorized" }, 401);
+    {
+      const _a = await requireAdminAuth(body, env, request, null);
+      if (!_a.ok) return json({ ok: false, error: _a.error }, _a.status);
+    }
     const pending = await readJsonArray(kv, 'review-pending');
     const reviews = [];
     await Promise.all(
@@ -1803,7 +2282,10 @@ async function handleReviews(body, env) {
 
   // ===== Admin: list all (status filter) =====
   if (action === "admin_list") {
-    if (!requireAdmin(body, env)) return json({ ok: false, error: "Unauthorized" }, 401);
+    {
+      const _a = await requireAdminAuth(body, env, request, null);
+      if (!_a.ok) return json({ ok: false, error: _a.error }, _a.status);
+    }
     const statusFilter = body.status ? String(body.status) : null;
     const productFilter = body.productId ? safeReviewSlug(body.productId) : null;
     const idxList = productFilter
@@ -1832,7 +2314,10 @@ async function handleReviews(body, env) {
 
   // ===== Admin: approve / reject =====
   if (action === "admin_approve" || action === "admin_reject") {
-    if (!requireAdmin(body, env)) return json({ ok: false, error: "Unauthorized" }, 401);
+    {
+      const _a = await requireAdminAuth(body, env, request, null);
+      if (!_a.ok) return json({ ok: false, error: _a.error }, _a.status);
+    }
     const reviewId = String(body.reviewId || '');
     if (!reviewId) return json({ ok: false, error: "Champ requis: reviewId" }, 400);
 
@@ -1871,7 +2356,10 @@ async function handleReviews(body, env) {
 
   // ===== Admin: delete =====
   if (action === "admin_delete") {
-    if (!requireAdmin(body, env)) return json({ ok: false, error: "Unauthorized" }, 401);
+    {
+      const _a = await requireAdminAuth(body, env, request, null);
+      if (!_a.ok) return json({ ok: false, error: _a.error }, _a.status);
+    }
     const reviewId = String(body.reviewId || '');
     if (!reviewId) return json({ ok: false, error: "Champ requis: reviewId" }, 400);
 
@@ -1931,7 +2419,10 @@ async function handleReviews(body, env) {
 
   // ===== Admin: pending count (handy for the admin badge) =====
   if (action === "admin_pending_count") {
-    if (!requireAdmin(body, env)) return json({ ok: false, error: "Unauthorized" }, 401);
+    {
+      const _a = await requireAdminAuth(body, env, request, null);
+      if (!_a.ok) return json({ ok: false, error: _a.error }, _a.status);
+    }
     const pending = await readJsonArray(kv, 'review-pending');
     return json({ ok: true, count: pending.length });
   }
@@ -1942,23 +2433,93 @@ async function handleReviews(body, env) {
 // ============================================================
 // Admin handler (product CRUD)
 // ============================================================
-async function handleAdmin(body, env) {
-  if (!requireAdmin(body, env)) {
-    return json({ ok: false, error: "Unauthorized" }, 401);
+async function handleAdmin(body, env, request) {
+  const action = body.action;
+
+  // ===== Phase 13 — actions that pre-empt the outer admin gate =====
+  // admin_emergency_login takes the legacy ADMIN_PASSWORD and creates a
+  // session — the password IS the auth, so we must dispatch before any
+  // requireAdmin check.
+  if (action === "admin_emergency_login") {
+    return adminEmergencyLogin(body, env, request);
+  }
+  // admin_me works for ANY authenticated customer — they may not be an
+  // admin yet, and the response tells the client whether to even show
+  // the admin panel.
+  if (action === "admin_me") {
+    return adminMe(body, env, request);
   }
 
-  const action = body.action;
+  // ===== Normal admin gate: session admin OR legacy password =====
+  const _outerAuth = await requireAdminAuth(body, env, request, null);
+  if (!_outerAuth.ok) {
+    return json({ ok: false, error: _outerAuth.error }, _outerAuth.status);
+  }
+  const adminCust = _outerAuth.customer;
+
+  // ===== Phase 13 admin-management actions (require 'all' permission) =====
+  if (
+    action === "admin_list_admins" ||
+    action === "admin_promote_admin" ||
+    action === "admin_demote_admin" ||
+    action === "admin_update_admin_permissions" ||
+    action === "admin_logs"
+  ) {
+    const allCheck = await requireAdminAuth(body, env, request, "all");
+    if (!allCheck.ok) {
+      return json({ ok: false, error: allCheck.error }, allCheck.status);
+    }
+    // Emergency sessions cannot promote / demote / change permissions —
+    // they're scoped to read-only recovery. They CAN view the admin list
+    // and logs.
+    if (
+      allCheck.customer.isEmergency &&
+      (action === "admin_promote_admin" ||
+        action === "admin_demote_admin" ||
+        action === "admin_update_admin_permissions")
+    ) {
+      return json(
+        { ok: false, error: "Une session d'urgence ne peut pas modifier les administrateurs." },
+        403,
+      );
+    }
+    if (action === "admin_list_admins") return adminListAdmins(env);
+    if (action === "admin_promote_admin") return adminPromoteAdmin(body, env, request, allCheck.customer);
+    if (action === "admin_demote_admin") return adminDemoteAdmin(body, env, request, allCheck.customer);
+    if (action === "admin_update_admin_permissions") return adminUpdateAdminPermissions(body, env, request, allCheck.customer);
+    if (action === "admin_logs") return adminListLogs(body, env);
+  }
 
   if (action === "list_products") {
     return json({ ok: true, products: await listProducts(env) });
   }
 
   if (action === "upsert_product") {
-    return adminUpsertProduct(body, env);
+    const res = await adminUpsertProduct(body, env);
+    // Attempt to log; we don't await/throw on log failures.
+    try {
+      const cloned = await res.clone().json();
+      if (cloned && cloned.ok) {
+        await logAdminAction(env, adminCust, "product.upsert", {
+          slug: cloned.product?.slug,
+          name: cloned.product?.name,
+          vipOnly: !!cloned.product?.vipOnly,
+        }, request);
+      }
+    } catch {}
+    return res;
   }
 
   if (action === "delete_product") {
-    return adminDeleteProduct(body, env);
+    const slug = body.slug;
+    const res = await adminDeleteProduct(body, env);
+    try {
+      const cloned = await res.clone().json();
+      if (cloned && cloned.ok) {
+        await logAdminAction(env, adminCust, "product.delete", { slug }, request);
+      }
+    } catch {}
+    return res;
   }
 
   if (action === "check_password") {
@@ -2026,9 +2587,10 @@ async function handleAdmin(body, env) {
     if (!raw) return json({ ok: false, error: "Compte introuvable" }, 404);
     const customer = JSON.parse(raw);
     normalizeCustomerTier(customer);
+    const previousTier = customer.tier;
     customer.tier = tier;
     customer.tierGrantedAt = new Date().toISOString();
-    customer.tierGrantedBy = "admin";
+    customer.tierGrantedBy = adminCust.phone || "admin";
     // Reseller fields are optional and only set when granting reseller
     // — but accept them at any tier so admin can pre-fill before promote.
     if (body.companyName !== undefined) {
@@ -2042,6 +2604,11 @@ async function handleAdmin(body, env) {
     }
     customer.updatedAt = new Date().toISOString();
     await env.CUSTOMERS_KV.put(`customer:${phone}`, JSON.stringify(customer));
+    await logAdminAction(env, adminCust, "tier.grant", {
+      customerPhone: phone,
+      from: previousTier,
+      to: tier,
+    }, request);
     return json({ ok: true, customer: await buildCustomerPayload(env, customer) });
   }
 
@@ -2055,12 +2622,17 @@ async function handleAdmin(body, env) {
     if (!raw) return json({ ok: false, error: "Compte introuvable" }, 404);
     const customer = JSON.parse(raw);
     normalizeCustomerTier(customer);
+    const previousTier = customer.tier;
     customer.tier = "regular";
     // Keep reseller fields stored — re-granting later restores the info.
     customer.tierGrantedAt = new Date().toISOString();
-    customer.tierGrantedBy = "admin";
+    customer.tierGrantedBy = adminCust.phone || "admin";
     customer.updatedAt = new Date().toISOString();
     await env.CUSTOMERS_KV.put(`customer:${phone}`, JSON.stringify(customer));
+    await logAdminAction(env, adminCust, "tier.revoke", {
+      customerPhone: phone,
+      from: previousTier,
+    }, request);
     return json({ ok: true });
   }
 
@@ -2081,6 +2653,7 @@ async function handleAdmin(body, env) {
     customer.passwordHash = await hashPassword(newPassword, customer.salt);
     customer.updatedAt = new Date().toISOString();
     await env.CUSTOMERS_KV.put(`customer:${phone}`, JSON.stringify(customer));
+    await logAdminAction(env, adminCust, "customer.password_reset", { customerPhone: phone }, request);
     return json({ ok: true });
   }
 
@@ -2124,7 +2697,7 @@ export default {
         let body;
         try { body = await request.json(); }
         catch { return json({ ok: false, error: "Invalid JSON" }, 400); }
-        return handleLoyalty(body, env);
+        return handleLoyalty(body, env, request);
       }
     }
 
@@ -2133,7 +2706,7 @@ export default {
       let body;
       try { body = await request.json(); }
       catch { return json({ ok: false, error: "Invalid JSON" }, 400); }
-      return handleAdmin(body, env);
+      return handleAdmin(body, env, request);
     }
 
     // ===== Customer auth & profile =====
@@ -2149,7 +2722,7 @@ export default {
       let body;
       try { body = await request.json(); }
       catch { return json({ ok: false, error: "Invalid JSON" }, 400); }
-      return handleOrders(body, env);
+      return handleOrders(body, env, request);
     }
 
     // ===== Wishlist =====
@@ -2165,7 +2738,7 @@ export default {
       let body;
       try { body = await request.json(); }
       catch { return json({ ok: false, error: "Invalid JSON" }, 400); }
-      return handleArticles(body, env);
+      return handleArticles(body, env, request);
     }
 
     // ===== Perfume requests (VIP concierge) =====
@@ -2173,7 +2746,7 @@ export default {
       let body;
       try { body = await request.json(); }
       catch { return json({ ok: false, error: "Invalid JSON" }, 400); }
-      return handlePerfumeRequests(body, env);
+      return handlePerfumeRequests(body, env, request);
     }
 
     // ===== Reviews (avis clients) =====
@@ -2181,7 +2754,7 @@ export default {
       let body;
       try { body = await request.json(); }
       catch { return json({ ok: false, error: "Invalid JSON" }, 400); }
-      return handleReviews(body, env);
+      return handleReviews(body, env, request);
     }
 
     // ===== Image upload =====

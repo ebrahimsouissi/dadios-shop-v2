@@ -30,6 +30,19 @@ import Base from '../../layouts/Base.astro';
     </div>
   </section>
 
+  <!-- Phase 13: visible only for tier === 'admin'. Populated by renderTier. -->
+  <section id="adminAccessSection" class="admin-access-section" hidden>
+    <article class="admin-access-card">
+      <div class="aac-badge">🛡️ Accès administrateur</div>
+      <h2>Espace de gestion</h2>
+      <p>Vous avez accès au panneau d'administration de Dadios.</p>
+      <p class="aac-perms">
+        Permissions : <span id="adminPerms"></span>
+      </p>
+      <a href="/admin" class="btn btn-gold aac-cta">Accéder à l'administration →</a>
+    </article>
+  </section>
+
   <section class="dash-grid">
     <!-- ===== Profile card ===== -->
     <article class="dash-card profile-card">
@@ -919,6 +932,61 @@ import Base from '../../layouts/Base.astro';
     color: var(--emerald);
   }
 
+  /* ===== Phase 13: admin access card ===== */
+  .admin-access-section {
+    max-width: 1280px;
+    margin: 24px auto 0;
+    padding: 0 32px;
+  }
+  .admin-access-card {
+    background: linear-gradient(135deg, var(--emerald-deep) 0%, var(--emerald) 100%);
+    color: var(--cream);
+    border: 1px solid var(--gold);
+    border-radius: 14px;
+    padding: 24px 28px;
+    box-shadow: 0 14px 32px rgba(5, 26, 14, 0.20);
+  }
+  .admin-access-card h2 {
+    font-size: 22px;
+    margin: 10px 0 8px;
+    color: var(--gold);
+  }
+  .admin-access-card p {
+    color: var(--cream-warm);
+    line-height: 1.6;
+    margin-bottom: 12px;
+  }
+  .aac-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--gold);
+    color: var(--emerald-deep);
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .aac-perms {
+    font-family: var(--font-body);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    color: rgba(212, 175, 55, 0.8);
+  }
+  .aac-perms span {
+    color: var(--gold);
+    font-weight: 500;
+  }
+  .aac-cta {
+    margin-top: 6px;
+    background: var(--gold) !important;
+    color: var(--emerald-deep) !important;
+    border-color: var(--gold) !important;
+  }
+
   /* ===== tier badge ===== */
   .tier-badge {
     display: inline-flex;
@@ -1112,8 +1180,24 @@ import Base from '../../layouts/Base.astro';
   const resOk = document.getElementById('resOk') as HTMLElement;
   const loyaltyVipNote = document.getElementById('loyaltyVipNote') as HTMLElement;
 
+  // Phase 13: surface the admin access card when the customer is admin.
+  const adminSection = document.getElementById('adminAccessSection') as HTMLElement | null;
+  const adminPermsEl = document.getElementById('adminPerms') as HTMLElement | null;
+
   function renderTier(c: any) {
     const tier = c.tier || 'regular';
+    // Phase 13: admin block, independent of the badge styling below.
+    if (tier === 'admin') {
+      if (adminSection) adminSection.hidden = false;
+      if (adminPermsEl) {
+        const perms = Array.isArray(c.adminPermissions) ? c.adminPermissions : [];
+        adminPermsEl.textContent = perms.includes('all') || !perms.length
+          ? 'Toutes (super-administrateur)'
+          : perms.join(', ');
+      }
+    } else if (adminSection) {
+      adminSection.hidden = true;
+    }
     if (tier === 'vip') {
       tierBadge.className = 'tier-badge vip';
       tierBadge.innerHTML = '<span>👑 VIP</span><span class="tier-sub">Accès privilégié activé</span>';
