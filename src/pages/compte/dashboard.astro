@@ -530,13 +530,23 @@ import Base from '../../layouts/Base.astro';
     pointer-events: none;
   }
   /* Filled stamps: gold gradient fill comes from the SVG itself
-     (fill="url(#dadiosGold)"). We add a soft drop-shadow on the icon
-     so it lifts off the gold disc background without losing the
-     gold-on-gold visual identity. No CSS fill override — that would
-     beat the inline SVG attribute and revert the icon to a flat
-     colour. */
+     (fill="url(#dadiosGold)"). Soft inner drop-shadow on the icon
+     for relief against the gold disc. */
   .fid-stamp.filled .sceau {
     filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+  }
+  /* Gentle gold halo around each earned stamp — looks like the disc
+     is breathing. Lives on the .filled element (the wrapper), so it
+     halos around the disc + icon, not just the icon. Different
+     properties from stamp-enter (transform/opacity) and stamp-new
+     (box-shadow), so all three coexist when combined below. */
+  .fid-stamp.filled {
+    filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.4));
+    animation: gentle-glow 3s ease-in-out infinite;
+  }
+  @keyframes gentle-glow {
+    0%, 100% { filter: drop-shadow(0 0 3px rgba(255, 215, 0, 0.3)); }
+    50%      { filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.6)); }
   }
 
   /* Name + counter row, between stamps and the magnetic stripe */
@@ -638,12 +648,20 @@ import Base from '../../layouts/Base.astro';
   .fid-card.card-enter {
     animation: fid-card-enter 600ms ease-out both;
   }
+  /* On filled stamps, the `animation` shorthand on .stamp-enter /
+     .stamp-new overrides the gentle-glow declaration above. Combine
+     them so the gentle-glow stays alive during and after the entry
+     stagger / new-stamp pulse. */
   .fid-stamp.stamp-enter {
-    animation: fid-stamp-enter 400ms ease-out both;
-    /* animation-delay set inline by JS for staggering */
+    animation:
+      fid-stamp-enter 400ms ease-out both,
+      gentle-glow 3s ease-in-out infinite;
   }
   .fid-stamp.stamp-new {
-    animation: fid-stamp-enter 400ms ease-out both, fid-stamp-pulse 1.5s ease-in-out 3;
+    animation:
+      fid-stamp-enter 400ms ease-out both,
+      fid-stamp-pulse 1.5s ease-in-out 3,
+      gentle-glow 3s ease-in-out infinite;
   }
   .vip-badge-pulse {
     animation: fid-vip-pulse 2s ease-in-out infinite;
@@ -654,11 +672,17 @@ import Base from '../../layouts/Base.astro';
     .fid-card.card-enter,
     .fid-stamp.stamp-enter,
     .fid-stamp.stamp-new,
+    .fid-stamp.filled,
     .vip-badge-pulse {
       animation: none !important;
       transition: none !important;
     }
     .fid-card { transform: none !important; }
+    /* Still show a steady (non-animated) halo so earned stamps remain
+       clearly distinguishable for users who opt out of motion. */
+    .fid-stamp.filled {
+      filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.35)) !important;
+    }
   }
 
   /* Reward-ready callout under the card when stamps === 8 */
