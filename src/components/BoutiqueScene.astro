@@ -107,13 +107,18 @@
   </p>
 </div>
 
-<!-- Three.js + OrbitControls. Deferred so the HTML paints first but the
-     scripts run in order. -->
+<!-- Phase 12 bugfix: cdnjs's r128 path doesn't host OrbitControls in
+     /controls/ — it 404s, so T.OrbitControls is never defined. Switch
+     to jsdelivr for that file. Also drop `defer` entirely: with plain
+     <script> tags in body order, each one synchronously loads and
+     executes before the next, which is exactly what we want for the
+     THREE → OrbitControls → bottles → scene chain. -->
 <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-<script is:inline defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script is:inline defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/controls/OrbitControls.js"></script>
-<script is:inline defer src="/js/boutique-scene/bottles.js"></script>
-<script is:inline defer src="/js/boutique-scene/scene.js?v=2"></script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script is:inline src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script is:inline src="/js/boutique-scene/bottles.js"></script>
+<script is:inline src="/js/boutique-scene/scene.js?v=3"></script>
 
 <!-- Bridge: expose window.cart so scene.js can call addItem without
      pulling cart.js as an ES module (it's loaded via <script src>). -->
@@ -186,22 +191,42 @@
         if (!products.length && Array.isArray(j.products)) products = j.products;
       }
 
-      // Defer until DadiosBottles is registered (scripts are deferred,
-      // so this script — also imported as a module — might run before
-      // them. We poll briefly).
+      // Wait until bottles.js has registered window.DadiosBottles, then
+      // map + setProducts and signal scene.js that the catalogue is
+      // ready. scene.js awaits this event before starting the scene so
+      // the 6 shelf bottles + 5 table flacons reflect the live API.
       const start = Date.now();
+      const signalReady = () => {
+        (window as any).__dadiosBotReady = true;
+        try {
+          document.dispatchEvent(new CustomEvent('dadios-bot-ready'));
+        } catch {}
+      };
       (function waitForBottles() {
         const Bot = (window as any).DadiosBottles;
         if (Bot && typeof Bot.setProducts === 'function') {
-          const mapped = products.map((p) => Bot.buildSceneProduct(p, sizes));
-          Bot.setProducts(mapped);
+          try {
+            const mapped = products.map((p) => Bot.buildSceneProduct(p, sizes));
+            Bot.setProducts(mapped);
+          } catch (e) {
+            try { console.warn('[BoutiqueScene] setProducts failed', e); } catch {}
+          }
+          signalReady();
           return;
         }
-        if (Date.now() - start > 4000) return;
+        if (Date.now() - start > 4000) {
+          // Give up gracefully — scene.js will boot with the bottles.js
+          // fallback catalogue.
+          signalReady();
+          return;
+        }
         setTimeout(waitForBottles, 50);
       })();
     } catch (err) {
       try { console.warn('[BoutiqueScene] product sync failed', err); } catch {}
+      // Still let scene.js boot — it falls back to the hardcoded list.
+      (window as any).__dadiosBotReady = true;
+      try { document.dispatchEvent(new CustomEvent('dadios-bot-ready')); } catch {}
     }
   }
 

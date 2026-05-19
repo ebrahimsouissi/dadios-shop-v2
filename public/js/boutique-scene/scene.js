@@ -20,7 +20,23 @@
  * this script runs, BoutiqueScene.astro shows the static fallback img.
  */
 
-(function () {
+(async function () {
+  // Phase 12 bugfix: wait briefly for the orchestrator in
+  // BoutiqueScene.astro to finish fetching /api/products and call
+  // DadiosBottles.setProducts(...). If we built the scene immediately,
+  // we'd use the hardcoded fallback catalogue even when the live one
+  // is available. 2.5 s timeout makes the wait bounded — if the
+  // orchestrator never signals, we boot with whatever bottles.js
+  // currently has.
+  await new Promise((resolve) => {
+    if (window.__dadiosBotReady) return resolve();
+    const t = setTimeout(resolve, 2500);
+    document.addEventListener('dadios-bot-ready', () => {
+      clearTimeout(t);
+      resolve();
+    }, { once: true });
+  });
+
   // ===== Phase 12 perf detection =====
   function detectLowPerf() {
     try {
