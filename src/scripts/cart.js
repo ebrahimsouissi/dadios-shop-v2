@@ -92,20 +92,30 @@ export function bindCartBadge() {
 }
 
 /**
- * Shows a brief "Ajouté au panier" toast. Creates a single shared element.
+ * Shows a brief "Ajouté au panier" toast. Single reusable DOM element.
+ * Phase 11: slides in from the top, emerald background, cream text,
+ * 2.5s auto-dismiss. Honors prefers-reduced-motion by skipping the
+ * slide animation (still fades).
  */
 export function showAddedToast(message = 'Ajouté au panier') {
   let toast = document.getElementById('dadios-cart-toast');
+  const reduceMotion = typeof matchMedia === 'function'
+    && matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (!toast) {
     toast = document.createElement('div');
     toast.id = 'dadios-cart-toast';
+    toast.setAttribute('role', 'status');
+    toast.setAttribute('aria-live', 'polite');
     toast.setAttribute(
       'style',
       [
         'position:fixed',
-        'bottom:24px',
+        'top:max(16px, env(safe-area-inset-top, 0px))',
         'left:50%',
-        'transform:translateX(-50%) translateY(20px)',
+        // Slide in from above the viewport (or just fade if reduced motion).
+        reduceMotion
+          ? 'transform:translateX(-50%)'
+          : 'transform:translateX(-50%) translateY(-120%)',
         'background:#0E3A1F',
         'color:#F5EDDC',
         'padding:12px 22px',
@@ -113,11 +123,13 @@ export function showAddedToast(message = 'Ajouté au panier') {
         'font-family:Inter,sans-serif',
         'font-size:13px',
         'letter-spacing:0.06em',
-        'box-shadow:0 8px 24px rgba(5,26,14,0.25)',
+        'box-shadow:0 8px 24px rgba(5,26,14,0.28)',
         'z-index:1000',
         'opacity:0',
-        'transition:opacity .2s, transform .2s',
+        'transition:opacity .25s ease-out, transform .35s cubic-bezier(0.2, 0.9, 0.3, 1.2)',
         'pointer-events:none',
+        'max-width:calc(100vw - 32px)',
+        'text-align:center',
       ].join(';'),
     );
     document.body.appendChild(toast);
@@ -130,6 +142,8 @@ export function showAddedToast(message = 'Ajouté au panier') {
   clearTimeout(toast._t);
   toast._t = setTimeout(() => {
     toast.style.opacity = '0';
-    toast.style.transform = 'translateX(-50%) translateY(20px)';
-  }, 1800);
+    toast.style.transform = reduceMotion
+      ? 'translateX(-50%)'
+      : 'translateX(-50%) translateY(-120%)';
+  }, 2500);
 }

@@ -89,19 +89,40 @@ import Base from '../../layouts/Base.astro';
       </header>
 
       <div id="loyaltyHas" class="loyalty-state" hidden>
-        <p class="loyalty-code">
-          Code de la carte : <strong id="loyaltyCode"></strong>
-        </p>
-        <div class="stamps-row" id="stampsRow" aria-label="Progression des tampons"></div>
-        <p class="loyalty-progress" id="stampsLabel"></p>
-        <p class="loyalty-rewards" id="rewardsLabel"></p>
-        <p id="loyaltyVipNote" class="loyalty-vip-note" hidden>
-          ✨ Vous gagnez 2× plus de tampons en tant que VIP
-        </p>
-        <p class="loyalty-fine">
-          Présentez votre code en boutique pour gagner un tampon à chaque
-          achat. À 8 tampons, votre cadeau est offert.
-        </p>
+        <!-- Phase 11: card visual — see the fid-* rules. The simple .stamps-row
+             from earlier phases is gone; we keep the same data flow (loyalty.code
+             / stamps / rewards) but render it inside the new card. -->
+        <div class="fid-card-wrap">
+          <div class="fid-card" id="fidCard" data-stamps="0">
+            <div class="fid-noise" aria-hidden="true"></div>
+            <div class="fid-content">
+              <header class="fid-head">
+                <div class="fid-brand">
+                  <div class="fid-logo">DADIOS</div>
+                  <div class="fid-tagline">Essence of Timeless Elegance</div>
+                </div>
+                <div class="fid-vip vip-badge-pulse" id="fidVip" hidden aria-label="Bonus VIP : 2 tampons par achat">× 2 tampons</div>
+              </header>
+              <div class="fid-stamps" id="fidStamps" role="list" aria-label="Progression des tampons"></div>
+              <footer class="fid-foot">
+                <div class="fid-count" id="fidCount">0 / 8 tampons</div>
+                <div class="fid-name" id="fidName"></div>
+              </footer>
+            </div>
+          </div>
+          <div class="fid-meta">
+            <p class="fid-code">Code : <strong id="loyaltyCode"></strong></p>
+            <p id="stampsLabel" class="fid-progress"></p>
+            <p id="rewardsLabel" class="fid-rewards"></p>
+            <p id="loyaltyVipNote" class="loyalty-vip-note" hidden>
+              ✨ Vous gagnez 2× plus de tampons en tant que VIP
+            </p>
+            <p class="fid-fine">
+              Présentez votre code en boutique pour gagner un tampon à chaque
+              achat. À 8 tampons, votre cadeau est offert.
+            </p>
+          </div>
+        </div>
       </div>
 
       <div id="loyaltyNone" class="loyalty-state" hidden>
@@ -363,55 +384,184 @@ import Base from '../../layouts/Base.astro';
     margin: 0;
   }
 
-  /* ===== loyalty ===== */
-  .loyalty-code {
+  /* ===== loyalty card (Phase 11 refonte) ===== */
+  .fid-card-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 22px;
+  }
+  /* The card itself — 1.586:1 ratio, capped at 420px wide. perspective on
+     the wrap so the 3D hover tilt is rendered correctly. */
+  .fid-card {
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    aspect-ratio: 1.586 / 1;
+    border-radius: 16px;
+    border: 2px solid var(--gold, #D4AF37);
+    background: linear-gradient(135deg, #0F5132 0%, #1B7340 100%);
+    color: #F5EDDC;
+    overflow: hidden;
+    box-shadow: 0 14px 40px rgba(5, 26, 14, 0.25);
+    transform-style: preserve-3d;
+    transition: transform 200ms ease-out;
+    will-change: transform;
+    /* CSS vars updated on mousemove for the tilt effect. Defaults = no tilt. */
+    --tilt-x: 0deg;
+    --tilt-y: 0deg;
+    transform: perspective(1000px) rotateY(var(--tilt-y)) rotateX(var(--tilt-x));
+  }
+  /* SVG fractalNoise overlay — opacity 0.05, multiply blend so it darkens
+     just slightly without washing out the gradient. */
+  .fid-noise {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.05;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 200px 200px;
+  }
+  .fid-content {
+    position: relative;
+    z-index: 1;
+    height: 100%;
+    padding: 18px 20px 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .fid-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .fid-brand {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .fid-logo {
+    font-family: var(--font-display);
+    color: #D4AF37;
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    line-height: 1;
+  }
+  .fid-tagline {
+    font-family: var(--font-display);
+    color: rgba(212, 175, 55, 0.72);
+    font-style: italic;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+  .fid-vip {
+    background: #D4AF37;
+    color: #0F5132;
+    font-family: var(--font-body);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+    box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.6);
+  }
+
+  /* Stamps grid — 4×2, 8 cells max */
+  .fid-stamps {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px 12px;
+    place-items: center;
+    flex-grow: 1;
+    align-content: center;
+  }
+  .fid-stamp {
+    width: 100%;
+    max-width: 38px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #0F5132;
+    box-sizing: border-box;
+  }
+  .fid-stamp.empty {
+    background: transparent;
+    border: 2px dashed rgba(212, 175, 55, 0.85);
+    color: transparent;
+  }
+  .fid-stamp.filled {
+    background: #D4AF37;
+    border: 2px solid #D4AF37;
+  }
+  .fid-stamp .sceau {
+    width: 60%;
+    height: 60%;
+  }
+  .fid-stamp .sceau path { fill: #0F5132; }
+
+  .fid-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 12px;
+  }
+  .fid-count {
+    color: #D4AF37;
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  .fid-name {
+    font-family: var(--font-display);
+    color: #D4AF37;
+    font-size: 18px;
+    font-style: italic;
+    text-align: right;
+    line-height: 1.1;
+  }
+  .fid-name:empty::before { content: ''; }
+
+  /* Meta block below the card — same data we used to show in dots */
+  .fid-meta {
+    width: 100%;
+    max-width: 460px;
+    text-align: center;
+  }
+  .fid-code {
     font-size: 13px;
     color: var(--ink-soft);
-    margin-bottom: 18px;
+    margin-bottom: 10px;
   }
-  .loyalty-code strong {
+  .fid-code strong {
     font-family: var(--font-display);
-    font-size: 22px;
+    font-size: 20px;
     color: var(--emerald);
     letter-spacing: 0.16em;
     margin-left: 6px;
   }
-  .stamps-row {
-    display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    gap: 8px;
-    margin-bottom: 14px;
-  }
-  .stamp {
-    aspect-ratio: 1;
-    border-radius: 50%;
-    background: var(--cream);
-    border: 1.5px solid var(--border-strong);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: transparent;
-    font-size: 16px;
-    transition: all .2s;
-  }
-  .stamp.filled {
-    background: var(--emerald);
-    border-color: var(--emerald);
-    color: var(--gold);
-  }
-  .loyalty-progress {
+  .fid-progress {
     font-family: var(--font-display);
-    font-size: 17px;
+    font-size: 16px;
     color: var(--ink);
-    margin-bottom: 6px;
+    margin-bottom: 4px;
   }
-  .loyalty-rewards {
+  .fid-rewards {
     font-size: 13px;
     color: var(--gold-soft);
     letter-spacing: 0.06em;
-    margin-bottom: 16px;
+    margin-bottom: 14px;
   }
-  .loyalty-fine {
+  .fid-fine {
     font-size: 12px;
     color: var(--ink-mute);
     line-height: 1.6;
@@ -420,6 +570,57 @@ import Base from '../../layouts/Base.astro';
   }
   .loyalty-state p { margin-bottom: 12px; line-height: 1.6; }
   .loyalty-state p.muted { color: var(--ink-mute); font-size: 14px; }
+
+  /* ===== animations (respect reduced motion) ===== */
+  @keyframes fid-card-enter {
+    from { opacity: 0; transform: perspective(1000px) translateY(20px) rotateX(8deg); }
+    to   { opacity: 1; transform: perspective(1000px) translateY(0) rotateX(0); }
+  }
+  @keyframes fid-stamp-enter {
+    from { opacity: 0; transform: scale(1.4) rotate(-15deg); }
+    to   { opacity: 1; transform: scale(1) rotate(0); }
+  }
+  @keyframes fid-stamp-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.85); }
+    50%      { box-shadow: 0 0 0 12px rgba(212, 175, 55, 0); }
+  }
+  @keyframes fid-vip-pulse {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.05); }
+  }
+  .fid-card.card-enter {
+    animation: fid-card-enter 600ms ease-out both;
+  }
+  .fid-stamp.stamp-enter {
+    animation: fid-stamp-enter 400ms ease-out both;
+    /* animation-delay set inline by JS for staggering */
+  }
+  .fid-stamp.stamp-new {
+    animation: fid-stamp-enter 400ms ease-out both, fid-stamp-pulse 1.5s ease-in-out 3;
+  }
+  .vip-badge-pulse {
+    animation: fid-vip-pulse 2s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fid-card,
+    .fid-card.card-enter,
+    .fid-stamp.stamp-enter,
+    .fid-stamp.stamp-new,
+    .vip-badge-pulse {
+      animation: none !important;
+      transition: none !important;
+    }
+    .fid-card { transform: none !important; }
+  }
+
+  @media (max-width: 480px) {
+    .fid-card { max-width: 100%; }
+    .fid-logo { font-size: 19px; }
+    .fid-name { font-size: 16px; }
+    .fid-count { font-size: 10px; }
+    .fid-stamp { max-width: 32px; }
+  }
 
   /* ===== quick tile (favoris) ===== */
   .dash-quick {
@@ -817,6 +1018,7 @@ import Base from '../../layouts/Base.astro';
       tierBadge.hidden = false;
       if (conciergeTile) conciergeTile.hidden = false;
       if (loyaltyVipNote) loyaltyVipNote.hidden = false;
+      if (fidVip) fidVip.hidden = false;
     } else if (tier === 'reseller') {
       tierBadge.className = 'tier-badge reseller';
       tierBadge.innerHTML = '<span>💼 Reseller</span><span class="tier-sub">Compte professionnel</span>';
@@ -864,6 +1066,60 @@ import Base from '../../layouts/Base.astro';
     }
   });
 
+  // Phase 11: card-shaped loyalty card. Element refs grabbed once, reused
+  // across renderLoyalty calls (login → me() → renderLoyalty).
+  const fidCard = document.getElementById('fidCard') as HTMLElement;
+  const fidStamps = document.getElementById('fidStamps') as HTMLElement;
+  const fidCount = document.getElementById('fidCount') as HTMLElement;
+  const fidName = document.getElementById('fidName') as HTMLElement;
+  const fidVip = document.getElementById('fidVip') as HTMLElement;
+
+  const LOYALTY_PREV_KEY = 'loyalty-last-count';
+  const PREFERS_REDUCED = typeof matchMedia === 'function'
+    && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // SEAU shape — a simple 4-pointed compass star, fills the stamp circle.
+  function seauSvg() {
+    return `<svg class="sceau" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M12 1 L14.4 9.6 L23 12 L14.4 14.4 L12 23 L9.6 14.4 L1 12 L9.6 9.6 Z"/>
+    </svg>`;
+  }
+
+  function readPrevStampCount(): number {
+    try {
+      const raw = localStorage.getItem(LOYALTY_PREV_KEY);
+      const n = raw == null ? -1 : Number(raw);
+      return Number.isFinite(n) ? n : -1;
+    } catch { return -1; }
+  }
+  function writePrevStampCount(n: number) {
+    try { localStorage.setItem(LOYALTY_PREV_KEY, String(n)); } catch {}
+  }
+
+  // Render the 8 stamps. `stamps` is the count in the *current* 0–7 cycle
+  // (the worker rolls over at 8 and increments rewards). The newestIndex
+  // (if any) gets .stamp-new for the pulse-glow animation.
+  function renderStamps(stamps: number, newestIndex: number | null) {
+    fidStamps.innerHTML = '';
+    for (let i = 0; i < 8; i++) {
+      const cell = document.createElement('div');
+      const filled = i < stamps;
+      const newest = newestIndex !== null && i === newestIndex;
+      cell.className = `fid-stamp ${filled ? 'filled' : 'empty'}`;
+      cell.setAttribute('role', 'listitem');
+      cell.setAttribute(
+        'aria-label',
+        filled ? `Tampon n°${i + 1} obtenu` : `Tampon n°${i + 1} à obtenir`,
+      );
+      if (filled) cell.innerHTML = seauSvg();
+      if (!PREFERS_REDUCED) {
+        cell.classList.add(newest ? 'stamp-new' : 'stamp-enter');
+        if (!newest) cell.style.animationDelay = `${i * 150}ms`;
+      }
+      fidStamps.appendChild(cell);
+    }
+  }
+
   function renderLoyalty(loyalty: any) {
     if (!loyalty || !loyalty.code) {
       loyaltyHas.hidden = true;
@@ -873,22 +1129,65 @@ import Base from '../../layouts/Base.astro';
     loyaltyNone.hidden = true;
     loyaltyHas.hidden = false;
     loyaltyCodeEl.textContent = loyalty.code;
+
     const stamps = Math.max(0, Math.min(8, Number(loyalty.stamps) || 0));
-    stampsRow.innerHTML = '';
-    for (let i = 0; i < 8; i++) {
-      const dot = document.createElement('span');
-      dot.className = 'stamp' + (i < stamps ? ' filled' : '');
-      dot.textContent = '✦';
-      stampsRow.appendChild(dot);
+
+    // Decide whether the latest stamp should pulse: only if the count
+    // strictly increased since the last visit. After the rewards roll-over
+    // (stamps was 7, now 0), the user gets a fresh card — skip the pulse
+    // since there's no visible "new" stamp.
+    const prev = readPrevStampCount();
+    let newestIndex: number | null = null;
+    if (!PREFERS_REDUCED && stamps > 0 && prev >= 0 && stamps > prev) {
+      newestIndex = stamps - 1;
     }
-    stampsLabel.textContent = `${stamps} / 8 tampons sur cette carte`;
+    writePrevStampCount(stamps);
+
+    renderStamps(stamps, newestIndex);
+    fidCount.textContent = `${stamps} / 8 tampons`;
+    if (stampsLabel) stampsLabel.textContent = `${stamps} / 8 tampons sur cette carte`;
     const rewards = Number(loyalty.rewards) || 0;
     rewardsLabel.textContent = rewards === 0
       ? 'Aucun cadeau pour le moment'
       : rewards === 1
         ? '1 cadeau gagné'
         : `${rewards} cadeaux gagnés`;
+
+    // Card name = customer.name from the most recent renderProfile call.
+    // viewName is updated synchronously in renderProfile before us.
+    if (fidName) {
+      const nameText = (document.getElementById('viewName')?.textContent || '').trim();
+      fidName.textContent = nameText && nameText !== '—' ? nameText : '';
+    }
+
+    // Trigger card-enter once per visit, not on subsequent re-renders.
+    if (!PREFERS_REDUCED && !fidCard.dataset.entered) {
+      fidCard.dataset.entered = '1';
+      fidCard.classList.add('card-enter');
+    }
   }
+
+  // ===== Desktop hover tilt =====
+  // Sets CSS vars on the card so the transform stays in sync with the mouse
+  // without React-style state. No-ops on touch / reduced-motion.
+  function bindCardTilt() {
+    if (PREFERS_REDUCED) return;
+    if (window.matchMedia('(pointer: coarse)').matches) return;
+    const card = fidCard;
+    if (!card) return;
+    card.addEventListener('mousemove', (e) => {
+      const r = card.getBoundingClientRect();
+      const dx = ((e.clientX - r.left) / r.width) - 0.5;   // -0.5 .. 0.5
+      const dy = ((e.clientY - r.top) / r.height) - 0.5;
+      card.style.setProperty('--tilt-y', `${dx * 4}deg`);   // ±2deg
+      card.style.setProperty('--tilt-x', `${-dy * 4}deg`);  // ±2deg
+    });
+    card.addEventListener('mouseleave', () => {
+      card.style.setProperty('--tilt-y', '0deg');
+      card.style.setProperty('--tilt-x', '0deg');
+    });
+  }
+  bindCardTilt();
 
   function applyWelcomeFlag() {
     const qp = new URLSearchParams(window.location.search);
