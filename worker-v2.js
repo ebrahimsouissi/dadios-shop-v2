@@ -12,6 +12,7 @@
  *   POST /api/articles         — journal: list_published, get_published, related, admin_*
  *   POST /api/perfume-requests — VIP concierge: create, list, admin_list, admin_update
  *   POST /api/reviews          — produit reviews: list, stats, submit (client), admin_*
+ *   POST /api/sales            — Phase 4: in-shop POS — staff login + tickets + admin stats
  *
  * Required bindings (set in Cloudflare dashboard → Worker → Settings):
  *   LOYALTY_KV   (KV namespace) — already configured
@@ -30,6 +31,10 @@
  *                                       Variable name: ADMIN_LOGS_KV
  *                                       Bind to: dadios-admin-logs
  *                                    3. Save & deploy the Worker
+ *   SALES_KV     (KV namespace) — *** NEW for Phase 4 (saisie ventes boutique) ***
+ *                                  KV namespace "dadios-sales".
+ *                                  Variable name in Worker → Settings → KV
+ *                                  bindings: SALES_KV.
  *   IMAGES       (R2 bucket)    — R2 bucket "dadios-images"
  *
  * Required env variables:
@@ -92,7 +97,7 @@ function requireAdmin(body, env) {
 
 const ADMIN_PERMISSIONS = [
   'products', 'orders', 'customers', 'articles', 'reviews',
-  'loyalty', 'tiers', 'perfume-requests', 'all',
+  'loyalty', 'tiers', 'perfume-requests', 'sales', 'all',
 ];
 const EMERGENCY_ADMIN_PHONE = 'emergency-admin';
 const EMERGENCY_SESSION_TTL = 60 * 60;        // 1h
@@ -2463,6 +2468,716 @@ async function handleReviews(body, env, request) {
 }
 
 // ============================================================
+// PHASE 4 — In-shop sales (POS) — /api/sales
+//   KV namespace binding: SALES_KV
+//   Keys:
+//     employee:${code}                — { code, name, active, createdAt,
+//                                          createdBy, salesCount }
+//     staff:session:${token}          — { code, name, createdAt }  (12h TTL)
+//     ratelimit:staff:${ip}           — { count, windowStart }     (10min TTL)
+//     sale:${id}                      — full sale record
+//     day:${YYYY-MM-DD}:sale:${id}    — index (empty value)
+//     month:${YYYY-MM}:sale:${id}     — index (empty value)
+//     employee:${code}:sale:${id}     — index (empty value)
+//
+//   Staff tokens (POS) and admin sessions (Phase 13) are STRICTLY separate.
+//   admin_* actions require Phase 13 admin auth + the 'sales' permission;
+//   they will never accept a staffToken. staff_* actions require a staff
+//   token and never grant admin access.
+// ============================================================
+const STAFF_SESSION_TTL_SECONDS = 12 * 60 * 60;       // 12 h
+const STAFF_LOGIN_RATE_LIMIT_MAX = 5;
+const STAFF_LOGIN_RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+const SALES_MONTHLY_FIXED_COSTS = 1660;               // DT — TODO: configurable in v2
+
+// CF Workers run in UTC. Tunisia is UTC+1 year-round (no DST since 2008).
+const TUNIS_OFFSET_MS = 60 * 60 * 1000;
+
+function tunisDateParts(d = new Date()) {
+  const t = new Date(d.getTime() + TUNIS_OFFSET_MS);
+  return {
+    yyyy: t.getUTCFullYear(),
+    mm: String(t.getUTCMonth() + 1).padStart(2, '0'),
+    dd: String(t.getUTCDate()).padStart(2, '0'),
+  };
+}
+function tunisDayKey(d = new Date()) {
+  const p = tunisDateParts(d);
+  return `${p.yyyy}-${p.mm}-${p.dd}`;
+}
+function tunisMonthKey(d = new Date()) {
+  const p = tunisDateParts(d);
+  return `${p.yyyy}-${p.mm}`;
+}
+
+function isValidEmployeeCode(code) {
+  return typeof code === 'string' && /^\d{4}$/.test(code);
+}
+
+function validateSaleItems(rawItems, declaredTotal) {
+  if (!Array.isArray(rawItems) || rawItems.length === 0) {
+    return { ok: false, error: 'Au moins un article requis' };
+  }
+  if (rawItems.length > 50) {
+    return { ok: false, error: 'Trop d\'articles (max 50)' };
+  }
+  const items = [];
+  let computed = 0;
+  for (const it of rawItems) {
+    const slug = String(it?.slug || '').trim().slice(0, 80);
+    const name = String(it?.name || '').trim().slice(0, 160);
+    const size = String(it?.size || '').trim().slice(0, 16);
+    const qty = parseInt(it?.qty, 10);
+    const price = Number(it?.price);
+    if (!slug || !name) return { ok: false, error: 'slug et name requis pour chaque article' };
+    if (!Number.isInteger(qty) || qty <= 0 || qty > 200) {
+      return { ok: false, error: 'qty invalide pour ' + name };
+    }
+    if (!Number.isFinite(price) || price < 0 || price > 100000) {
+      return { ok: false, error: 'price invalide pour ' + name };
+    }
+    items.push({ slug, name, size, qty, price: Math.round(price * 1000) / 1000 });
+    computed += qty * price;
+  }
+  const total = Number(declaredTotal);
+  if (!Number.isFinite(total) || total <= 0) {
+    return { ok: false, error: 'Total invalide' };
+  }
+  // Tolerance 0.01 DT — accounts for floating-point drift in cents.
+  if (Math.abs(total - computed) > 0.01) {
+    return { ok: false, error: `Total ${total} ne correspond pas à la somme des articles (${computed.toFixed(2)})` };
+  }
+  return { ok: true, items, total: Math.round(computed * 100) / 100 };
+}
+
+/**
+ * Resolve a staff session token to its employee record.
+ * Returns null on any failure (invalid token, missing KV, deleted employee,
+ * inactive employee). Never throws.
+ */
+async function getStaffFromToken(token, env) {
+  if (!token || !env.SALES_KV) return null;
+  try {
+    const sessRaw = await env.SALES_KV.get(`staff:session:${token}`);
+    if (!sessRaw) return null;
+    const sess = JSON.parse(sessRaw);
+    const empRaw = await env.SALES_KV.get(`employee:${sess.code}`);
+    if (!empRaw) return null;
+    const emp = JSON.parse(empRaw);
+    if (emp.active === false) return null;
+    return { code: emp.code, name: emp.name, sessionToken: token };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * If a sale was created with a customerPhone tied to a loyalty card,
+ * award 1 stamp (×2 for VIP — same rule as handleLoyalty addStamp).
+ * Returns { ok, awarded, vipBonus, card? } so the caller can include
+ * the result in the response. Never throws.
+ */
+async function awardLoyaltyForSale(env, customerPhone) {
+  if (!env.LOYALTY_KV || !customerPhone) {
+    return { ok: false, awarded: 0, reason: 'no_kv_or_phone' };
+  }
+  try {
+    const wanted = normalizePhone(customerPhone);
+    if (!wanted) return { ok: false, awarded: 0, reason: 'invalid_phone' };
+    // Scan card:* for a matching phone. Small dataset; same approach
+    // handleLoyalty 'get' already takes.
+    const list = await env.LOYALTY_KV.list({ prefix: 'card:' });
+    let matchedKey = null;
+    let card = null;
+    for (const key of list.keys) {
+      const raw = await env.LOYALTY_KV.get(key.name);
+      if (!raw) continue;
+      try {
+        const c = JSON.parse(raw);
+        if (c.phone && normalizePhone(c.phone) === wanted) {
+          matchedKey = key.name;
+          card = normalizeCard(c);
+          break;
+        }
+      } catch {}
+    }
+    if (!matchedKey || !card) {
+      return { ok: false, awarded: 0, reason: 'no_card' };
+    }
+    let vipBonus = false;
+    if (env.CUSTOMERS_KV) {
+      const custRaw = await env.CUSTOMERS_KV.get(`customer:${wanted}`);
+      if (custRaw) {
+        const c = JSON.parse(custRaw);
+        if (c && c.tier === 'vip') vipBonus = true;
+      }
+    }
+    const qty = vipBonus ? 2 : 1;
+    card.stamps += qty;
+    card.rewards += Math.floor(card.stamps / 8);
+    card.stamps = card.stamps % 8;
+    await env.LOYALTY_KV.put(matchedKey, JSON.stringify(card));
+    return { ok: true, awarded: qty, vipBonus, card };
+  } catch {
+    return { ok: false, awarded: 0, reason: 'error' };
+  }
+}
+
+/**
+ * Aggregate sale-indexes under a given prefix into the full sale records.
+ * Filters out null reads silently (orphan index entries are tolerated so
+ * a partial KV deletion doesn't break the whole listing).
+ */
+async function loadSalesUnderPrefix(env, prefix, { status } = {}) {
+  const list = await env.SALES_KV.list({ prefix });
+  const sales = [];
+  for (const key of list.keys) {
+    const saleId = key.name.split(':sale:')[1];
+    if (!saleId) continue;
+    const raw = await env.SALES_KV.get(`sale:${saleId}`);
+    if (!raw) continue;
+    try {
+      const s = JSON.parse(raw);
+      if (status && s.status !== status) continue;
+      sales.push(s);
+    } catch {}
+  }
+  // Newest first.
+  sales.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  return sales;
+}
+
+async function handleSales(body, env, request) {
+  const action = body.action;
+
+  if (!env.SALES_KV) {
+    return json({ ok: false, error: 'KV not bound (SALES_KV)' }, 500);
+  }
+
+  const kv = env.SALES_KV;
+
+  // ====================================================================
+  // STAFF ACTIONS — authenticate with a 4-digit code, get a staffToken
+  // ====================================================================
+
+  if (action === 'staff_login') {
+    const code = String(body.code || '').trim();
+    if (!isValidEmployeeCode(code)) {
+      return json({ ok: false, error: 'Code invalide' }, 400);
+    }
+    // Per-IP rate limit (5 attempts / 10 min).
+    const ip = (request && request.headers.get('CF-Connecting-IP')) || 'unknown';
+    const rateKey = `ratelimit:staff:${ip}`;
+    const nowMs = Date.now();
+    let rateData = { count: 0, windowStart: nowMs };
+    const rawRate = await kv.get(rateKey);
+    if (rawRate) {
+      try {
+        const parsed = JSON.parse(rawRate);
+        if (nowMs - parsed.windowStart < STAFF_LOGIN_RATE_LIMIT_WINDOW_MS) {
+          rateData = parsed;
+        }
+      } catch {}
+    }
+    if (rateData.count >= STAFF_LOGIN_RATE_LIMIT_MAX) {
+      return json({ ok: false, error: 'Trop de tentatives. Réessayez dans 10 minutes.' }, 429);
+    }
+    const empRaw = await kv.get(`employee:${code}`);
+    if (!empRaw) {
+      rateData.count += 1;
+      await kv.put(rateKey, JSON.stringify(rateData), {
+        expirationTtl: Math.ceil(STAFF_LOGIN_RATE_LIMIT_WINDOW_MS / 1000),
+      });
+      // Generic error — don't leak whether the code exists.
+      return json({ ok: false, error: 'Code incorrect' }, 401);
+    }
+    let emp;
+    try { emp = JSON.parse(empRaw); } catch { return json({ ok: false, error: 'Employé corrompu' }, 500); }
+    if (emp.active === false) {
+      return json({ ok: false, error: 'Compte désactivé' }, 403);
+    }
+    const token = crypto.randomUUID();
+    const session = {
+      code: emp.code,
+      name: emp.name,
+      createdAt: new Date().toISOString(),
+    };
+    await kv.put(`staff:session:${token}`, JSON.stringify(session), {
+      expirationTtl: STAFF_SESSION_TTL_SECONDS,
+    });
+    // Successful login resets the per-IP counter so a busy shop doesn't
+    // self-DoS after a few employees rotating on the same tablet.
+    await kv.delete(rateKey);
+    return json({
+      ok: true,
+      staffToken: token,
+      employee: { code: emp.code, name: emp.name },
+    });
+  }
+
+  if (action === 'staff_me') {
+    const staff = await getStaffFromToken(body.staffToken, env);
+    if (!staff) return json({ ok: false, error: 'Session invalide' }, 401);
+    return json({ ok: true, employee: { code: staff.code, name: staff.name } });
+  }
+
+  if (action === 'staff_logout') {
+    const token = String(body.staffToken || '');
+    if (token) {
+      try { await kv.delete(`staff:session:${token}`); } catch {}
+    }
+    return json({ ok: true });
+  }
+
+  if (action === 'create_sale') {
+    const staff = await getStaffFromToken(body.staffToken, env);
+    if (!staff) return json({ ok: false, error: 'Session invalide' }, 401);
+
+    const validation = validateSaleItems(body.items, body.total);
+    if (!validation.ok) return json(validation, 400);
+
+    const paymentMethod = String(body.paymentMethod || 'cash');
+    if (paymentMethod !== 'cash') {
+      return json({ ok: false, error: 'paymentMethod doit être "cash" pour l\'instant' }, 400);
+    }
+
+    let customerPhone = null;
+    let customerName = null;
+    if (body.customerPhone) {
+      const norm = normalizePhone(body.customerPhone);
+      if (!norm) return json({ ok: false, error: 'Téléphone client invalide' }, 400);
+      if (env.CUSTOMERS_KV) {
+        const custRaw = await env.CUSTOMERS_KV.get(`customer:${norm}`);
+        if (!custRaw) {
+          return json({ ok: false, error: 'Aucun client trouvé pour ce téléphone' }, 404);
+        }
+        try {
+          const c = JSON.parse(custRaw);
+          customerPhone = norm;
+          customerName = c.name || null;
+        } catch {
+          return json({ ok: false, error: 'Client corrompu' }, 500);
+        }
+      } else {
+        // CUSTOMERS_KV unbound — keep raw phone, no name.
+        customerPhone = norm;
+      }
+    }
+
+    const now = new Date();
+    const id = crypto.randomUUID();
+    const sale = {
+      id,
+      items: validation.items,
+      total: validation.total,
+      paymentMethod,
+      customerPhone,
+      customerName,
+      notes: String(body.notes || '').slice(0, 500) || null,
+      status: 'active',
+      createdAt: now.toISOString(),
+      createdBy: staff.code,
+      createdByName: staff.name,
+    };
+
+    const dayKey = tunisDayKey(now);
+    const monthKey = tunisMonthKey(now);
+
+    await Promise.all([
+      kv.put(`sale:${id}`, JSON.stringify(sale)),
+      kv.put(`day:${dayKey}:sale:${id}`, ''),
+      kv.put(`month:${monthKey}:sale:${id}`, ''),
+      kv.put(`employee:${staff.code}:sale:${id}`, ''),
+    ]);
+
+    // Loyalty integration — best effort, never fails the sale.
+    let loyalty = { awarded: 0 };
+    if (customerPhone) {
+      loyalty = await awardLoyaltyForSale(env, customerPhone);
+    }
+
+    return json({ ok: true, sale, loyalty });
+  }
+
+  if (action === 'list_my_sales') {
+    const staff = await getStaffFromToken(body.staffToken, env);
+    if (!staff) return json({ ok: false, error: 'Session invalide' }, 401);
+    const dayKey = String(body.date || tunisDayKey()).slice(0, 10);
+    // Load all of this employee's sales for the day. Cheaper than scanning
+    // by day prefix when the shop has multiple staff.
+    const all = await loadSalesUnderPrefix(env, `employee:${staff.code}:sale:`);
+    const sales = all.filter((s) => tunisDayKey(new Date(s.createdAt)) === dayKey);
+    const total = sales.reduce(
+      (sum, s) => sum + (s.status === 'active' ? s.total : 0),
+      0,
+    );
+    return json({
+      ok: true,
+      date: dayKey,
+      employee: { code: staff.code, name: staff.name },
+      sales,
+      summary: {
+        ticketCount: sales.filter((s) => s.status === 'active').length,
+        revenue: Math.round(total * 100) / 100,
+      },
+    });
+  }
+
+  if (action === 'modify_sale') {
+    const staff = await getStaffFromToken(body.staffToken, env);
+    if (!staff) return json({ ok: false, error: 'Session invalide' }, 401);
+    const saleId = String(body.saleId || '');
+    const raw = await kv.get(`sale:${saleId}`);
+    if (!raw) return json({ ok: false, error: 'Vente introuvable' }, 404);
+    const sale = JSON.parse(raw);
+    if (sale.createdBy !== staff.code) {
+      return json({ ok: false, error: 'Modification réservée au créateur du ticket' }, 403);
+    }
+    if (sale.status !== 'active') {
+      return json({ ok: false, error: 'Vente déjà annulée' }, 400);
+    }
+    // Same-day restriction (Tunis time).
+    if (tunisDayKey(new Date(sale.createdAt)) !== tunisDayKey()) {
+      return json({ ok: false, error: 'Vente du jour uniquement — passez par l\'admin' }, 403);
+    }
+    const validation = validateSaleItems(body.items, body.total);
+    if (!validation.ok) return json(validation, 400);
+    sale.items = validation.items;
+    sale.total = validation.total;
+    sale.modifiedAt = new Date().toISOString();
+    sale.modifiedBy = staff.code;
+    await kv.put(`sale:${saleId}`, JSON.stringify(sale));
+    return json({ ok: true, sale });
+  }
+
+  if (action === 'cancel_sale') {
+    const staff = await getStaffFromToken(body.staffToken, env);
+    if (!staff) return json({ ok: false, error: 'Session invalide' }, 401);
+    const saleId = String(body.saleId || '');
+    const raw = await kv.get(`sale:${saleId}`);
+    if (!raw) return json({ ok: false, error: 'Vente introuvable' }, 404);
+    const sale = JSON.parse(raw);
+    if (sale.createdBy !== staff.code) {
+      return json({ ok: false, error: 'Annulation réservée au créateur du ticket' }, 403);
+    }
+    if (sale.status !== 'active') {
+      return json({ ok: false, error: 'Vente déjà annulée' }, 400);
+    }
+    if (tunisDayKey(new Date(sale.createdAt)) !== tunisDayKey()) {
+      return json({ ok: false, error: 'Vente du jour uniquement — passez par l\'admin' }, 403);
+    }
+    sale.status = 'cancelled';
+    sale.cancelledAt = new Date().toISOString();
+    sale.cancelledBy = staff.code;
+    sale.cancelReason = String(body.reason || '').slice(0, 200) || null;
+    await kv.put(`sale:${saleId}`, JSON.stringify(sale));
+    return json({ ok: true, sale });
+  }
+
+  // ====================================================================
+  // ADMIN ACTIONS — require Phase 13 admin auth + 'sales' permission
+  // ====================================================================
+  const _PERM = 'sales';
+
+  if (action === 'admin_list_sales') {
+    const auth = await requireAdminAuth(body, env, request, _PERM);
+    if (!auth.ok) return json({ ok: false, error: auth.error }, auth.status);
+
+    const from = String(body.from || tunisDayKey()).slice(0, 10);
+    const to = String(body.to || from).slice(0, 10);
+    const employeeCode = body.employeeCode ? String(body.employeeCode) : null;
+    const status = body.status ? String(body.status) : null;
+    const page = Math.max(1, parseInt(body.page, 10) || 1);
+    const limit = Math.min(200, Math.max(1, parseInt(body.limit, 10) || 50));
+
+    // Gather all day keys in the [from, to] inclusive range. Iterate by
+    // day to keep KV.list windows small.
+    const fromDate = new Date(from + 'T00:00:00Z');
+    const toDate = new Date(to + 'T00:00:00Z');
+    if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime()) || fromDate > toDate) {
+      return json({ ok: false, error: 'Plage de dates invalide' }, 400);
+    }
+    const dayKeys = [];
+    for (let d = new Date(fromDate); d <= toDate; d.setUTCDate(d.getUTCDate() + 1)) {
+      const p = tunisDateParts(d);
+      dayKeys.push(`${p.yyyy}-${p.mm}-${p.dd}`);
+      if (dayKeys.length > 366) break; // safety
+    }
+
+    let all = [];
+    for (const dk of dayKeys) {
+      const dayList = await loadSalesUnderPrefix(env, `day:${dk}:sale:`);
+      all = all.concat(dayList);
+    }
+    if (employeeCode) all = all.filter((s) => s.createdBy === employeeCode);
+    if (status) all = all.filter((s) => s.status === status);
+    // Newest first across the whole window.
+    all.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+
+    const activeOnly = all.filter((s) => s.status === 'active');
+    const revenue = activeOnly.reduce((sum, s) => sum + s.total, 0);
+    const ticketCount = activeOnly.length;
+    const avgTicket = ticketCount > 0 ? revenue / ticketCount : 0;
+
+    const startIdx = (page - 1) * limit;
+    const paged = all.slice(startIdx, startIdx + limit);
+
+    return json({
+      ok: true,
+      sales: paged,
+      pagination: { page, limit, total: all.length, hasMore: startIdx + limit < all.length },
+      summary: {
+        revenue: Math.round(revenue * 100) / 100,
+        ticketCount,
+        avgTicket: Math.round(avgTicket * 100) / 100,
+      },
+    });
+  }
+
+  if (action === 'admin_get_sale') {
+    const auth = await requireAdminAuth(body, env, request, _PERM);
+    if (!auth.ok) return json({ ok: false, error: auth.error }, auth.status);
+    const saleId = String(body.saleId || '');
+    const raw = await kv.get(`sale:${saleId}`);
+    if (!raw) return json({ ok: false, error: 'Vente introuvable' }, 404);
+    return json({ ok: true, sale: JSON.parse(raw) });
+  }
+
+  if (action === 'admin_modify_sale') {
+    const auth = await requireAdminAuth(body, env, request, _PERM);
+    if (!auth.ok) return json({ ok: false, error: auth.error }, auth.status);
+    const saleId = String(body.saleId || '');
+    const raw = await kv.get(`sale:${saleId}`);
+    if (!raw) return json({ ok: false, error: 'Vente introuvable' }, 404);
+    const sale = JSON.parse(raw);
+    const validation = validateSaleItems(body.items, body.total);
+    if (!validation.ok) return json(validation, 400);
+    const before = { items: sale.items, total: sale.total };
+    sale.items = validation.items;
+    sale.total = validation.total;
+    sale.modifiedAt = new Date().toISOString();
+    sale.modifiedBy = auth.customer.phone || 'admin';
+    sale.adminModified = true;
+    if (body.notes !== undefined) {
+      sale.notes = String(body.notes || '').slice(0, 500) || null;
+    }
+    await kv.put(`sale:${saleId}`, JSON.stringify(sale));
+    await logAdminAction(env, auth.customer, 'sale.modify', {
+      saleId, before, after: { items: sale.items, total: sale.total },
+    }, request);
+    return json({ ok: true, sale });
+  }
+
+  if (action === 'admin_cancel_sale') {
+    const auth = await requireAdminAuth(body, env, request, _PERM);
+    if (!auth.ok) return json({ ok: false, error: auth.error }, auth.status);
+    const saleId = String(body.saleId || '');
+    const reason = String(body.reason || '').slice(0, 200);
+    const raw = await kv.get(`sale:${saleId}`);
+    if (!raw) return json({ ok: false, error: 'Vente introuvable' }, 404);
+    const sale = JSON.parse(raw);
+    if (sale.status !== 'active') {
+      return json({ ok: false, error: 'Vente déjà annulée' }, 400);
+    }
+    sale.status = 'cancelled';
+    sale.cancelledAt = new Date().toISOString();
+    sale.cancelledBy = auth.customer.phone || 'admin';
+    sale.cancelReason = reason || null;
+    sale.adminCancelled = true;
+    await kv.put(`sale:${saleId}`, JSON.stringify(sale));
+    await logAdminAction(env, auth.customer, 'sale.cancel', {
+      saleId, reason: reason || null,
+    }, request);
+    return json({ ok: true, sale });
+  }
+
+  if (action === 'admin_stats') {
+    const auth = await requireAdminAuth(body, env, request, _PERM);
+    if (!auth.ok) return json({ ok: false, error: auth.error }, auth.status);
+
+    const period = String(body.period || 'today');
+    let from, to;
+    if (period === 'today') {
+      from = to = tunisDayKey();
+    } else if (period === 'month') {
+      const p = tunisDateParts();
+      from = `${p.yyyy}-${p.mm}-01`;
+      to = tunisDayKey();
+    } else if (period === 'custom') {
+      from = String(body.from || tunisDayKey()).slice(0, 10);
+      to = String(body.to || from).slice(0, 10);
+    } else {
+      return json({ ok: false, error: 'period doit être today|month|custom' }, 400);
+    }
+
+    const fromDate = new Date(from + 'T00:00:00Z');
+    const toDate = new Date(to + 'T00:00:00Z');
+    if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime()) || fromDate > toDate) {
+      return json({ ok: false, error: 'Plage de dates invalide' }, 400);
+    }
+
+    const byDayMap = new Map();
+    const byEmployeeMap = new Map();
+    const byProductMap = new Map();
+    let totalRevenue = 0;
+    let totalTickets = 0;
+
+    for (let d = new Date(fromDate); d <= toDate; d.setUTCDate(d.getUTCDate() + 1)) {
+      const p = tunisDateParts(d);
+      const dk = `${p.yyyy}-${p.mm}-${p.dd}`;
+      const sales = await loadSalesUnderPrefix(env, `day:${dk}:sale:`);
+      let dayRev = 0;
+      let dayTickets = 0;
+      for (const s of sales) {
+        if (s.status !== 'active') continue;
+        dayRev += s.total;
+        dayTickets += 1;
+        totalRevenue += s.total;
+        totalTickets += 1;
+
+        const empKey = s.createdBy;
+        const empEntry = byEmployeeMap.get(empKey) ||
+          { code: s.createdBy, name: s.createdByName || s.createdBy, revenue: 0, ticketCount: 0 };
+        empEntry.revenue += s.total;
+        empEntry.ticketCount += 1;
+        byEmployeeMap.set(empKey, empEntry);
+
+        for (const it of (s.items || [])) {
+          const k = `${it.slug}__${it.size || ''}`;
+          const prodEntry = byProductMap.get(k) ||
+            { slug: it.slug, name: it.name, size: it.size || '', qty: 0, revenue: 0 };
+          prodEntry.qty += it.qty;
+          prodEntry.revenue += it.qty * it.price;
+          byProductMap.set(k, prodEntry);
+        }
+      }
+      byDayMap.set(dk, { date: dk, revenue: Math.round(dayRev * 100) / 100, ticketCount: dayTickets });
+      if (byDayMap.size > 366) break;
+    }
+
+    const byDay = Array.from(byDayMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+    const byEmployee = Array.from(byEmployeeMap.values())
+      .map((e) => ({ ...e, revenue: Math.round(e.revenue * 100) / 100 }))
+      .sort((a, b) => b.revenue - a.revenue);
+    const byProduct = Array.from(byProductMap.values())
+      .map((p) => ({ ...p, revenue: Math.round(p.revenue * 100) / 100 }))
+      .sort((a, b) => b.qty - a.qty)
+      .slice(0, 20);
+
+    const avgTicket = totalTickets > 0 ? totalRevenue / totalTickets : 0;
+
+    return json({
+      ok: true,
+      period: { from, to },
+      revenue: {
+        total: Math.round(totalRevenue * 100) / 100,
+        avgTicket: Math.round(avgTicket * 100) / 100,
+        ticketCount: totalTickets,
+      },
+      byEmployee,
+      byProduct,
+      byDay,
+      comparison: {
+        monthlyFixedCosts: SALES_MONTHLY_FIXED_COSTS,
+        profitEstimate: Math.round((totalRevenue - SALES_MONTHLY_FIXED_COSTS) * 100) / 100,
+      },
+    });
+  }
+
+  if (action === 'admin_list_employees') {
+    const auth = await requireAdminAuth(body, env, request, _PERM);
+    if (!auth.ok) return json({ ok: false, error: auth.error }, auth.status);
+    const list = await kv.list({ prefix: 'employee:' });
+    const employees = [];
+    for (const key of list.keys) {
+      // Skip the index keys (employee:{code}:sale:{id}).
+      if (key.name.split(':').length !== 2) continue;
+      const raw = await kv.get(key.name);
+      if (!raw) continue;
+      try {
+        const e = JSON.parse(raw);
+        const salesIndex = await kv.list({ prefix: `employee:${e.code}:sale:` });
+        employees.push({
+          code: e.code,
+          name: e.name,
+          active: e.active !== false,
+          createdAt: e.createdAt,
+          createdBy: e.createdBy || null,
+          salesCount: salesIndex.keys.length,
+        });
+      } catch {}
+    }
+    employees.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+    return json({ ok: true, employees });
+  }
+
+  if (action === 'admin_create_employee') {
+    const auth = await requireAdminAuth(body, env, request, _PERM);
+    if (!auth.ok) return json({ ok: false, error: auth.error }, auth.status);
+    const code = String(body.code || '').trim();
+    const name = String(body.name || '').trim();
+    if (!isValidEmployeeCode(code)) return json({ ok: false, error: 'Code doit faire 4 chiffres' }, 400);
+    if (!name || name.length > 80) return json({ ok: false, error: 'Nom requis (max 80 caractères)' }, 400);
+    const existing = await kv.get(`employee:${code}`);
+    if (existing) return json({ ok: false, error: 'Ce code est déjà utilisé' }, 409);
+    const employee = {
+      code, name, active: true,
+      createdAt: new Date().toISOString(),
+      createdBy: auth.customer.phone || 'admin',
+    };
+    await kv.put(`employee:${code}`, JSON.stringify(employee));
+    await logAdminAction(env, auth.customer, 'employee.create', { code, name }, request);
+    return json({ ok: true, employee });
+  }
+
+  if (action === 'admin_update_employee') {
+    const auth = await requireAdminAuth(body, env, request, _PERM);
+    if (!auth.ok) return json({ ok: false, error: auth.error }, auth.status);
+    const code = String(body.code || '').trim();
+    if (!isValidEmployeeCode(code)) return json({ ok: false, error: 'Code invalide' }, 400);
+    const raw = await kv.get(`employee:${code}`);
+    if (!raw) return json({ ok: false, error: 'Employé introuvable' }, 404);
+    const employee = JSON.parse(raw);
+    const before = { name: employee.name, active: employee.active !== false };
+    if (body.name !== undefined) {
+      const newName = String(body.name || '').trim();
+      if (!newName || newName.length > 80) {
+        return json({ ok: false, error: 'Nom invalide' }, 400);
+      }
+      employee.name = newName;
+    }
+    if (body.active !== undefined) {
+      employee.active = !!body.active;
+    }
+    await kv.put(`employee:${code}`, JSON.stringify(employee));
+    await logAdminAction(env, auth.customer, 'employee.update', { code, before, after: { name: employee.name, active: employee.active !== false } }, request);
+    return json({ ok: true, employee });
+  }
+
+  if (action === 'admin_delete_employee') {
+    const auth = await requireAdminAuth(body, env, request, _PERM);
+    if (!auth.ok) return json({ ok: false, error: auth.error }, auth.status);
+    const code = String(body.code || '').trim();
+    if (!isValidEmployeeCode(code)) return json({ ok: false, error: 'Code invalide' }, 400);
+    const raw = await kv.get(`employee:${code}`);
+    if (!raw) return json({ ok: false, error: 'Employé introuvable' }, 404);
+    // Refuse if the employee has any sales — keeps historical attribution intact.
+    const salesIndex = await kv.list({ prefix: `employee:${code}:sale:` });
+    if (salesIndex.keys.length > 0) {
+      return json({
+        ok: false,
+        error: `Cet employé a ${salesIndex.keys.length} vente(s). Désactivez-le plutôt que de le supprimer.`,
+      }, 409);
+    }
+    await kv.delete(`employee:${code}`);
+    await logAdminAction(env, auth.customer, 'employee.delete', { code }, request);
+    return json({ ok: true });
+  }
+
+  return json({ ok: false, error: 'Unknown sales action: ' + action }, 400);
+}
+
+// ============================================================
 // Admin handler (product CRUD)
 // ============================================================
 async function handleAdmin(body, env, request) {
@@ -2798,6 +3513,14 @@ export default {
       try { body = await request.json(); }
       catch { return json({ ok: false, error: "Invalid JSON" }, 400); }
       return handleReviews(body, env, request);
+    }
+
+    // ===== Phase 4 — POS (staff + admin) =====
+    if (url.pathname === "/api/sales" && request.method === "POST") {
+      let body;
+      try { body = await request.json(); }
+      catch { return json({ ok: false, error: "Invalid JSON" }, 400); }
+      return handleSales(body, env, request);
     }
 
     // ===== Image upload =====
