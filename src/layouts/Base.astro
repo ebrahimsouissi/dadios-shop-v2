@@ -19,7 +19,8 @@ const canonical = new URL(Astro.url.pathname, Astro.site).toString();
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#F5EDDC" />
   <title>{title}</title>
   <meta name="description" content={description} />
   <link rel="canonical" href={canonical} />
@@ -44,24 +45,73 @@ const canonical = new URL(Astro.url.pathname, Astro.site).toString();
   )}
 </head>
 <body>
-  <nav class="nav">
+  <nav class="nav" id="siteNav">
     <div class="nav-inner">
       <a href="/" class="nav-logo">
         <span class="wordmark">Dadios</span>
         <span class="tag">Fragrance</span>
       </a>
+
+      <!-- Desktop links (hidden < 768px via CSS) -->
       <div class="nav-links">
         <a href="/parfums">Parfums</a>
         <a href="/journal">Journal</a>
         <a href="/boutique">Boutique</a>
         <a href="/contact">Contact</a>
       </div>
+
+      <!-- Desktop actions (hidden < 768px via CSS) -->
       <div class="nav-actions">
         <a href="/compte" data-account-link>Se connecter</a>
         <a href="/panier" class="nav-cart" data-cart-count>Panier · 0</a>
       </div>
+
+      <!-- Mobile actions (cart pill + burger) -->
+      <div class="nav-mobile-actions">
+        <a href="/panier" class="nav-cart-mobile" data-cart-count aria-label="Panier">Panier · 0</a>
+        <button type="button" class="nav-burger" id="navBurger" aria-label="Ouvrir le menu" aria-controls="navDrawer" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="3" y1="12" x2="21" y2="12"/>
+            <line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+      </div>
     </div>
   </nav>
+
+  <!-- Mobile drawer (slides from right) -->
+  <div class="nav-drawer-backdrop" id="navDrawerBackdrop" aria-hidden="true"></div>
+  <aside class="nav-drawer" id="navDrawer" role="dialog" aria-modal="true" aria-label="Menu de navigation" tabindex="-1">
+    <div class="nav-drawer-head">
+      <span class="nav-drawer-brand">Dadios</span>
+      <button type="button" class="nav-drawer-close" id="navDrawerClose" aria-label="Fermer le menu">×</button>
+    </div>
+
+    <div class="nav-drawer-links">
+      <a href="/parfums">Parfums</a>
+      <a href="/journal">Journal</a>
+      <a href="/boutique">Boutique</a>
+      <a href="/contact">Contact</a>
+    </div>
+
+    <div class="nav-drawer-divider">Compte</div>
+
+    <div class="nav-drawer-actions">
+      <a href="/compte" data-account-link>
+        <span>Se connecter</span>
+        <span aria-hidden="true">→</span>
+      </a>
+      <a href="/panier" data-cart-count>
+        Panier · 0
+      </a>
+    </div>
+
+    <a href="/admin" class="nav-drawer-admin" id="navDrawerAdmin" hidden>
+      <span>Espace administrateur</span>
+      <span class="badge">Admin</span>
+    </a>
+  </aside>
 
   <main>
     <slot />
@@ -94,8 +144,8 @@ const canonical = new URL(Astro.url.pathname, Astro.site).toString();
       <div>
         <h4>Compte</h4>
         <ul>
-          <li><a href="/connexion">Se connecter</a></li>
-          <li><a href="/fidelite">Carte de fidélité</a></li>
+          <li><a href="/compte">Se connecter</a></li>
+          <li><a href="/compte/dashboard">Carte de fidélité</a></li>
         </ul>
       </div>
     </div>
@@ -110,16 +160,88 @@ const canonical = new URL(Astro.url.pathname, Astro.site).toString();
     bindCartBadge();
     bindWishlistHearts();
 
-    // Server-rendered HTML always says "Se connecter" → /compte.
-    // If a customer session token is present, swap to "Mon compte" → /compte/dashboard.
-    // (We don't validate the token here to avoid a network call on every page load;
-    // /compte/dashboard re-validates via /me and bounces back if the session is stale.)
+    // ============ Account link swap ============
+    // Server HTML always renders "Se connecter" → /compte.
+    // When a session token is present, swap to "Mon compte" → /compte/dashboard
+    // on every link tagged [data-account-link] (covers both desktop nav and drawer).
     if (isLoggedIn()) {
       document.querySelectorAll('[data-account-link]').forEach((a) => {
         const el = a as HTMLAnchorElement;
-        el.textContent = 'Mon compte';
+        // Drawer link wraps the label in a <span> — only update the first span if so
+        const labelSpan = el.querySelector('span');
+        if (labelSpan && labelSpan.nextElementSibling) {
+          labelSpan.textContent = 'Mon compte';
+        } else {
+          el.textContent = 'Mon compte';
+        }
         el.setAttribute('href', '/compte/dashboard');
       });
+    }
+
+    // ============ Drawer (mobile menu) ============
+    const burger = document.getElementById('navBurger') as HTMLButtonElement | null;
+    const drawer = document.getElementById('navDrawer') as HTMLElement | null;
+    const backdrop = document.getElementById('navDrawerBackdrop') as HTMLElement | null;
+    const closeBtn = document.getElementById('navDrawerClose') as HTMLButtonElement | null;
+
+    function openDrawer() {
+      if (!drawer || !backdrop || !burger) return;
+      drawer.classList.add('is-open');
+      backdrop.classList.add('is-open');
+      burger.setAttribute('aria-expanded', 'true');
+      document.body.classList.add('no-scroll');
+      // Move focus to the close button for keyboard users
+      setTimeout(() => closeBtn?.focus(), 50);
+    }
+    function closeDrawer() {
+      if (!drawer || !backdrop || !burger) return;
+      drawer.classList.remove('is-open');
+      backdrop.classList.remove('is-open');
+      burger.setAttribute('aria-expanded', 'false');
+      document.body.classList.remove('no-scroll');
+      burger.focus();
+    }
+
+    burger?.addEventListener('click', openDrawer);
+    closeBtn?.addEventListener('click', closeDrawer);
+    backdrop?.addEventListener('click', closeDrawer);
+
+    // Esc closes the drawer
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && drawer?.classList.contains('is-open')) closeDrawer();
+    });
+
+    // Auto-close on any link tap inside the drawer
+    drawer?.querySelectorAll('a').forEach((a) => {
+      a.addEventListener('click', () => closeDrawer());
+    });
+
+    // ============ Sticky nav drop-shadow on scroll ============
+    const navEl = document.getElementById('siteNav');
+    if (navEl) {
+      const onScroll = () => {
+        if (window.scrollY > 8) navEl.classList.add('is-scrolled');
+        else navEl.classList.remove('is-scrolled');
+      };
+      window.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+    }
+
+    // ============ Admin link in drawer (conditional) ============
+    // Only show "Espace administrateur" if the customer session resolves to a
+    // tier='admin' account. The actual permission check is async — we fail
+    // closed (link stays hidden) on any error / non-admin.
+    const adminLink = document.getElementById('navDrawerAdmin') as HTMLElement | null;
+    if (adminLink && isLoggedIn()) {
+      (async () => {
+        try {
+          const { adminMe } = await import('../scripts/adminApi.js');
+          const res = await adminMe();
+          if (res && res.ok && res.isAdmin) {
+            adminLink.hidden = false;
+          }
+        } catch {}
+      })();
     }
   </script>
 </body>
