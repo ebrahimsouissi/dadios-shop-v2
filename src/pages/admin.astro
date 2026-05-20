@@ -50,17 +50,145 @@ const sizes = data.sizes;
   </div>
 </section>
 
-<!-- ============ MAIN ADMIN (hidden until logged in) ============ -->
-<section class="admin hidden" id="adminMain">
-  <div class="admin-head">
-    <div>
-      <div class="eyebrow">Administration</div>
-      <h1>Gestion des parfums</h1>
-      <p id="countLine" style="color:var(--ink-soft);margin-top:8px">Chargement...</p>
+<!-- ============ ADMIN SHELL (refonte) ============ -->
+<div class="admin-shell hidden" id="adminMain">
+
+  <!-- TOPBAR -->
+  <header class="admin-topbar">
+    <button type="button" class="admin-burger" id="adminBurger" aria-label="Ouvrir le menu" aria-controls="adminDrawer" aria-expanded="false">
+      <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" aria-hidden="true">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    <a href="#accueil" class="admin-topbar-brand" data-nav="accueil">
+      <span class="admin-topbar-wordmark">Dadios</span>
+      <span class="admin-topbar-tag">Admin</span>
+    </a>
+    <button type="button" class="admin-search-btn" id="adminSearchBtn" aria-label="Rechercher">
+      <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/>
+      </svg>
+      <span class="admin-search-label">Rechercher…</span>
+      <kbd class="admin-search-kbd">⌘K</kbd>
+    </button>
+    <div class="admin-topbar-actions">
+      <button type="button" class="admin-user-btn" id="adminUserBtn" aria-haspopup="true" aria-expanded="false">
+        <span class="admin-user-avatar" id="adminUserAvatar" aria-hidden="true">A</span>
+        <span class="admin-user-name" id="adminUserName">—</span>
+        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" aria-hidden="true" class="admin-user-caret"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="admin-user-menu" id="adminUserMenu" hidden>
+        <a href="/compte/dashboard">Mon profil</a>
+        <a href="/" target="_blank" rel="noopener">Voir le site public ↗</a>
+        <button type="button" id="logoutBtn">Se déconnecter</button>
+      </div>
     </div>
-    <div style="display:flex;gap:12px;align-items:center">
-      <button class="btn btn-outline btn-sm" id="logoutBtn">Déconnexion</button>
-      <button class="btn btn-primary" id="newBtn" data-requires-permission="products">+ Nouveau parfum</button>
+  </header>
+
+  <!-- SIDEBAR (desktop) -->
+  <aside class="admin-sidebar" aria-label="Navigation">
+    <a href="#accueil" class="admin-sidebar-brand-link" data-nav="accueil">
+      <span class="admin-sidebar-brand">Dadios</span>
+      <span class="admin-sidebar-brand-tag">Administration</span>
+    </a>
+    <nav class="admin-sidebar-nav">
+      <a href="#accueil" class="admin-nav-item" data-nav="accueil">
+        <span class="admin-nav-icon" aria-hidden="true">🏠</span>
+        <span class="admin-nav-label">Accueil</span>
+      </a>
+      <div class="admin-nav-group" data-nav-group="ventes">Ventes</div>
+      <a href="#ventes" class="admin-nav-item" data-nav="ventes" data-nav-section="ventes">
+        <span class="admin-nav-icon" aria-hidden="true">🛒</span>
+        <span class="admin-nav-label">Ventes</span>
+      </a>
+      <div class="admin-nav-group" data-nav-group="catalogue">Catalogue</div>
+      <a href="#catalogue" class="admin-nav-item" data-nav="catalogue" data-nav-section="catalogue">
+        <span class="admin-nav-icon" aria-hidden="true">📦</span>
+        <span class="admin-nav-label">Produits</span>
+      </a>
+      <div class="admin-nav-group" data-nav-group="clients">Clientèle</div>
+      <a href="#clients" class="admin-nav-item" data-nav="clients" data-nav-section="clients">
+        <span class="admin-nav-icon" aria-hidden="true">👥</span>
+        <span class="admin-nav-label">Clients</span>
+      </a>
+      <div class="admin-nav-group" data-nav-group="contenu">Contenu</div>
+      <a href="#contenu" class="admin-nav-item" data-nav="contenu" data-nav-section="contenu">
+        <span class="admin-nav-icon" aria-hidden="true">✍️</span>
+        <span class="admin-nav-label">Blog &amp; avis</span>
+      </a>
+      <div class="admin-nav-group" data-nav-group="equipe">Équipe</div>
+      <a href="#equipe" class="admin-nav-item" data-nav="equipe" data-nav-section="equipe">
+        <span class="admin-nav-icon" aria-hidden="true">⚙️</span>
+        <span class="admin-nav-label">Équipe &amp; réglages</span>
+      </a>
+    </nav>
+    <div class="admin-sidebar-foot">
+      <div class="admin-sidebar-mode">Mode administrateur</div>
+      <div class="admin-sidebar-version">DADIOS · v2</div>
+    </div>
+  </aside>
+
+  <!-- MOBILE DRAWER (slides from left) -->
+  <div class="admin-drawer-backdrop" id="adminDrawerBackdrop" aria-hidden="true"></div>
+  <aside class="admin-drawer" id="adminDrawer" role="dialog" aria-modal="true" aria-label="Menu admin" tabindex="-1">
+    <div class="admin-drawer-head">
+      <span class="admin-drawer-brand">Dadios <span style="opacity:0.6;font-size:14px;letter-spacing:0.2em">ADMIN</span></span>
+      <button type="button" class="admin-drawer-close" id="adminDrawerClose" aria-label="Fermer">×</button>
+    </div>
+    <nav class="admin-drawer-nav">
+      <a href="#accueil" class="admin-nav-item" data-nav="accueil"><span class="admin-nav-icon">🏠</span><span class="admin-nav-label">Accueil</span></a>
+      <a href="#ventes" class="admin-nav-item" data-nav="ventes" data-nav-section="ventes"><span class="admin-nav-icon">🛒</span><span class="admin-nav-label">Ventes</span></a>
+      <a href="#catalogue" class="admin-nav-item" data-nav="catalogue" data-nav-section="catalogue"><span class="admin-nav-icon">📦</span><span class="admin-nav-label">Catalogue</span></a>
+      <a href="#clients" class="admin-nav-item" data-nav="clients" data-nav-section="clients"><span class="admin-nav-icon">👥</span><span class="admin-nav-label">Clients</span></a>
+      <a href="#contenu" class="admin-nav-item" data-nav="contenu" data-nav-section="contenu"><span class="admin-nav-icon">✍️</span><span class="admin-nav-label">Contenu</span></a>
+      <a href="#equipe" class="admin-nav-item" data-nav="equipe" data-nav-section="equipe"><span class="admin-nav-icon">⚙️</span><span class="admin-nav-label">Équipe &amp; réglages</span></a>
+    </nav>
+  </aside>
+
+  <!-- MOBILE BOTTOM NAV -->
+  <nav class="admin-bottomnav" aria-label="Navigation rapide">
+    <a href="#accueil" class="admin-bottomnav-item" data-nav="accueil"><span class="admin-bottomnav-icon" aria-hidden="true">🏠</span><span class="admin-bottomnav-label">Accueil</span></a>
+    <a href="#ventes" class="admin-bottomnav-item" data-nav="ventes" data-nav-section="ventes"><span class="admin-bottomnav-icon" aria-hidden="true">🛒</span><span class="admin-bottomnav-label">Ventes</span></a>
+    <a href="#catalogue" class="admin-bottomnav-item" data-nav="catalogue" data-nav-section="catalogue"><span class="admin-bottomnav-icon" aria-hidden="true">📦</span><span class="admin-bottomnav-label">Produits</span></a>
+    <a href="#clients" class="admin-bottomnav-item" data-nav="clients" data-nav-section="clients"><span class="admin-bottomnav-icon" aria-hidden="true">👥</span><span class="admin-bottomnav-label">Clients</span></a>
+    <button type="button" class="admin-bottomnav-item" id="adminMoreBtn"><span class="admin-bottomnav-icon" aria-hidden="true">⋯</span><span class="admin-bottomnav-label">Plus</span></button>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main class="admin-content admin">
+
+  <!-- Per-section title bar: updates as nav changes -->
+  <header class="admin-section-current">
+    <div>
+      <div class="eyebrow" id="sectionEyebrow">Administration</div>
+      <h1 id="sectionTitle">Tableau de bord</h1>
+      <p class="admin-section-help" id="sectionHelp">Vue d'ensemble de l'activité.</p>
+      <p id="countLine" style="color:var(--ink-soft);margin-top:8px;font-size:13px" hidden>Chargement...</p>
+    </div>
+    <div class="admin-section-actions">
+      <button class="btn btn-primary" id="newBtn" data-for-section="catalogue" data-requires-permission="products" hidden>+ Nouveau parfum</button>
+    </div>
+  </header>
+
+  <!-- Per-section empty state: shown when the active section has no visible block -->
+  <div id="adminSectionEmpty" class="admin-section-empty" hidden>
+    <p><strong>Aucun module accessible dans cette section</strong> avec vos permissions actuelles.</p>
+    <p style="margin-top:8px;font-size:13px">Demandez à un super-administrateur d'élargir vos accès.</p>
+  </div>
+
+  <!-- ACCUEIL placeholder (Slice 2 will replace) -->
+  <div class="admin-section" data-section="accueil" hidden>
+    <div class="admin-accueil-card">
+      <div class="admin-accueil-icon" aria-hidden="true">🏗️</div>
+      <h2>Tableau de bord en cours de refonte</h2>
+      <p>
+        Cette page d'accueil affichera bientôt vos KPIs (CA, tickets, panier moyen),
+        les alertes en attente (avis à modérer, commandes à confirmer, demandes VIP)
+        et l'activité récente de la boutique.
+      </p>
+      <p class="admin-accueil-hint">
+        En attendant, utilisez la navigation latérale pour accéder à chaque module.
+      </p>
     </div>
   </div>
 
@@ -73,7 +201,7 @@ const sizes = data.sizes;
     </p>
   </div>
 
-  <div class="products-block" data-requires-permission="products">
+  <div class="products-block admin-block" data-section="catalogue" data-requires-permission="products" hidden>
     <div class="admin-tabs">
       <button class="tab-btn active" data-filter="all">Tous</button>
       <button class="tab-btn" data-filter="homme">Homme</button>
@@ -103,7 +231,7 @@ const sizes = data.sizes;
   </div>
 
   <!-- ============ CUSTOMER MANAGEMENT ============ -->
-  <div class="customers-block" data-requires-permission="customers">
+  <div class="customers-block admin-block" data-section="clients" data-requires-permission="customers" hidden>
     <div class="customers-head">
       <div class="eyebrow">Gestion des comptes clients</div>
       <h2>Recherche &amp; mot de passe</h2>
@@ -152,7 +280,7 @@ const sizes = data.sizes;
   </div>
 
   <!-- ============ ORDERS MANAGEMENT ============ -->
-  <div class="orders-block" data-requires-permission="orders">
+  <div class="orders-block admin-block" data-section="ventes" data-requires-permission="orders" hidden>
     <div class="orders-head">
       <div>
         <div class="eyebrow">Commandes</div>
@@ -195,7 +323,7 @@ const sizes = data.sizes;
   </div>
 
   <!-- ============ JOURNAL (articles) ============ -->
-  <div class="articles-block" data-requires-permission="articles">
+  <div class="articles-block admin-block" data-section="contenu" data-requires-permission="articles" hidden>
     <div class="articles-head">
       <div>
         <div class="eyebrow">Journal</div>
@@ -236,7 +364,7 @@ const sizes = data.sizes;
   </div>
 
   <!-- ============ CLIENTS (tier management) ============ -->
-  <div class="clients-block" data-requires-permission="tiers">
+  <div class="clients-block admin-block" data-section="clients" data-requires-permission="tiers" hidden>
     <div class="clients-head">
       <div>
         <div class="eyebrow">Clientèle</div>
@@ -278,7 +406,7 @@ const sizes = data.sizes;
   </div>
 
   <!-- ============ PERFUME REQUESTS (concierge) ============ -->
-  <div class="perfreq-block" data-requires-permission="perfume-requests">
+  <div class="perfreq-block admin-block" data-section="clients" data-requires-permission="perfume-requests" hidden>
     <div class="perfreq-head">
       <div>
         <div class="eyebrow">Concierge</div>
@@ -319,7 +447,7 @@ const sizes = data.sizes;
   </div>
 
   <!-- ============ REVIEWS (avis clients) ============ -->
-  <div class="reviews-block" data-requires-permission="reviews">
+  <div class="reviews-block admin-block" data-section="contenu" data-requires-permission="reviews" hidden>
     <div class="reviews-head">
       <div>
         <div class="eyebrow">Avis</div>
@@ -360,7 +488,7 @@ const sizes = data.sizes;
   </div>
 
   <!-- ============ ADMINISTRATEURS (super-admin only) ============ -->
-  <div class="admins-block" data-requires-permission="all">
+  <div class="admins-block admin-block" data-section="equipe" data-requires-permission="all" hidden>
     <div class="admins-head">
       <div>
         <div class="eyebrow">Administration</div>
@@ -420,7 +548,7 @@ const sizes = data.sizes;
   </div>
 
   <!-- ============ VENTES BOUTIQUE (Phase 4) ============ -->
-  <div class="sales-block" data-requires-permission="sales">
+  <div class="sales-block admin-block" data-section="ventes" data-requires-permission="sales" hidden>
     <div class="sales-head">
       <div>
         <div class="eyebrow">Boutique</div>
@@ -576,7 +704,29 @@ const sizes = data.sizes;
       <p id="employeesStatus" class="status-msg hidden"></p>
     </div>
   </div>
-</section>
+
+  </main><!-- /.admin-content -->
+</div><!-- /.admin-shell -->
+
+<!-- ============ GLOBAL SEARCH MODAL (Ctrl+K) ============ -->
+<div class="search-modal" id="adminSearchModal" hidden>
+  <div class="search-modal-overlay" id="adminSearchOverlay"></div>
+  <div class="search-modal-box" role="dialog" aria-modal="true" aria-label="Recherche">
+    <div class="search-modal-input-wrap">
+      <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/>
+      </svg>
+      <input type="search" id="adminSearchInput" placeholder="Chercher produit, client, commande, vente…" autocomplete="off" />
+      <button type="button" id="adminSearchClose" class="search-modal-close" aria-label="Fermer">Esc</button>
+    </div>
+    <div class="search-modal-results" id="adminSearchResults">
+      <div class="search-modal-hint">
+        Commencez à taper pour rechercher.<br>
+        <span style="opacity:0.7">Astuce : <kbd>⌘K</kbd> ou <kbd>Ctrl+K</kbd> ouvre cette modal partout dans l'admin.</span>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ============ SALE DETAIL / EDIT MODAL (Phase 4) ============ -->
 <div class="modal hidden" id="saleModal">
@@ -1018,6 +1168,620 @@ const sizes = data.sizes;
 </Base>
 
 <style>
+  /* ============================================================
+     REFONTE ADMIN — SHELL (Slice 1)
+     Sidebar nav + topbar + mobile drawer + bottom nav + content
+     ============================================================ */
+
+  /* Reset Base.astro's nav from this page — admin has its own chrome.
+     Keep the existing site nav hidden behind the new admin topbar. */
+  body { background: #FAF6F0; }
+  body > nav.nav, body > footer { display: none !important; }
+
+  .admin-shell {
+    --admin-emerald: #0F5132;
+    --admin-emerald-deep: #0A3E25;
+    --admin-gold: #D4AF37;
+    --admin-gold-hover: #BF9B30;
+    --admin-cream: #FAF6F0;
+    --admin-paper: #FFFFFF;
+    --admin-ink: #1F1F1F;
+    --admin-ink-soft: #6B6B6B;
+    --admin-ink-mute: #9B9B9B;
+    --admin-border: #E8DFC8;
+    --admin-success: #22C55E;
+    --admin-warning: #F59E0B;
+    --admin-danger: #EF4444;
+    --admin-info: #3B82F6;
+    --admin-sidebar-w: 240px;
+    --admin-topbar-h: 60px;
+    --admin-bottomnav-h: 64px;
+
+    min-height: 100vh;
+    background: var(--admin-cream);
+    color: var(--admin-ink);
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: var(--admin-topbar-h) 1fr;
+    grid-template-areas:
+      "topbar"
+      "content";
+  }
+  .admin-shell.hidden { display: none; }
+
+  @media (min-width: 1024px) {
+    .admin-shell {
+      grid-template-columns: var(--admin-sidebar-w) 1fr;
+      grid-template-rows: var(--admin-topbar-h) 1fr;
+      grid-template-areas:
+        "sidebar topbar"
+        "sidebar content";
+    }
+  }
+
+  /* ============ TOPBAR ============ */
+  .admin-topbar {
+    grid-area: topbar;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--admin-paper);
+    border-bottom: 1px solid var(--admin-border);
+    display: grid;
+    grid-template-columns: 44px 1fr auto auto;
+    gap: 12px;
+    align-items: center;
+    padding: 0 16px;
+    box-shadow: 0 1px 3px rgba(15, 81, 50, 0.04);
+  }
+  @media (min-width: 1024px) {
+    .admin-topbar {
+      grid-template-columns: minmax(280px, 480px) 1fr auto;
+      padding: 0 24px;
+    }
+  }
+  .admin-burger {
+    width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: var(--admin-ink);
+    cursor: pointer;
+  }
+  .admin-burger:active, .admin-burger:hover { background: rgba(15, 81, 50, 0.06); }
+  @media (min-width: 1024px) {
+    .admin-burger { display: none; }
+  }
+  .admin-topbar-brand {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    text-decoration: none;
+    color: var(--admin-ink);
+    min-width: 0;
+    overflow: hidden;
+  }
+  .admin-topbar-wordmark {
+    font-family: var(--font-script);
+    font-size: 26px;
+    color: var(--admin-gold);
+    line-height: 1;
+  }
+  .admin-topbar-tag {
+    font-family: var(--font-display);
+    font-size: 11px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--admin-ink-soft);
+  }
+  @media (min-width: 1024px) {
+    /* Brand lives in sidebar — hide topbar brand on desktop */
+    .admin-topbar-brand { display: none; }
+  }
+  .admin-search-btn {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    height: 38px;
+    padding: 0 14px;
+    border: 1px solid var(--admin-border);
+    border-radius: 8px;
+    background: var(--admin-cream);
+    color: var(--admin-ink-soft);
+    cursor: pointer;
+    font-family: var(--font-body);
+    font-size: 13px;
+    min-width: 0;
+  }
+  .admin-search-btn:hover { border-color: var(--admin-gold); color: var(--admin-ink); }
+  .admin-search-label { flex: 1; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .admin-search-kbd {
+    font-family: var(--font-body);
+    font-size: 11px;
+    background: var(--admin-paper);
+    border: 1px solid var(--admin-border);
+    border-radius: 4px;
+    padding: 2px 6px;
+    color: var(--admin-ink-soft);
+  }
+  @media (min-width: 768px) {
+    .admin-search-btn { display: inline-flex; }
+  }
+  /* Mobile: collapse search to icon only (replaces label/kbd). */
+  .admin-search-btn-mobile {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--admin-ink);
+    cursor: pointer;
+  }
+  @media (min-width: 768px) {
+    .admin-search-btn-mobile { display: none; }
+  }
+
+  .admin-topbar-actions { display: flex; align-items: center; gap: 8px; position: relative; }
+  .admin-user-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 40px;
+    padding: 0 10px 0 6px;
+    border: none;
+    background: transparent;
+    color: var(--admin-ink);
+    cursor: pointer;
+    border-radius: 8px;
+    font-family: var(--font-body);
+    font-size: 13px;
+  }
+  .admin-user-btn:hover { background: rgba(15, 81, 50, 0.06); }
+  .admin-user-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--admin-emerald);
+    color: var(--admin-gold);
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+  }
+  .admin-user-name { display: none; }
+  @media (min-width: 768px) {
+    .admin-user-name { display: inline; }
+  }
+  .admin-user-caret { color: var(--admin-ink-soft); }
+
+  .admin-user-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    min-width: 220px;
+    background: var(--admin-paper);
+    border: 1px solid var(--admin-border);
+    border-radius: 12px;
+    box-shadow: 0 12px 36px -8px rgba(15, 81, 50, 0.2);
+    overflow: hidden;
+    z-index: 60;
+  }
+  .admin-user-menu a, .admin-user-menu button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 12px 16px;
+    font-size: 14px;
+    color: var(--admin-ink);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-body);
+  }
+  .admin-user-menu a:hover, .admin-user-menu button:hover {
+    background: var(--admin-cream);
+  }
+  .admin-user-menu button { color: var(--admin-danger); border-top: 1px solid var(--admin-border); }
+
+  /* ============ SIDEBAR (desktop) ============ */
+  .admin-sidebar {
+    display: none;
+    grid-area: sidebar;
+    background: var(--admin-emerald);
+    color: var(--admin-cream);
+    padding: 24px 12px 20px;
+    flex-direction: column;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  @media (min-width: 1024px) {
+    .admin-sidebar { display: flex; }
+  }
+  .admin-sidebar-brand-link {
+    display: block;
+    padding: 4px 12px 12px;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.18);
+    margin-bottom: 4px;
+  }
+  .admin-sidebar-brand {
+    font-family: var(--font-script);
+    font-size: 32px;
+    color: var(--admin-gold);
+    line-height: 1;
+    display: block;
+  }
+  .admin-sidebar-brand-tag {
+    font-family: var(--font-display);
+    font-size: 10px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: rgba(250, 246, 240, 0.6);
+    margin-top: 4px;
+    display: block;
+  }
+  .admin-sidebar-nav {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .admin-nav-group {
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: rgba(212, 175, 55, 0.7);
+    padding: 14px 12px 6px;
+    user-select: none;
+  }
+  .admin-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    min-height: 44px;
+    border-radius: 8px;
+    color: var(--admin-cream);
+    font-size: 14px;
+    font-family: var(--font-body);
+    text-decoration: none;
+    border-left: 3px solid transparent;
+    transition: background .15s, border-color .15s;
+    cursor: pointer;
+  }
+  .admin-nav-item:hover { background: rgba(250, 246, 240, 0.07); }
+  .admin-nav-item.is-active {
+    background: rgba(212, 175, 55, 0.12);
+    border-left-color: var(--admin-gold);
+  }
+  .admin-nav-item.is-active .admin-nav-label { color: var(--admin-gold); }
+  .admin-nav-item.is-disabled { opacity: 0.35; pointer-events: none; }
+  .admin-nav-icon {
+    width: 22px;
+    text-align: center;
+    font-size: 17px;
+    flex-shrink: 0;
+  }
+  .admin-nav-label { font-weight: 500; letter-spacing: 0.02em; }
+
+  .admin-sidebar-foot {
+    padding: 12px;
+    border-top: 1px solid rgba(212, 175, 55, 0.15);
+    color: rgba(250, 246, 240, 0.5);
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  .admin-sidebar-mode { letter-spacing: 0.12em; text-transform: uppercase; color: var(--admin-gold); margin-bottom: 4px; }
+  .admin-sidebar-version { opacity: 0.6; }
+
+  /* ============ MOBILE DRAWER ============ */
+  .admin-drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 62, 37, 0.55);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .25s ease-out;
+    z-index: 200;
+  }
+  .admin-drawer-backdrop.is-open { opacity: 1; pointer-events: auto; }
+
+  .admin-drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(85vw, 320px);
+    background: var(--admin-emerald);
+    color: var(--admin-cream);
+    z-index: 201;
+    transform: translateX(-100%);
+    transition: transform .3s ease-out;
+    display: flex;
+    flex-direction: column;
+    padding: 16px 14px max(20px, env(safe-area-inset-bottom));
+    padding-top: max(20px, env(safe-area-inset-top));
+    box-shadow: 20px 0 60px -20px rgba(10, 62, 37, 0.5);
+    overflow-y: auto;
+  }
+  .admin-drawer.is-open { transform: translateX(0); }
+  .admin-drawer-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .admin-drawer-brand {
+    font-family: var(--font-script);
+    font-size: 26px;
+    color: var(--admin-gold);
+  }
+  .admin-drawer-close {
+    width: 40px;
+    height: 40px;
+    border: none;
+    background: transparent;
+    color: var(--admin-cream);
+    font-size: 26px;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: 8px;
+  }
+  .admin-drawer-close:active { background: rgba(250, 246, 240, 0.1); }
+  .admin-drawer-nav { display: flex; flex-direction: column; gap: 2px; }
+  @media (min-width: 1024px) {
+    .admin-drawer-backdrop, .admin-drawer { display: none !important; }
+  }
+
+  /* ============ MOBILE BOTTOM NAV ============ */
+  .admin-bottomnav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--admin-paper);
+    border-top: 1px solid var(--admin-border);
+    box-shadow: 0 -4px 18px -8px rgba(15, 81, 50, 0.15);
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    z-index: 40;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .admin-bottomnav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 10px 4px;
+    min-height: 64px;
+    background: transparent;
+    border: none;
+    color: var(--admin-ink-soft);
+    font-size: 10px;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    text-decoration: none;
+    font-family: var(--font-body);
+  }
+  .admin-bottomnav-item.is-active { color: var(--admin-emerald); }
+  .admin-bottomnav-icon { font-size: 22px; line-height: 1; }
+  .admin-bottomnav-label { font-weight: 500; }
+  @media (min-width: 1024px) {
+    .admin-bottomnav { display: none; }
+  }
+
+  /* ============ CONTENT ============ */
+  .admin-content {
+    grid-area: content;
+    padding: 20px 16px calc(var(--admin-bottomnav-h) + 32px);
+    max-width: 100%;
+    margin: 0;
+    background: var(--admin-cream);
+  }
+  @media (min-width: 768px) {
+    .admin-content { padding: 28px 32px 32px; }
+  }
+  @media (min-width: 1024px) {
+    .admin-content { padding: 32px 40px 40px; max-width: 1280px; }
+  }
+
+  /* Hide the old admin-head — topbar + section-current replace it. */
+  .admin-shell .admin-head { display: none; }
+
+  .admin-section-current {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--admin-border);
+    margin-bottom: 24px;
+  }
+  .admin-section-current h1 {
+    font-family: var(--font-display);
+    font-size: clamp(24px, 4vw, 32px);
+    margin: 6px 0 4px;
+    color: var(--admin-ink);
+  }
+  .admin-section-help { color: var(--admin-ink-soft); font-size: 14px; max-width: 640px; }
+  .admin-section-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .admin-section-current .eyebrow { color: var(--admin-gold); }
+
+  /* Accueil placeholder card */
+  .admin-accueil-card {
+    background: var(--admin-paper);
+    border: 1px solid var(--admin-border);
+    border-radius: 16px;
+    padding: clamp(28px, 5vw, 56px);
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(15, 81, 50, 0.04);
+    max-width: 640px;
+    margin: 0 auto;
+  }
+  .admin-accueil-icon { font-size: 44px; margin-bottom: 16px; }
+  .admin-accueil-card h2 {
+    font-family: var(--font-display);
+    font-size: 24px;
+    margin-bottom: 12px;
+  }
+  .admin-accueil-card p { color: var(--admin-ink-soft); line-height: 1.6; font-size: 14px; }
+  .admin-accueil-hint { margin-top: 14px; font-size: 13px; color: var(--admin-ink-mute); }
+
+  /* Per-block tweaks to fit the new shell */
+  .admin-shell .admin-block { margin-top: 24px; }
+  .admin-shell .admin-block:first-of-type { margin-top: 0; }
+
+  /* ========= SECTION VISIBILITY =========
+     Each section (accueil + 5 perms) only shows when data-active-section
+     on the shell matches the block's data-section. Permission-denied blocks
+     keep their [hidden] from the perm filter and CSS keeps them out. */
+  .admin-shell .admin-section,
+  .admin-shell .admin-block { display: none; }
+
+  .admin-shell[data-active-section="accueil"] .admin-section[data-section="accueil"] { display: block; }
+
+  .admin-shell[data-active-section="ventes"] .admin-block[data-section="ventes"]:not([hidden]),
+  .admin-shell[data-active-section="catalogue"] .admin-block[data-section="catalogue"]:not([hidden]),
+  .admin-shell[data-active-section="clients"] .admin-block[data-section="clients"]:not([hidden]),
+  .admin-shell[data-active-section="contenu"] .admin-block[data-section="contenu"]:not([hidden]),
+  .admin-shell[data-active-section="equipe"] .admin-block[data-section="equipe"]:not([hidden]) {
+    display: block;
+  }
+
+  /* Per-section action buttons in the section-current header — only the
+     one matching the active section is shown. */
+  .admin-shell .admin-section-actions [data-for-section] { display: none; }
+  .admin-shell[data-active-section="catalogue"] .admin-section-actions [data-for-section="catalogue"]:not([hidden]) {
+    display: inline-flex;
+  }
+
+  /* Empty-state when the active section has no visible block (e.g. an admin
+     with only ['orders'] navigated to Catalogue). */
+  .admin-section-empty {
+    background: var(--admin-paper);
+    border: 1px dashed var(--admin-border);
+    border-radius: 12px;
+    padding: 40px 24px;
+    text-align: center;
+    color: var(--admin-ink-mute);
+    font-size: 14px;
+  }
+  .admin-section-empty[hidden] { display: none; }
+
+  /* ============ SEARCH MODAL (Ctrl+K) ============ */
+  .search-modal { position: fixed; inset: 0; z-index: 300; }
+  .search-modal[hidden] { display: none; }
+  .search-modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(10, 62, 37, 0.5);
+    backdrop-filter: blur(3px);
+  }
+  .search-modal-box {
+    position: relative;
+    max-width: 560px;
+    margin: 12vh auto 0;
+    background: var(--admin-paper);
+    border-radius: 16px;
+    box-shadow: 0 24px 60px -10px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+    max-height: 70vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .search-modal-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--admin-border);
+    color: var(--admin-ink-soft);
+  }
+  .search-modal-input-wrap input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 16px;
+    color: var(--admin-ink);
+    font-family: var(--font-body);
+    padding: 6px 0;
+    min-height: 40px;
+  }
+  .search-modal-close {
+    border: 1px solid var(--admin-border);
+    background: var(--admin-cream);
+    color: var(--admin-ink-soft);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    font-family: var(--font-body);
+  }
+  .search-modal-results {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 8px;
+  }
+  .search-modal-hint {
+    padding: 30px 20px;
+    text-align: center;
+    color: var(--admin-ink-mute);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .search-modal-hint kbd {
+    background: var(--admin-cream);
+    border: 1px solid var(--admin-border);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 11px;
+  }
+  .search-modal-group {
+    padding: 8px 12px;
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--admin-ink-mute);
+  }
+  .search-modal-result {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--admin-ink);
+    text-decoration: none;
+    font-size: 14px;
+  }
+  .search-modal-result:hover, .search-modal-result.is-focused {
+    background: var(--admin-cream);
+  }
+  .search-modal-result-meta {
+    margin-left: auto;
+    color: var(--admin-ink-mute);
+    font-size: 12px;
+  }
+
+  /* ============ LOGIN GATE — keep simple, no shell chrome ============ */
+  /* Existing .login-gate rules below still apply on the gate elements.
+     When adminMain is hidden, .admin-topbar etc. aren't rendered. */
+
   /* ====== LOGIN GATE ====== */
   .login-gate {
     min-height: 70vh;
@@ -4649,6 +5413,319 @@ const sizes = data.sizes;
     (salesBlockEl as any)._loaded = true;
     loadDashboard();
     loadEmployees();
+  }
+
+  // ============================================================
+  // REFONTE — SHELL CONTROLLER (Slice 1)
+  //   Nav switching (sidebar + drawer + bottom-nav), URL hash sync,
+  //   drawer open/close, user menu, Ctrl+K search modal.
+  //
+  //   Permission filtering is handled by the auto-login script
+  //   above — it sets [hidden] on blocks the admin can't access.
+  //   This controller computes which SECTIONS still have visible
+  //   blocks and disables empty nav items.
+  // ============================================================
+
+  const SECTION_META: Record<string, { eyebrow: string; title: string; help: string }> = {
+    accueil:   { eyebrow: 'Administration', title: 'Tableau de bord',     help: 'Vue d\'ensemble de l\'activité.' },
+    ventes:    { eyebrow: 'Ventes',         title: 'Ventes',              help: 'Commandes en ligne et tickets boutique.' },
+    catalogue: { eyebrow: 'Catalogue',      title: 'Produits',            help: 'Gestion du catalogue de parfums.' },
+    clients:   { eyebrow: 'Clientèle',      title: 'Clients',             help: 'Comptes, tiers VIP/Reseller, fidélité, demandes.' },
+    contenu:   { eyebrow: 'Contenu',        title: 'Contenu',             help: 'Blog et modération des avis.' },
+    equipe:    { eyebrow: 'Administration', title: 'Équipe & réglages',   help: 'Administrateurs, employés boutique, journal d\'audit.' },
+  };
+  const VALID_SECTIONS = Object.keys(SECTION_META);
+
+  const shellEl = document.getElementById('adminMain') as HTMLElement | null;
+  const sectionTitleEl = document.getElementById('sectionTitle');
+  const sectionEyebrowEl = document.getElementById('sectionEyebrow');
+  const sectionHelpEl = document.getElementById('sectionHelp');
+  const countLineEl = document.getElementById('countLine');
+  const sectionEmptyEl = document.getElementById('adminSectionEmpty');
+  const drawerEl = document.getElementById('adminDrawer');
+  const drawerBackdropEl = document.getElementById('adminDrawerBackdrop');
+  const drawerCloseEl = document.getElementById('adminDrawerClose');
+  const burgerEl = document.getElementById('adminBurger');
+  const moreBtnEl = document.getElementById('adminMoreBtn');
+  const userBtnEl = document.getElementById('adminUserBtn');
+  const userMenuEl = document.getElementById('adminUserMenu');
+  const userAvatarEl = document.getElementById('adminUserAvatar');
+  const userNameEl = document.getElementById('adminUserName');
+
+  function currentSection(): string {
+    const h = (window.location.hash || '').replace('#', '').trim();
+    return VALID_SECTIONS.includes(h) ? h : 'accueil';
+  }
+
+  function hasVisibleBlock(section: string): boolean {
+    if (section === 'accueil') return true;
+    const blocks = document.querySelectorAll<HTMLElement>(`.admin-block[data-section="${section}"]`);
+    for (const b of blocks) {
+      if (!b.hasAttribute('hidden')) return true;
+    }
+    return false;
+  }
+
+  function refreshNavAvailability() {
+    // Disable nav items whose section has no permission-allowed block.
+    document.querySelectorAll<HTMLElement>('[data-nav-section]').forEach((el) => {
+      const sect = el.getAttribute('data-nav-section') || '';
+      if (hasVisibleBlock(sect)) {
+        el.classList.remove('is-disabled');
+        el.removeAttribute('aria-disabled');
+      } else {
+        el.classList.add('is-disabled');
+        el.setAttribute('aria-disabled', 'true');
+      }
+    });
+  }
+
+  function setActiveSection(section: string, options: { fromHashEvent?: boolean } = {}) {
+    if (!VALID_SECTIONS.includes(section)) section = 'accueil';
+    // If user clicked a disabled section, fall back to accueil silently.
+    const navItem = document.querySelector<HTMLElement>(`[data-nav-section="${section}"]`);
+    if (navItem && navItem.classList.contains('is-disabled')) section = 'accueil';
+
+    shellEl?.setAttribute('data-active-section', section);
+
+    // Section title + helper text
+    const meta = SECTION_META[section];
+    if (meta) {
+      sectionTitleEl && (sectionTitleEl.textContent = meta.title);
+      sectionEyebrowEl && (sectionEyebrowEl.textContent = meta.eyebrow);
+      sectionHelpEl && (sectionHelpEl.textContent = meta.help);
+    }
+    // countLine is products-specific
+    if (countLineEl) countLineEl.hidden = (section !== 'catalogue');
+
+    // Sync URL hash without firing another hashchange
+    if (!options.fromHashEvent) {
+      const target = '#' + section;
+      if (window.location.hash !== target) {
+        history.replaceState(null, '', target);
+      }
+    }
+
+    // Mark all nav items
+    document.querySelectorAll<HTMLElement>('[data-nav]').forEach((el) => {
+      if (el.getAttribute('data-nav') === section) el.classList.add('is-active');
+      else el.classList.remove('is-active');
+    });
+
+    // Empty-state if the section has zero visible blocks
+    if (sectionEmptyEl) {
+      const empty = section !== 'accueil' && !hasVisibleBlock(section);
+      (sectionEmptyEl as HTMLElement).hidden = !empty;
+    }
+
+    // Scroll back to top on section change
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }
+
+  // Event delegation: any [data-nav] anchor/button switches the section.
+  document.addEventListener('click', (e) => {
+    const t = (e.target as HTMLElement).closest<HTMLElement>('[data-nav]');
+    if (!t) return;
+    const sect = t.getAttribute('data-nav') || '';
+    if (sect === 'more') {
+      // Mobile "Plus" button — open the drawer to expose Contenu + Équipe.
+      e.preventDefault();
+      openDrawer();
+      return;
+    }
+    if (t.classList.contains('is-disabled')) {
+      e.preventDefault();
+      return;
+    }
+    if (VALID_SECTIONS.includes(sect)) {
+      e.preventDefault();
+      setActiveSection(sect);
+      closeDrawer();
+    }
+  });
+
+  // Hash change (back/forward buttons)
+  window.addEventListener('hashchange', () => setActiveSection(currentSection(), { fromHashEvent: true }));
+
+  // ============ Drawer ============
+  function openDrawer() {
+    drawerEl?.classList.add('is-open');
+    drawerBackdropEl?.classList.add('is-open');
+    burgerEl?.setAttribute('aria-expanded', 'true');
+    document.body.classList.add('no-scroll');
+    setTimeout(() => drawerCloseEl?.focus(), 50);
+  }
+  function closeDrawer() {
+    drawerEl?.classList.remove('is-open');
+    drawerBackdropEl?.classList.remove('is-open');
+    burgerEl?.setAttribute('aria-expanded', 'false');
+    document.body.classList.remove('no-scroll');
+  }
+  burgerEl?.addEventListener('click', openDrawer);
+  drawerCloseEl?.addEventListener('click', closeDrawer);
+  drawerBackdropEl?.addEventListener('click', closeDrawer);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && drawerEl?.classList.contains('is-open')) closeDrawer();
+  });
+
+  // ============ User menu ============
+  function toggleUserMenu(force?: boolean) {
+    const showing = userMenuEl && !userMenuEl.hidden;
+    const want = force !== undefined ? force : !showing;
+    if (userMenuEl) (userMenuEl as HTMLElement).hidden = !want;
+    userBtnEl?.setAttribute('aria-expanded', want ? 'true' : 'false');
+  }
+  userBtnEl?.addEventListener('click', (e) => { e.stopPropagation(); toggleUserMenu(); });
+  document.addEventListener('click', (e) => {
+    if (!userMenuEl || userMenuEl.hidden) return;
+    const t = e.target as HTMLElement;
+    if (!t.closest('#adminUserBtn') && !t.closest('#adminUserMenu')) toggleUserMenu(false);
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && userMenuEl && !userMenuEl.hidden) toggleUserMenu(false);
+  });
+
+  // Fill avatar + name when adminMe resolves. Re-uses the result from
+  // the auto-login script by polling for the document.cookie /
+  // sessionStorage state — simplest: read the user object after a brief
+  // delay so the auto-login script has populated localStorage.
+  async function fillUserBadge() {
+    if (!userAvatarEl || !userNameEl) return;
+    try {
+      const { adminMe } = await import('../scripts/adminApi.js');
+      const res = await adminMe();
+      if (res && res.ok && res.customer) {
+        const name = res.customer.name || res.customer.phone || 'Admin';
+        userNameEl.textContent = name.length > 18 ? name.slice(0, 16) + '…' : name;
+        const initial = (name.match(/[A-Za-zÀ-ÖØ-öø-ÿ]/) || ['A'])[0].toUpperCase();
+        userAvatarEl.textContent = initial;
+      } else if (res && res.isEmergency) {
+        userNameEl.textContent = 'Urgence';
+        userAvatarEl.textContent = '!';
+      }
+    } catch {}
+  }
+
+  // ============ Ctrl+K search modal ============
+  const searchBtnEl = document.getElementById('adminSearchBtn');
+  const searchModalEl = document.getElementById('adminSearchModal');
+  const searchOverlayEl = document.getElementById('adminSearchOverlay');
+  const searchCloseEl = document.getElementById('adminSearchClose');
+  const searchInputEl = document.getElementById('adminSearchInput') as HTMLInputElement | null;
+  const searchResultsEl = document.getElementById('adminSearchResults');
+
+  function openSearch() {
+    if (!searchModalEl) return;
+    (searchModalEl as HTMLElement).hidden = false;
+    document.body.classList.add('no-scroll');
+    setTimeout(() => searchInputEl?.focus(), 50);
+  }
+  function closeSearch() {
+    if (!searchModalEl) return;
+    (searchModalEl as HTMLElement).hidden = true;
+    document.body.classList.remove('no-scroll');
+    if (searchInputEl) searchInputEl.value = '';
+    if (searchResultsEl) {
+      searchResultsEl.innerHTML = `
+        <div class="search-modal-hint">
+          Commencez à taper pour rechercher.<br>
+          <span style="opacity:0.7">Astuce : <kbd>⌘K</kbd> ou <kbd>Ctrl+K</kbd> ouvre cette modal partout dans l'admin.</span>
+        </div>`;
+    }
+  }
+  searchBtnEl?.addEventListener('click', openSearch);
+  searchOverlayEl?.addEventListener('click', closeSearch);
+  searchCloseEl?.addEventListener('click', closeSearch);
+  document.addEventListener('keydown', (e) => {
+    const isOpenable = adminMain && !adminMain.classList.contains('hidden');
+    if (!isOpenable) return;
+    if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+      e.preventDefault();
+      if (searchModalEl && (searchModalEl as HTMLElement).hidden) openSearch();
+      else closeSearch();
+    } else if (e.key === 'Escape' && searchModalEl && !(searchModalEl as HTMLElement).hidden) {
+      closeSearch();
+    }
+  });
+
+  // Minimal Slice-1 search: in-memory products by name / inspiredBy.
+  // Slice 2 will add customers, orders, articles.
+  let searchTimer: any = null;
+  searchInputEl?.addEventListener('input', () => {
+    if (searchTimer) clearTimeout(searchTimer);
+    searchTimer = setTimeout(runSearch, 180);
+  });
+  function escSearch(s: any) {
+    return String(s ?? '').replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[c]!));
+  }
+  function highlight(text: string, q: string) {
+    const idx = text.toLowerCase().indexOf(q.toLowerCase());
+    if (idx < 0) return escSearch(text);
+    return escSearch(text.slice(0, idx)) +
+      '<mark style="background:rgba(212,175,55,0.3);color:inherit">' +
+      escSearch(text.slice(idx, idx + q.length)) + '</mark>' +
+      escSearch(text.slice(idx + q.length));
+  }
+  function runSearch() {
+    if (!searchInputEl || !searchResultsEl) return;
+    const q = searchInputEl.value.trim();
+    if (q.length < 2) {
+      searchResultsEl.innerHTML = `<div class="search-modal-hint">Tapez au moins 2 caractères…</div>`;
+      return;
+    }
+    // 'products' is the in-memory state loaded by loadProducts() in the
+    // catalogue block. May be empty if loadProducts() hasn't fired yet.
+    const list = (typeof products !== 'undefined' ? products : []) as any[];
+    const ql = q.toLowerCase();
+    const matches = list.filter((p) => {
+      const hay = `${p.name || ''} ${p.inspiredBy || ''}`.toLowerCase();
+      return hay.includes(ql);
+    }).slice(0, 8);
+
+    if (matches.length === 0) {
+      searchResultsEl.innerHTML = `
+        <div class="search-modal-group">Produits</div>
+        <div class="search-modal-hint" style="text-align:left;padding:14px 12px">Aucun produit trouvé.</div>
+      `;
+      return;
+    }
+    searchResultsEl.innerHTML = `
+      <div class="search-modal-group">Produits (${matches.length})</div>
+      ${matches.map((p) => `
+        <a class="search-modal-result" href="#catalogue" data-slug="${escSearch(p.slug)}">
+          <span style="font-size:18px">📦</span>
+          <span>${highlight(p.name || '—', q)}${p.inspiredBy ? `<br><small style="color:var(--admin-ink-mute)">inspiré de ${escSearch(p.inspiredBy)}</small>` : ''}</span>
+          <span class="search-modal-result-meta">Catalogue</span>
+        </a>
+      `).join('')}
+    `;
+    searchResultsEl.querySelectorAll<HTMLAnchorElement>('.search-modal-result').forEach((a) => {
+      a.addEventListener('click', () => closeSearch());
+    });
+  }
+
+  // ============ Boot ============
+  // Wait until auto-login finishes filtering blocks by permission (it
+  // runs the moment adminMain loses .hidden). We observe class change.
+  function bootShell() {
+    refreshNavAvailability();
+    setActiveSection(currentSection());
+    fillUserBadge();
+  }
+  if (adminMain && !adminMain.classList.contains('hidden')) {
+    bootShell();
+  } else if (adminMain) {
+    const shellBootObs = new MutationObserver(() => {
+      if (!adminMain.classList.contains('hidden')) {
+        shellBootObs.disconnect();
+        // Defer 50ms so the auto-login permission filter has finished
+        // toggling [hidden] on blocks before we read it.
+        setTimeout(bootShell, 50);
+      }
+    });
+    shellBootObs.observe(adminMain, { attributes: true, attributeFilter: ['class'] });
   }
 </script>
 
