@@ -185,6 +185,51 @@ export async function adminListLogs({ page = 1, limit = 50, action, customerId, 
   return adminPost('admin_logs', { page, limit, action, customerId, from, to });
 }
 
+// ===== Phase 4: sales (POS) admin =====
+//
+// Same auth shape as adminPost but routed to /api/sales — the sales
+// worker handler enforces the 'sales' permission itself.
+async function salesAdminPost(action, extra = {}) {
+  try {
+    const res = await fetch(apiUrl('/api/sales'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(adminAuthBody({ action, ...extra })),
+    });
+    return await res.json();
+  } catch {
+    return { ok: false, error: 'Erreur réseau' };
+  }
+}
+
+export async function adminListSales({ from, to, employeeCode, status, page = 1, limit = 50 } = {}) {
+  return salesAdminPost('admin_list_sales', { from, to, employeeCode, status, page, limit });
+}
+export async function adminGetSale(saleId) {
+  return salesAdminPost('admin_get_sale', { saleId });
+}
+export async function adminModifySale(saleId, { items, total, notes } = {}) {
+  return salesAdminPost('admin_modify_sale', { saleId, items, total, notes });
+}
+export async function adminCancelSale(saleId, reason) {
+  return salesAdminPost('admin_cancel_sale', { saleId, reason });
+}
+export async function adminSalesStats({ period = 'today', from, to } = {}) {
+  return salesAdminPost('admin_stats', { period, from, to });
+}
+export async function adminListEmployees() {
+  return salesAdminPost('admin_list_employees');
+}
+export async function adminCreateEmployee(code, name) {
+  return salesAdminPost('admin_create_employee', { code, name });
+}
+export async function adminUpdateEmployee(code, { name, active } = {}) {
+  return salesAdminPost('admin_update_employee', { code, name, active });
+}
+export async function adminDeleteEmployee(code) {
+  return salesAdminPost('admin_delete_employee', { code });
+}
+
 /**
  * Uploads a Blob (cropped image) to the worker, returns public URL.
  * Sends the password in a header since the body is binary.
