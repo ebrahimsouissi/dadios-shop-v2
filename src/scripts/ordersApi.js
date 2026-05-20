@@ -4,8 +4,8 @@
  * All requests POST to /api/orders with { action, ... }.
  *   create        — guest or logged in (phone required)
  *   list / get    — own orders, requires session
- *   admin_list    — all orders, admin password
- *   admin_update  — change status / notes, admin password
+ *   admin_list    — all orders, admin auth (session or password)
+ *   admin_update  — change status / notes, admin auth
  *
  * Server is the source of truth; this module is just a thin wrapper around
  * fetch. Network errors return { ok: false, error } so callers can show a
@@ -14,6 +14,7 @@
 
 import { apiUrl } from './apiBase.js';
 import { getSessionToken } from './customerApi.js';
+import { adminAuthBody } from './adminApi.js';
 
 async function post(action, extra = {}) {
   try {
@@ -54,12 +55,17 @@ export async function getOrder(orderId) {
   return post('get', { sessionToken, orderId });
 }
 
-export async function adminListOrders(password, status) {
-  return post('admin_list', { password, status: status || undefined });
+/**
+ * Phase 13: signature changed. Callers no longer pass `password` — auth
+ * is pulled from sessionStorage (legacy password gate) AND localStorage
+ * (customer session / emergency token) via adminAuthBody.
+ */
+export async function adminListOrders(status) {
+  return post('admin_list', adminAuthBody({ status: status || undefined }));
 }
 
-export async function adminUpdateOrder(password, orderId, { status, notes } = {}) {
-  return post('admin_update', { password, orderId, status, notes });
+export async function adminUpdateOrder(orderId, { status, notes } = {}) {
+  return post('admin_update', adminAuthBody({ orderId, status, notes }));
 }
 
 /**

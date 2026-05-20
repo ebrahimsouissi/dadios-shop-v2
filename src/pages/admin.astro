@@ -2449,7 +2449,7 @@ const sizes = data.sizes;
 
   async function loadAdminOrders() {
     ordersRowsEl.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px">Chargement des commandes…</td></tr>`;
-    const res = await adminListOrders(getPassword());
+    const res = await adminListOrders();
     if (!res.ok) {
       ordersRowsEl.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:#B23A1F">Erreur : ${escH(res.error || 'chargement impossible')}</td></tr>`;
       return;
@@ -2480,7 +2480,7 @@ const sizes = data.sizes;
     const newStatus = sel.value;
     if (newStatus === current) return;
     sel.disabled = true;
-    const res = await adminUpdateOrder(getPassword(), orderId, { status: newStatus });
+    const res = await adminUpdateOrder(orderId, { status: newStatus });
     sel.disabled = false;
     if (!res.ok || !res.order) {
       sel.value = current;
@@ -2557,7 +2557,7 @@ const sizes = data.sizes;
     if (!modalOrderId) return;
     orderSaveNotes.disabled = true;
     orderSaveNotes.textContent = 'Enregistrement…';
-    const res = await adminUpdateOrder(getPassword(), modalOrderId, { notes: orderNotes.value });
+    const res = await adminUpdateOrder(modalOrderId, { notes: orderNotes.value });
     orderSaveNotes.disabled = false;
     orderSaveNotes.textContent = 'Enregistrer les notes';
     if (!res.ok || !res.order) {

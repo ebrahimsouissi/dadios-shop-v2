@@ -35,7 +35,7 @@ export function clearPassword() {
  * session token lives under EMERGENCY_TOKEN_KEY and overrides the
  * regular customer session for /api/admin calls.
  */
-function getAdminSessionToken() {
+export function getAdminSessionToken() {
   try {
     return localStorage.getItem(EMERGENCY_TOKEN_KEY) || getSessionToken();
   } catch {
@@ -43,16 +43,25 @@ function getAdminSessionToken() {
   }
 }
 
+/**
+ * Phase 13 shared body for any admin-gated POST (products, orders,
+ * articles, perfume-requests, reviews, loyalty, etc.). Always sends
+ * BOTH credentials — worker prefers session, falls back to password.
+ * Other admin API modules import this so the auth path stays in sync.
+ */
+export function adminAuthBody(extra = {}) {
+  return {
+    password: getPassword(),
+    sessionToken: getAdminSessionToken(),
+    ...extra,
+  };
+}
+
 async function adminPost(action, extra = {}) {
   const res = await fetch(apiUrl('/api/admin'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      action,
-      password: getPassword(),
-      sessionToken: getAdminSessionToken(),
-      ...extra,
-    }),
+    body: JSON.stringify(adminAuthBody({ action, ...extra })),
   });
   return res.json();
 }

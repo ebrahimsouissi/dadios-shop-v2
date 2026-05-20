@@ -2,13 +2,14 @@
  * VIP concierge perfume-requests client.
  *
  * The server-side endpoint gates create/list on a valid session AND on
- * customer.tier === 'vip' (regular/reseller get 403). admin_* go through
- * the existing admin password gate.
+ * customer.tier === 'vip' (regular/reseller get 403). Admin actions:
+ * Phase 13 sends BOTH the customer session token (preferred) AND the
+ * legacy admin password (back-compat) via adminApi.adminAuthBody.
  */
 
 import { apiUrl } from './apiBase.js';
 import { getSessionToken } from './customerApi.js';
-import { getPassword } from './adminApi.js';
+import { adminAuthBody } from './adminApi.js';
 
 async function post(action, extra = {}) {
   try {
@@ -37,11 +38,11 @@ export async function listMyPerfumeRequests() {
 }
 
 export async function adminListPerfumeRequests(status) {
-  return post('admin_list', { password: getPassword(), status: status || undefined });
+  return post('admin_list', adminAuthBody({ status: status || undefined }));
 }
 
 export async function adminUpdatePerfumeRequest(requestId, { status, adminNotes } = {}) {
-  return post('admin_update', { password: getPassword(), requestId, status, adminNotes });
+  return post('admin_update', adminAuthBody({ requestId, status, adminNotes }));
 }
 
 export const PERFUME_REQUEST_STATUS_LABELS = {

@@ -4,15 +4,12 @@
  * Action-based — same pattern as orders / customer / articles.
  *   - stats / list are public (no session required)
  *   - submit requires a customer session
- *   - admin_* require admin auth. Phase 13: we send BOTH the customer
- *     session token (preferred — enables tier=admin auth + per-permission
- *     gating on the worker) AND the legacy admin password (back-compat
- *     for the password gate). Mirrors adminApi.adminPost().
+ *   - admin_* use the Phase 13 shared admin body (session + password)
  */
 
 import { apiUrl } from './apiBase.js';
 import { getSessionToken } from './customerApi.js';
-import { getPassword, getEmergencyAdminToken } from './adminApi.js';
+import { adminAuthBody } from './adminApi.js';
 
 async function post(action, extra = {}) {
   try {
@@ -25,27 +22,6 @@ async function post(action, extra = {}) {
   } catch {
     return { ok: false, error: 'Erreur réseau. Vérifiez votre connexion.' };
   }
-}
-
-/**
- * Phase 13: emergency-login token (from /admin/emergency) overrides the
- * regular customer session for admin calls; otherwise fall back to the
- * normal customer session token.
- */
-function adminSessionToken() {
-  try {
-    return getEmergencyAdminToken() || getSessionToken();
-  } catch {
-    return getSessionToken();
-  }
-}
-
-function adminBody(extra = {}) {
-  return {
-    password: getPassword(),
-    sessionToken: adminSessionToken(),
-    ...extra,
-  };
 }
 
 // ===== Public =====
@@ -68,25 +44,25 @@ export async function submitReview({ productId, rating, text }) {
 
 // ===== Admin =====
 export async function adminListPendingReviews() {
-  return post('admin_pending', adminBody());
+  return post('admin_pending', adminAuthBody());
 }
 export async function adminPendingReviewsCount() {
-  return post('admin_pending_count', adminBody());
+  return post('admin_pending_count', adminAuthBody());
 }
 export async function adminListReviews({ status, productId } = {}) {
-  return post('admin_list', adminBody({
+  return post('admin_list', adminAuthBody({
     status: status || undefined,
     productId: productId || undefined,
   }));
 }
 export async function adminApproveReview(reviewId) {
-  return post('admin_approve', adminBody({ reviewId }));
+  return post('admin_approve', adminAuthBody({ reviewId }));
 }
 export async function adminRejectReview(reviewId) {
-  return post('admin_reject', adminBody({ reviewId }));
+  return post('admin_reject', adminAuthBody({ reviewId }));
 }
 export async function adminDeleteReview(reviewId) {
-  return post('admin_delete', adminBody({ reviewId }));
+  return post('admin_delete', adminAuthBody({ reviewId }));
 }
 
 /**

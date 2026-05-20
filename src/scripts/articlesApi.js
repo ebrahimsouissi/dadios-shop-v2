@@ -2,13 +2,13 @@
  * Articles (Journal) client.
  *
  * Public actions are unauthenticated and run from /journal pages.
- * Admin actions reuse the existing admin password (stored in sessionStorage
- * by adminApi.js). Importing getPassword from adminApi keeps the auth path
- * consistent with products / customers / orders.
+ * Admin actions: Phase 13 sends BOTH the customer session token
+ * (preferred — enables tier=admin gating) AND the legacy admin
+ * password (back-compat). Shared body via adminApi.adminAuthBody.
  */
 
 import { apiUrl } from './apiBase.js';
-import { getPassword } from './adminApi.js';
+import { adminAuthBody } from './adminApi.js';
 
 async function post(action, extra = {}) {
   try {
@@ -24,7 +24,7 @@ async function post(action, extra = {}) {
 }
 
 async function adminPost(action, extra = {}) {
-  return post(action, { password: getPassword(), ...extra });
+  return post(action, adminAuthBody(extra));
 }
 
 // ===== Public =====
