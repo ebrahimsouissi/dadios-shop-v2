@@ -1,0 +1,679 @@
+---
+import StaffLayout from '../../layouts/StaffLayout.astro';
+---
+<StaffLayout title="Caisse">
+  <main class="pos-wrap">
+    <header class="pos-head">
+      <div>
+        <div class="pos-eyebrow">Caisse boutique</div>
+        <div class="pos-employee" id="posEmployee">…</div>
+      </div>
+      <div class="pos-date" id="posDate"></div>
+      <div class="pos-head-actions">
+        <a href="/staff/historique" class="pos-link">Historique</a>
+        <button type="button" class="pos-link pos-link--danger" id="logoutBtn">Déconnexion</button>
+      </div>
+    </header>
+
+    <div class="pos-grid">
+      <section class="pos-products" aria-label="Catalogue">
+        <div class="pos-filters" id="posFilters" role="tablist">
+          <button type="button" class="pos-filter is-active" data-filter="all" role="tab">Tous</button>
+          <button type="button" class="pos-filter" data-filter="homme" role="tab">Homme</button>
+          <button type="button" class="pos-filter" data-filter="femme" role="tab">Femme</button>
+          <button type="button" class="pos-filter" data-filter="mixte" role="tab">Mixte</button>
+        </div>
+        <div class="pos-products-grid" id="posProducts">
+          <div class="pos-loading">Chargement du catalogue…</div>
+        </div>
+      </section>
+
+      <aside class="pos-ticket" aria-label="Ticket en cours">
+        <div class="pos-ticket-head">
+          <div>
+            <div class="pos-eyebrow">Ticket en cours</div>
+            <div class="pos-ticket-count" id="ticketCount">0 article</div>
+          </div>
+          <button type="button" id="clearTicketBtn" class="pos-link pos-link--ghost">Vider</button>
+        </div>
+
+        <ul class="pos-ticket-items" id="ticketItems">
+          <li class="pos-ticket-empty">Aucun article. Tapez sur un parfum à gauche.</li>
+        </ul>
+
+        <div class="pos-ticket-total">
+          <span>Total</span>
+          <span id="ticketTotal">0,00 DT</span>
+        </div>
+
+        <div class="pos-ticket-customer">
+          <label>
+            <span>Téléphone client (optionnel)</span>
+            <input type="tel" id="customerPhone" inputmode="tel" autocomplete="off"
+                   placeholder="ex. 97 867 324" />
+          </label>
+          <p class="pos-ticket-hint" id="customerHint">Un tampon de fidélité sera ajouté si le client est enregistré.</p>
+        </div>
+
+        <button type="button" class="pos-validate" id="validateBtn" disabled>
+          Valider la vente
+        </button>
+      </aside>
+    </div>
+
+    <!-- Toast pinned in StaffLayout-global CSS -->
+    <div class="staff-toast" id="posToast" role="status" aria-live="polite"></div>
+  </main>
+
+  <style>
+    .pos-wrap {
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+    .pos-head {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 20px;
+      background: var(--cream-soft);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .pos-eyebrow {
+      font-size: 10px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--gold-soft);
+    }
+    .pos-employee {
+      font-family: var(--font-display);
+      font-size: 22px;
+      color: var(--ink);
+      margin-top: 2px;
+    }
+    .pos-date {
+      font-size: 13px;
+      color: var(--ink-soft);
+      letter-spacing: 0.04em;
+      text-transform: capitalize;
+    }
+    .pos-head-actions { display: flex; gap: 14px; align-items: center; }
+    .pos-link {
+      font-size: 13px;
+      letter-spacing: 0.04em;
+      color: var(--ink-soft);
+      background: transparent;
+      border: 1px solid var(--border-strong);
+      padding: 10px 16px;
+      min-height: 40px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-family: var(--font-body);
+    }
+    .pos-link:active { background: rgba(14, 58, 31, 0.05); }
+    .pos-link--danger { border-color: rgba(178, 58, 31, 0.4); color: #8a2a14; }
+    .pos-link--ghost { border-color: transparent; padding: 6px 10px; min-height: 36px; }
+
+    .pos-grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+
+    .pos-products {
+      padding: 20px;
+      overflow-y: auto;
+    }
+    .pos-filters {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .pos-filter {
+      padding: 10px 18px;
+      min-height: 40px;
+      font-size: 13px;
+      letter-spacing: 0.04em;
+      border: 1px solid var(--border-strong);
+      background: transparent;
+      color: var(--ink);
+      border-radius: 999px;
+      cursor: pointer;
+      font-family: var(--font-body);
+    }
+    .pos-filter.is-active {
+      background: var(--emerald);
+      color: var(--cream);
+      border-color: var(--emerald);
+    }
+    .pos-loading {
+      padding: 60px 20px;
+      text-align: center;
+      color: var(--ink-mute);
+    }
+
+    .pos-products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 12px;
+    }
+    .pos-product {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: box-shadow .15s, transform .1s;
+    }
+    .pos-product-img {
+      aspect-ratio: 1 / 1;
+      background: var(--cream-warm);
+      border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .pos-product-img img { width: 100%; height: 100%; object-fit: cover; }
+    .pos-product-img svg { width: 60%; height: 60%; opacity: 0.65; }
+    .pos-product-name {
+      font-family: var(--font-display);
+      font-size: 17px;
+      line-height: 1.15;
+      color: var(--ink);
+      min-height: 38px;
+    }
+    .pos-product-sizes {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .pos-size-btn {
+      padding: 10px 8px;
+      min-height: 56px;
+      border-radius: 10px;
+      border: 1px solid var(--emerald);
+      background: var(--emerald);
+      color: var(--cream);
+      cursor: pointer;
+      font-family: var(--font-body);
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      text-align: center;
+      transition: transform .08s, background .12s;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 2px;
+    }
+    .pos-size-btn:active {
+      transform: scale(0.96);
+      background: var(--emerald-dark);
+    }
+    .pos-size-btn .size {
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .pos-size-btn .price {
+      font-family: var(--font-display);
+      font-size: 16px;
+    }
+    .pos-product.is-pulse {
+      box-shadow: 0 0 0 3px var(--gold);
+    }
+
+    /* Ticket */
+    .pos-ticket {
+      background: var(--cream-soft);
+      border-top: 1px solid var(--border-strong);
+      padding: 20px max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      position: sticky;
+      bottom: 0;
+    }
+    .pos-ticket-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    .pos-ticket-count {
+      font-size: 14px;
+      color: var(--ink-soft);
+      margin-top: 2px;
+    }
+    .pos-ticket-items {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      max-height: 36vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .pos-ticket-empty {
+      color: var(--ink-mute);
+      font-style: italic;
+      font-size: 14px;
+      text-align: center;
+      padding: 20px 0;
+    }
+    .pos-ticket-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 12px;
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    .pos-ticket-item-name {
+      font-size: 14px;
+      color: var(--ink);
+      line-height: 1.3;
+    }
+    .pos-ticket-item-meta {
+      font-size: 12px;
+      color: var(--ink-mute);
+      margin-top: 2px;
+    }
+    .pos-ticket-item-controls {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .pos-qty-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: 1px solid var(--border-strong);
+      background: var(--cream);
+      cursor: pointer;
+      font-size: 18px;
+      color: var(--ink);
+      font-family: var(--font-body);
+    }
+    .pos-qty-btn:active { background: var(--cream-warm); }
+    .pos-qty-val { min-width: 28px; text-align: center; font-weight: 600; }
+
+    .pos-ticket-total {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding-top: 12px;
+      border-top: 1px solid var(--border-strong);
+      font-family: var(--font-display);
+    }
+    .pos-ticket-total > span:first-child {
+      font-size: 14px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+    }
+    .pos-ticket-total > span:last-child {
+      font-size: 28px;
+      color: var(--emerald);
+    }
+
+    .pos-ticket-customer label > span {
+      display: block;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      margin-bottom: 6px;
+    }
+    .pos-ticket-customer input {
+      width: 100%;
+      padding: 12px 14px;
+      min-height: 48px;
+      border: 1px solid var(--border-strong);
+      border-radius: 10px;
+      background: var(--cream);
+      font-size: 16px;
+      box-sizing: border-box;
+      font-family: var(--font-body);
+    }
+    .pos-ticket-customer input:focus { outline: none; border-color: var(--emerald); }
+    .pos-ticket-hint {
+      font-size: 12px;
+      color: var(--ink-mute);
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+    .pos-ticket-hint.is-good { color: var(--emerald); }
+    .pos-ticket-hint.is-error { color: #8a2a14; }
+
+    .pos-validate {
+      width: 100%;
+      min-height: 64px;
+      background: var(--emerald);
+      color: var(--cream);
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      font-family: var(--font-body);
+      font-size: 16px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 600;
+      transition: background .15s, transform .08s;
+    }
+    .pos-validate:active { transform: scale(0.98); background: var(--emerald-dark); }
+    .pos-validate:disabled {
+      background: var(--ink-mute);
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Tablet+ : split into two columns. */
+    @media (min-width: 900px) {
+      .pos-grid {
+        grid-template-columns: 1fr 380px;
+      }
+      .pos-products {
+        max-height: calc(100vh - 80px);
+      }
+      .pos-ticket {
+        border-top: none;
+        border-left: 1px solid var(--border-strong);
+        position: static;
+        max-height: calc(100vh - 80px);
+        overflow-y: auto;
+      }
+    }
+    @media (min-width: 1200px) {
+      .pos-grid { grid-template-columns: 1fr 440px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .pos-product, .pos-size-btn, .pos-validate { transition: none !important; }
+    }
+  </style>
+
+  <script>
+    import { fetchPublicProducts } from '../../scripts/adminApi.js';
+    import {
+      staffMe, staffLogout, createSale, isStaffLoggedIn,
+      formatDT, frenchDateLong, tunisDayKey,
+    } from '../../scripts/staffApi.js';
+
+    // ============ Auth gate ============
+    if (!isStaffLoggedIn()) {
+      window.location.replace('/staff/login');
+    }
+
+    // ============ Static config (price tiers) ============
+    // products.json has a top-level `sizes` array — but the public
+    // /api/products endpoint only returns the products array, so we
+    // duplicate the size catalogue here. Update both if you ever change
+    // the in-shop pricing.
+    const SIZES = [
+      { code: '20ml', label: '20ml', price: 10 },
+      { code: '50ml', label: '50ml', price: 20 },
+    ];
+
+    // ============ DOM ============
+    const employeeEl = document.getElementById('posEmployee') as HTMLElement;
+    const dateEl = document.getElementById('posDate') as HTMLElement;
+    const productsEl = document.getElementById('posProducts') as HTMLElement;
+    const filtersEl = document.getElementById('posFilters') as HTMLElement;
+    const ticketItemsEl = document.getElementById('ticketItems') as HTMLElement;
+    const ticketCountEl = document.getElementById('ticketCount') as HTMLElement;
+    const ticketTotalEl = document.getElementById('ticketTotal') as HTMLElement;
+    const customerPhoneEl = document.getElementById('customerPhone') as HTMLInputElement;
+    const customerHintEl = document.getElementById('customerHint') as HTMLElement;
+    const validateBtn = document.getElementById('validateBtn') as HTMLButtonElement;
+    const clearBtn = document.getElementById('clearTicketBtn') as HTMLButtonElement;
+    const logoutBtn = document.getElementById('logoutBtn') as HTMLButtonElement;
+    const toastEl = document.getElementById('posToast') as HTMLElement;
+
+    dateEl.textContent = frenchDateLong(tunisDayKey());
+
+    // ============ State ============
+    let allProducts: any[] = [];
+    let currentFilter = 'all';
+    /** Map keyed by slug__size → { slug, name, size, qty, price } */
+    const ticket = new Map<string, any>();
+
+    function escHtml(s) {
+      return String(s ?? '').replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      }[c]!));
+    }
+
+    function toast(msg, kind = '') {
+      toastEl.textContent = msg;
+      toastEl.className = 'staff-toast is-show' + (kind ? ' is-' + kind : '');
+      setTimeout(() => { toastEl.className = 'staff-toast'; }, 2400);
+    }
+
+    // ============ Boot ============
+    (async () => {
+      const me = await staffMe();
+      if (!me.ok) {
+        window.location.replace('/staff/login');
+        return;
+      }
+      employeeEl.textContent = me.employee.name;
+      try {
+        const list = await fetchPublicProducts('/products.json');
+        // Keep only essentials.
+        allProducts = (list || []).map((p) => ({
+          slug: p.slug,
+          name: p.name,
+          gender: p.gender,
+          image: p.image || '',
+        })).sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+        renderProducts();
+      } catch {
+        productsEl.innerHTML = '<div class="pos-loading">Erreur de chargement du catalogue.</div>';
+      }
+    })();
+
+    // ============ Products grid ============
+    function renderProducts() {
+      const filtered = currentFilter === 'all'
+        ? allProducts
+        : allProducts.filter((p) => p.gender === currentFilter);
+      if (filtered.length === 0) {
+        productsEl.innerHTML = '<div class="pos-loading">Aucun parfum dans cette catégorie.</div>';
+        return;
+      }
+      productsEl.innerHTML = filtered.map((p) => `
+        <div class="pos-product" data-slug="${escHtml(p.slug)}">
+          <div class="pos-product-img">
+            ${p.image
+              ? `<img src="${escHtml(p.image)}" alt="" loading="lazy" />`
+              : `<svg viewBox="0 0 40 50" aria-hidden="true"><rect x="12" y="10" width="16" height="36" rx="1.5" fill="#0E3A1F"/><rect x="16" y="22" width="8" height="14" fill="#0E3A1F" stroke="#D4AF37" stroke-width="0.3"/><rect x="16" y="4" width="8" height="6" rx="0.8" fill="#A87C45"/></svg>`}
+          </div>
+          <div class="pos-product-name">${escHtml(p.name)}</div>
+          <div class="pos-product-sizes">
+            ${SIZES.map((s) => `
+              <button type="button" class="pos-size-btn"
+                      data-slug="${escHtml(p.slug)}"
+                      data-name="${escHtml(p.name)}"
+                      data-size="${escHtml(s.code)}"
+                      data-price="${s.price}">
+                <span class="size">${escHtml(s.label)}</span>
+                <span class="price">${formatDT(s.price)}</span>
+              </button>
+            `).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    filtersEl.addEventListener('click', (e) => {
+      const t = (e.target as HTMLElement).closest<HTMLButtonElement>('.pos-filter');
+      if (!t) return;
+      currentFilter = t.dataset.filter || 'all';
+      filtersEl.querySelectorAll('.pos-filter').forEach((f) => f.classList.remove('is-active'));
+      t.classList.add('is-active');
+      renderProducts();
+    });
+
+    productsEl.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('.pos-size-btn');
+      if (!btn) return;
+      const item = {
+        slug: btn.dataset.slug || '',
+        name: btn.dataset.name || '',
+        size: btn.dataset.size || '',
+        price: Number(btn.dataset.price || '0'),
+      };
+      addToTicket(item);
+      const card = btn.closest('.pos-product') as HTMLElement | null;
+      if (card) {
+        card.classList.add('is-pulse');
+        setTimeout(() => card.classList.remove('is-pulse'), 220);
+      }
+    });
+
+    // ============ Ticket ============
+    function addToTicket(item) {
+      const key = `${item.slug}__${item.size}`;
+      const existing = ticket.get(key);
+      if (existing) {
+        existing.qty += 1;
+      } else {
+        ticket.set(key, { ...item, qty: 1 });
+      }
+      renderTicket();
+    }
+    function decTicket(key) {
+      const it = ticket.get(key);
+      if (!it) return;
+      it.qty -= 1;
+      if (it.qty <= 0) ticket.delete(key);
+      renderTicket();
+    }
+    function incTicket(key) {
+      const it = ticket.get(key);
+      if (!it) return;
+      it.qty += 1;
+      renderTicket();
+    }
+    function clearTicket() {
+      ticket.clear();
+      customerPhoneEl.value = '';
+      customerHintEl.className = 'pos-ticket-hint';
+      customerHintEl.textContent = 'Un tampon de fidélité sera ajouté si le client est enregistré.';
+      renderTicket();
+    }
+    function ticketTotal() {
+      let sum = 0;
+      ticket.forEach((it) => { sum += it.qty * it.price; });
+      return Math.round(sum * 100) / 100;
+    }
+    function renderTicket() {
+      if (ticket.size === 0) {
+        ticketItemsEl.innerHTML = '<li class="pos-ticket-empty">Aucun article. Tapez sur un parfum à gauche.</li>';
+        ticketCountEl.textContent = '0 article';
+        ticketTotalEl.textContent = formatDT(0);
+        validateBtn.disabled = true;
+        return;
+      }
+      let totalQty = 0;
+      const html: string[] = [];
+      ticket.forEach((it, key) => {
+        totalQty += it.qty;
+        html.push(`
+          <li class="pos-ticket-item">
+            <div>
+              <div class="pos-ticket-item-name">${escHtml(it.name)}</div>
+              <div class="pos-ticket-item-meta">${escHtml(it.size)} · ${formatDT(it.price)} l'unité</div>
+            </div>
+            <div class="pos-ticket-item-controls">
+              <button type="button" class="pos-qty-btn" data-act="dec" data-key="${escHtml(key)}" aria-label="Diminuer">−</button>
+              <span class="pos-qty-val">${it.qty}</span>
+              <button type="button" class="pos-qty-btn" data-act="inc" data-key="${escHtml(key)}" aria-label="Augmenter">+</button>
+            </div>
+          </li>
+        `);
+      });
+      ticketItemsEl.innerHTML = html.join('');
+      ticketCountEl.textContent = `${totalQty} article${totalQty > 1 ? 's' : ''}`;
+      ticketTotalEl.textContent = formatDT(ticketTotal());
+      validateBtn.disabled = false;
+    }
+
+    ticketItemsEl.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('.pos-qty-btn');
+      if (!btn) return;
+      const key = btn.dataset.key || '';
+      if (btn.dataset.act === 'dec') decTicket(key);
+      else if (btn.dataset.act === 'inc') incTicket(key);
+    });
+
+    clearBtn.addEventListener('click', () => {
+      if (ticket.size === 0) return;
+      if (!confirm('Vider le ticket en cours ?')) return;
+      clearTicket();
+    });
+
+    logoutBtn.addEventListener('click', async () => {
+      if (!confirm('Se déconnecter ?')) return;
+      await staffLogout();
+      window.location.replace('/staff/login');
+    });
+
+    // ============ Validate sale ============
+    validateBtn.addEventListener('click', async () => {
+      if (ticket.size === 0) return;
+      validateBtn.disabled = true;
+      const original = validateBtn.textContent;
+      validateBtn.textContent = 'Enregistrement…';
+
+      const items: any[] = [];
+      ticket.forEach((it) => {
+        items.push({
+          slug: it.slug,
+          name: it.name,
+          size: it.size,
+          qty: it.qty,
+          price: it.price,
+        });
+      });
+      const total = ticketTotal();
+      const phone = customerPhoneEl.value.trim();
+
+      const res = await createSale({
+        items,
+        total,
+        customerPhone: phone || undefined,
+      });
+
+      if (!res.ok) {
+        toast(res.error || 'Erreur lors de l\'enregistrement', 'error');
+        customerHintEl.className = 'pos-ticket-hint is-error';
+        customerHintEl.textContent = res.error || 'Erreur';
+        validateBtn.disabled = false;
+        validateBtn.textContent = original;
+        return;
+      }
+
+      toast(`Vente enregistrée — ${formatDT(res.sale.total)}`, '');
+      if (res.loyalty?.ok && res.loyalty.awarded > 0 && res.sale.customerName) {
+        const bonus = res.loyalty.vipBonus ? ' (×2 VIP)' : '';
+        setTimeout(() => {
+          toast(`+${res.loyalty.awarded} tampon${res.loyalty.awarded > 1 ? 's' : ''} ajouté${res.loyalty.awarded > 1 ? 's' : ''} à ${res.sale.customerName}${bonus}`, 'gold');
+        }, 1800);
+      }
+      clearTicket();
+      validateBtn.textContent = original;
+    });
+  </script>
+</StaffLayout>

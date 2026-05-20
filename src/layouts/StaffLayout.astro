@@ -1,0 +1,75 @@
+---
+import '../styles/global.css';
+
+export interface Props {
+  title: string;
+  /** Set false on the PIN screen — it has its own emerald background. */
+  cream?: boolean;
+}
+const { title, cream = true } = Astro.props;
+---
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content={cream ? '#F5EDDC' : '#051A0E'} />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>{title} — Dadios Staff</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body class={cream ? 'staff-body staff-body--cream' : 'staff-body staff-body--emerald'}>
+  <slot />
+
+  <style is:global>
+    .staff-body {
+      min-height: 100vh;
+      min-height: 100dvh;
+      font-family: var(--font-body);
+      font-size: 16px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .staff-body--cream { background: var(--cream); color: var(--ink); }
+    .staff-body--emerald { background: var(--emerald-deep); color: var(--cream); }
+
+    /* Kiosks: no text-selection, no long-press menu. */
+    .staff-body button, .staff-body .no-select {
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    /* Generic toast (used by sale + historique). */
+    .staff-toast {
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: max(28px, env(safe-area-inset-bottom));
+      background: var(--emerald);
+      color: var(--cream);
+      padding: 14px 22px;
+      border-radius: 999px;
+      font-size: 15px;
+      letter-spacing: 0.02em;
+      box-shadow: 0 12px 30px -8px rgba(8, 40, 23, 0.45);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .25s, transform .25s;
+      z-index: 500;
+    }
+    .staff-toast.is-show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(-6px);
+    }
+    .staff-toast.is-error { background: #8a2a14; }
+    .staff-toast.is-gold {
+      background: var(--gold);
+      color: var(--emerald-deep);
+      font-weight: 600;
+    }
+  </style>
+</body>
+</html>

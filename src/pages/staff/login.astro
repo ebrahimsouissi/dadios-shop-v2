@@ -1,0 +1,253 @@
+---
+import StaffLayout from '../../layouts/StaffLayout.astro';
+---
+<StaffLayout title="Connexion" cream={false}>
+  <main class="pin-wrap">
+    <div class="pin-brand">
+      <div class="pin-wordmark">Dadios</div>
+      <div class="pin-tag">Espace personnel</div>
+    </div>
+
+    <p class="pin-instruction" id="pinInstruction">Entrez votre code à 4 chiffres</p>
+
+    <div class="pin-dots" id="pinDots" aria-label="Code saisi">
+      <span class="pin-dot" data-i="0"></span>
+      <span class="pin-dot" data-i="1"></span>
+      <span class="pin-dot" data-i="2"></span>
+      <span class="pin-dot" data-i="3"></span>
+    </div>
+
+    <div class="pin-keypad" id="pinKeypad" role="group" aria-label="Pavé numérique">
+      <button type="button" class="pin-key" data-digit="1">1</button>
+      <button type="button" class="pin-key" data-digit="2">2</button>
+      <button type="button" class="pin-key" data-digit="3">3</button>
+      <button type="button" class="pin-key" data-digit="4">4</button>
+      <button type="button" class="pin-key" data-digit="5">5</button>
+      <button type="button" class="pin-key" data-digit="6">6</button>
+      <button type="button" class="pin-key" data-digit="7">7</button>
+      <button type="button" class="pin-key" data-digit="8">8</button>
+      <button type="button" class="pin-key" data-digit="9">9</button>
+      <button type="button" class="pin-key pin-key--ghost" data-action="erase" aria-label="Effacer le dernier chiffre">⌫</button>
+      <button type="button" class="pin-key" data-digit="0">0</button>
+      <button type="button" class="pin-key pin-key--ghost" data-action="clear" aria-label="Tout effacer">×</button>
+    </div>
+
+    <a class="pin-back" href="/">← Retour au site</a>
+  </main>
+
+  <style>
+    .pin-wrap {
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      padding: 32px 20px max(32px, env(safe-area-inset-bottom));
+      padding-top: max(40px, env(safe-area-inset-top));
+    }
+    .pin-brand { text-align: center; }
+    .pin-wordmark {
+      font-family: var(--font-script);
+      font-size: 56px;
+      color: var(--gold);
+      line-height: 1;
+    }
+    .pin-tag {
+      margin-top: 6px;
+      font-family: var(--font-display);
+      font-size: 13px;
+      letter-spacing: 0.34em;
+      text-transform: uppercase;
+      color: var(--cream-warm);
+      opacity: 0.85;
+    }
+    .pin-instruction {
+      font-size: 15px;
+      color: var(--cream-warm);
+      text-align: center;
+      opacity: 0.85;
+      min-height: 22px;
+      transition: color .2s;
+    }
+    .pin-instruction.is-error { color: #F2B0A0; opacity: 1; }
+    .pin-dots {
+      display: flex;
+      gap: 18px;
+    }
+    .pin-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid rgba(212, 175, 55, 0.5);
+      background: transparent;
+      transition: background .15s, border-color .15s, transform .15s;
+    }
+    .pin-dot.is-filled {
+      background: var(--gold);
+      border-color: var(--gold);
+      transform: scale(1.05);
+    }
+    .pin-dots.is-shake { animation: pinShake .35s; }
+    @keyframes pinShake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+
+    .pin-keypad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      width: 100%;
+      max-width: 340px;
+    }
+    .pin-key {
+      min-height: 80px;
+      font-size: 28px;
+      font-weight: 500;
+      color: var(--cream);
+      background: rgba(245, 237, 220, 0.07);
+      border: 1px solid rgba(212, 175, 55, 0.18);
+      border-radius: 16px;
+      cursor: pointer;
+      transition: background .12s, transform .08s, border-color .12s;
+      font-family: var(--font-body);
+    }
+    .pin-key:active {
+      background: rgba(212, 175, 55, 0.18);
+      border-color: var(--gold);
+      transform: scale(0.97);
+    }
+    .pin-key--ghost {
+      background: transparent;
+      color: var(--gold-soft);
+      font-size: 22px;
+    }
+    .pin-key--ghost:active {
+      background: rgba(212, 175, 55, 0.12);
+      color: var(--gold);
+    }
+    .pin-key[disabled] { opacity: 0.5; pointer-events: none; }
+
+    .pin-back {
+      font-size: 12px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--cream-warm);
+      opacity: 0.5;
+      margin-top: 12px;
+    }
+    .pin-back:active { opacity: 1; color: var(--gold); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .pin-dots.is-shake, .pin-dot { animation: none !important; transition: none !important; }
+    }
+  </style>
+
+  <script>
+    import { staffLogin, isStaffLoggedIn } from '../../scripts/staffApi.js';
+
+    // If a staff session is already active, skip the PIN screen.
+    if (isStaffLoggedIn()) {
+      window.location.replace('/staff/sale');
+    }
+
+    const dotsEl = document.getElementById('pinDots') as HTMLElement;
+    const keypadEl = document.getElementById('pinKeypad') as HTMLElement;
+    const instructionEl = document.getElementById('pinInstruction') as HTMLElement;
+    const dots = Array.from(dotsEl.querySelectorAll<HTMLElement>('.pin-dot'));
+    const keys = Array.from(keypadEl.querySelectorAll<HTMLButtonElement>('.pin-key'));
+
+    let buffer = '';
+    let busy = false;
+
+    function renderDots() {
+      dots.forEach((d, i) => {
+        if (i < buffer.length) d.classList.add('is-filled');
+        else d.classList.remove('is-filled');
+      });
+    }
+    function setBusy(v) {
+      busy = v;
+      keys.forEach((k) => { k.disabled = v; });
+    }
+    function showError(msg) {
+      instructionEl.textContent = msg;
+      instructionEl.classList.add('is-error');
+      dotsEl.classList.add('is-shake');
+      try { navigator.vibrate?.(160); } catch {}
+      setTimeout(() => { dotsEl.classList.remove('is-shake'); }, 400);
+    }
+    function resetInstruction() {
+      instructionEl.textContent = 'Entrez votre code à 4 chiffres';
+      instructionEl.classList.remove('is-error');
+    }
+    function reset() {
+      buffer = '';
+      renderDots();
+    }
+
+    async function attempt() {
+      setBusy(true);
+      const res = await staffLogin(buffer);
+      if (res && res.ok) {
+        instructionEl.textContent = 'Bienvenue ' + (res.employee?.name || '');
+        // Tiny delay so the user sees the 4th dot fill.
+        setTimeout(() => { window.location.replace('/staff/sale'); }, 200);
+        return;
+      }
+      showError(res?.error || 'Code incorrect');
+      reset();
+      setBusy(false);
+    }
+
+    function press(digit) {
+      if (busy) return;
+      if (buffer.length >= 4) return;
+      resetInstruction();
+      buffer += digit;
+      renderDots();
+      if (buffer.length === 4) {
+        attempt();
+      }
+    }
+
+    keypadEl.addEventListener('click', (e) => {
+      const t = (e.target as HTMLElement).closest<HTMLButtonElement>('.pin-key');
+      if (!t) return;
+      const action = t.dataset.action;
+      if (action === 'erase') {
+        if (busy) return;
+        buffer = buffer.slice(0, -1);
+        renderDots();
+        return;
+      }
+      if (action === 'clear') {
+        if (busy) return;
+        reset();
+        resetInstruction();
+        return;
+      }
+      const digit = t.dataset.digit;
+      if (digit) press(digit);
+    });
+
+    // Physical keyboard for tablets with a Bluetooth keypad.
+    document.addEventListener('keydown', (e) => {
+      if (busy) return;
+      if (/^[0-9]$/.test(e.key)) {
+        e.preventDefault();
+        press(e.key);
+      } else if (e.key === 'Backspace') {
+        e.preventDefault();
+        buffer = buffer.slice(0, -1);
+        renderDots();
+      } else if (e.key === 'Escape') {
+        reset();
+        resetInstruction();
+      }
+    });
+  </script>
+</StaffLayout>

@@ -1,0 +1,531 @@
+---
+import StaffLayout from '../../layouts/StaffLayout.astro';
+---
+<StaffLayout title="Historique du jour">
+  <main class="hist-wrap">
+    <header class="hist-head">
+      <a href="/staff/sale" class="hist-back" aria-label="Retour caisse">←</a>
+      <div>
+        <div class="pos-eyebrow">Vos ventes</div>
+        <div class="hist-employee" id="histEmployee">…</div>
+      </div>
+      <div class="hist-date" id="histDate"></div>
+    </header>
+
+    <section class="hist-summary">
+      <div class="hist-stat">
+        <div class="hist-stat-label">Tickets</div>
+        <div class="hist-stat-value" id="statTickets">0</div>
+      </div>
+      <div class="hist-stat hist-stat--gold">
+        <div class="hist-stat-label">Chiffre d'affaires</div>
+        <div class="hist-stat-value" id="statRevenue">0,00 DT</div>
+      </div>
+    </section>
+
+    <section class="hist-list" id="histList" aria-label="Liste des ventes">
+      <div class="hist-loading">Chargement…</div>
+    </section>
+
+    <!-- Modal édition -->
+    <div class="hist-modal" id="editModal" hidden>
+      <div class="hist-modal-overlay" id="editOverlay"></div>
+      <div class="hist-modal-box">
+        <button type="button" class="hist-modal-close" id="editClose" aria-label="Fermer">×</button>
+        <div class="pos-eyebrow">Modifier le ticket</div>
+        <h2 id="editTitle" class="hist-modal-title">Ticket</h2>
+        <ul class="hist-modal-items" id="editItems"></ul>
+        <div class="hist-modal-total">
+          <span>Total recalculé</span>
+          <span id="editTotal">0,00 DT</span>
+        </div>
+        <p id="editStatus" class="hist-modal-status" hidden></p>
+        <div class="hist-modal-actions">
+          <button type="button" class="pos-link" id="editCancel">Annuler</button>
+          <button type="button" class="pos-link hist-modal-save" id="editSave">Enregistrer</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="staff-toast" id="histToast" role="status" aria-live="polite"></div>
+  </main>
+
+  <style>
+    .hist-wrap {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px 16px max(20px, env(safe-area-inset-bottom));
+    }
+    .hist-head {
+      display: grid;
+      grid-template-columns: 40px 1fr auto;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+    .hist-back {
+      width: 40px;
+      height: 40px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      color: var(--ink-soft);
+      border: 1px solid var(--border-strong);
+      border-radius: 50%;
+      background: transparent;
+    }
+    .hist-back:active { background: var(--cream-warm); }
+    .hist-employee {
+      font-family: var(--font-display);
+      font-size: 22px;
+      color: var(--ink);
+    }
+    .hist-date {
+      font-size: 12px;
+      color: var(--ink-soft);
+      text-align: right;
+      text-transform: capitalize;
+    }
+    .pos-eyebrow {
+      font-size: 10px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--gold-soft);
+    }
+
+    .hist-summary {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .hist-stat {
+      background: var(--cream-soft);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+    }
+    .hist-stat--gold {
+      background: var(--emerald);
+      color: var(--cream);
+      border-color: var(--emerald);
+    }
+    .hist-stat-label {
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      opacity: 0.75;
+      margin-bottom: 6px;
+    }
+    .hist-stat-value {
+      font-family: var(--font-display);
+      font-size: 30px;
+      line-height: 1.1;
+    }
+    .hist-stat--gold .hist-stat-value { color: var(--gold-light); }
+
+    .hist-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .hist-loading,
+    .hist-empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--ink-mute);
+    }
+    .hist-sale {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .hist-sale--cancelled { opacity: 0.55; }
+    .hist-sale-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+    }
+    .hist-sale-time {
+      font-family: var(--font-display);
+      font-size: 20px;
+      color: var(--ink);
+    }
+    .hist-sale-total {
+      font-family: var(--font-display);
+      font-size: 22px;
+      color: var(--emerald);
+    }
+    .hist-sale--cancelled .hist-sale-total { text-decoration: line-through; }
+    .hist-sale-items {
+      font-size: 13px;
+      color: var(--ink-soft);
+      line-height: 1.5;
+    }
+    .hist-sale-meta {
+      font-size: 12px;
+      color: var(--ink-mute);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .hist-sale-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .hist-action {
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      color: var(--ink-soft);
+      background: transparent;
+      border: 1px solid var(--border-strong);
+      padding: 8px 14px;
+      min-height: 36px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-family: var(--font-body);
+    }
+    .hist-action:active { background: var(--cream-warm); }
+    .hist-action--danger { color: #8a2a14; border-color: rgba(178, 58, 31, 0.4); }
+    .hist-tag {
+      display: inline-block;
+      padding: 2px 8px;
+      background: rgba(178, 58, 31, 0.08);
+      color: #8a2a14;
+      border: 1px solid #B23A1F;
+      border-radius: 999px;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* Modal */
+    .hist-modal { position: fixed; inset: 0; z-index: 600; }
+    .hist-modal-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(5, 26, 14, 0.55);
+      backdrop-filter: blur(2px);
+    }
+    .hist-modal-box {
+      position: relative;
+      max-width: 500px;
+      margin: 8vh auto 0;
+      background: var(--cream-soft);
+      border: 1px solid var(--border-strong);
+      border-radius: 16px;
+      padding: 24px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .hist-modal-close {
+      position: absolute;
+      top: 12px; right: 12px;
+      width: 36px; height: 36px;
+      border: none;
+      background: transparent;
+      font-size: 26px;
+      color: var(--ink-soft);
+      cursor: pointer;
+      border-radius: 50%;
+    }
+    .hist-modal-close:active { background: var(--cream-warm); }
+    .hist-modal-title {
+      font-family: var(--font-display);
+      font-size: 24px;
+      margin: 6px 0 16px;
+    }
+    .hist-modal-items {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .hist-modal-items li {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    .hist-modal-items .pos-ticket-item-controls {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .hist-modal-total {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding-top: 12px;
+      border-top: 1px solid var(--border-strong);
+      font-family: var(--font-display);
+    }
+    .hist-modal-total > span:first-child {
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+    }
+    .hist-modal-total > span:last-child {
+      font-size: 24px;
+      color: var(--emerald);
+    }
+    .hist-modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 18px;
+    }
+    .hist-modal-save {
+      background: var(--emerald);
+      color: var(--cream);
+      border-color: var(--emerald);
+    }
+    .hist-modal-save:active { background: var(--emerald-dark); }
+    .hist-modal-status {
+      margin: 12px 0 0;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      background: rgba(178, 58, 31, 0.08);
+      color: #8a2a14;
+      border: 1px solid #B23A1F;
+    }
+  </style>
+
+  <script>
+    import {
+      staffMe, listMySales, modifySale, cancelSale, isStaffLoggedIn,
+      formatDT, formatHM, frenchDateLong, tunisDayKey,
+    } from '../../scripts/staffApi.js';
+
+    // ============ Auth gate ============
+    if (!isStaffLoggedIn()) {
+      window.location.replace('/staff/login');
+    }
+
+    const employeeEl = document.getElementById('histEmployee') as HTMLElement;
+    const dateEl = document.getElementById('histDate') as HTMLElement;
+    const statTicketsEl = document.getElementById('statTickets') as HTMLElement;
+    const statRevenueEl = document.getElementById('statRevenue') as HTMLElement;
+    const listEl = document.getElementById('histList') as HTMLElement;
+    const toastEl = document.getElementById('histToast') as HTMLElement;
+
+    // Modal
+    const editModalEl = document.getElementById('editModal') as HTMLElement;
+    const editOverlayEl = document.getElementById('editOverlay') as HTMLElement;
+    const editCloseEl = document.getElementById('editClose') as HTMLButtonElement;
+    const editCancelBtn = document.getElementById('editCancel') as HTMLButtonElement;
+    const editSaveBtn = document.getElementById('editSave') as HTMLButtonElement;
+    const editTitleEl = document.getElementById('editTitle') as HTMLElement;
+    const editItemsEl = document.getElementById('editItems') as HTMLElement;
+    const editTotalEl = document.getElementById('editTotal') as HTMLElement;
+    const editStatusEl = document.getElementById('editStatus') as HTMLElement;
+
+    dateEl.textContent = frenchDateLong(tunisDayKey());
+
+    let sales: any[] = [];
+    let editingSaleId: string | null = null;
+    /** Map keyed by slug__size → { slug, name, size, qty, price } */
+    let editTicket = new Map<string, any>();
+
+    function escHtml(s) {
+      return String(s ?? '').replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      }[c]!));
+    }
+
+    function toast(msg, kind = '') {
+      toastEl.textContent = msg;
+      toastEl.className = 'staff-toast is-show' + (kind ? ' is-' + kind : '');
+      setTimeout(() => { toastEl.className = 'staff-toast'; }, 2400);
+    }
+
+    function summarizeItems(items) {
+      if (!items || items.length === 0) return '—';
+      const parts = items.slice(0, 3).map((it) => `${it.qty}× ${it.name} (${it.size})`);
+      if (items.length > 3) parts.push(`+${items.length - 3} autre${items.length - 3 > 1 ? 's' : ''}`);
+      return parts.join(', ');
+    }
+
+    // ============ Boot ============
+    (async () => {
+      const me = await staffMe();
+      if (!me.ok) {
+        window.location.replace('/staff/login');
+        return;
+      }
+      employeeEl.textContent = me.employee.name;
+      await reload();
+    })();
+
+    async function reload() {
+      listEl.innerHTML = '<div class="hist-loading">Chargement…</div>';
+      const res = await listMySales();
+      if (!res.ok) {
+        listEl.innerHTML = `<div class="hist-empty" style="color:#8a2a14">Erreur : ${escHtml(res.error || 'chargement impossible')}</div>`;
+        return;
+      }
+      sales = res.sales || [];
+      statTicketsEl.textContent = String(res.summary?.ticketCount ?? 0);
+      statRevenueEl.textContent = formatDT(res.summary?.revenue ?? 0);
+      if (sales.length === 0) {
+        listEl.innerHTML = '<div class="hist-empty">Aucune vente enregistrée aujourd\'hui.</div>';
+        return;
+      }
+      listEl.innerHTML = sales.map(saleHtml).join('');
+    }
+
+    function saleHtml(s) {
+      const cancelled = s.status === 'cancelled';
+      return `
+        <div class="hist-sale ${cancelled ? 'hist-sale--cancelled' : ''}" data-sale="${escHtml(s.id)}">
+          <div class="hist-sale-head">
+            <div class="hist-sale-time">${formatHM(s.createdAt)}</div>
+            <div class="hist-sale-total">${formatDT(s.total)}</div>
+          </div>
+          <div class="hist-sale-items">${escHtml(summarizeItems(s.items))}</div>
+          <div class="hist-sale-meta">
+            ${s.customerName ? `<span>👤 ${escHtml(s.customerName)}</span>` : ''}
+            ${s.modifiedAt ? '<span>Modifié</span>' : ''}
+            ${cancelled ? `<span class="hist-tag">Annulé</span>` : ''}
+          </div>
+          ${!cancelled ? `
+            <div class="hist-sale-actions">
+              <button type="button" class="hist-action" data-act="edit" data-sale="${escHtml(s.id)}">Modifier</button>
+              <button type="button" class="hist-action hist-action--danger" data-act="cancel" data-sale="${escHtml(s.id)}">Annuler</button>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    listEl.addEventListener('click', async (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('.hist-action');
+      if (!btn) return;
+      const saleId = btn.dataset.sale!;
+      const sale = sales.find((s) => s.id === saleId);
+      if (!sale) return;
+      if (btn.dataset.act === 'edit') openEdit(sale);
+      else if (btn.dataset.act === 'cancel') doCancel(sale);
+    });
+
+    // ============ Edit modal ============
+    function openEdit(sale) {
+      editingSaleId = sale.id;
+      editTicket = new Map();
+      sale.items.forEach((it) => {
+        const key = `${it.slug}__${it.size}`;
+        editTicket.set(key, { ...it });
+      });
+      editTitleEl.textContent = `Ticket de ${formatHM(sale.createdAt)}`;
+      editStatusEl.hidden = true;
+      editStatusEl.textContent = '';
+      renderEditItems();
+      editModalEl.hidden = false;
+    }
+
+    function closeEdit() {
+      editModalEl.hidden = true;
+      editingSaleId = null;
+      editTicket.clear();
+    }
+
+    function renderEditItems() {
+      if (editTicket.size === 0) {
+        editItemsEl.innerHTML = '<li style="text-align:center;color:var(--ink-mute);font-style:italic">Le ticket sera vide. Annulez plutôt qu\'enregistrer.</li>';
+      } else {
+        const rows: string[] = [];
+        editTicket.forEach((it, key) => {
+          rows.push(`
+            <li>
+              <div>
+                <div style="font-size:14px">${escHtml(it.name)}</div>
+                <div style="font-size:12px;color:var(--ink-mute);margin-top:2px">${escHtml(it.size)} · ${formatDT(it.price)}</div>
+              </div>
+              <div class="pos-ticket-item-controls">
+                <button type="button" class="pos-qty-btn" data-act="dec" data-key="${escHtml(key)}">−</button>
+                <span class="pos-qty-val">${it.qty}</span>
+                <button type="button" class="pos-qty-btn" data-act="inc" data-key="${escHtml(key)}">+</button>
+              </div>
+            </li>
+          `);
+        });
+        editItemsEl.innerHTML = rows.join('');
+      }
+      let total = 0;
+      editTicket.forEach((it) => { total += it.qty * it.price; });
+      editTotalEl.textContent = formatDT(total);
+      editSaveBtn.disabled = editTicket.size === 0;
+    }
+
+    editItemsEl.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('.pos-qty-btn');
+      if (!btn) return;
+      const key = btn.dataset.key!;
+      const it = editTicket.get(key);
+      if (!it) return;
+      if (btn.dataset.act === 'inc') it.qty += 1;
+      else if (btn.dataset.act === 'dec') {
+        it.qty -= 1;
+        if (it.qty <= 0) editTicket.delete(key);
+      }
+      renderEditItems();
+    });
+
+    editCloseEl.addEventListener('click', closeEdit);
+    editOverlayEl.addEventListener('click', closeEdit);
+    editCancelBtn.addEventListener('click', closeEdit);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !editModalEl.hidden) closeEdit();
+    });
+
+    editSaveBtn.addEventListener('click', async () => {
+      if (!editingSaleId || editTicket.size === 0) return;
+      const items: any[] = [];
+      let total = 0;
+      editTicket.forEach((it) => {
+        items.push({ slug: it.slug, name: it.name, size: it.size, qty: it.qty, price: it.price });
+        total += it.qty * it.price;
+      });
+      total = Math.round(total * 100) / 100;
+      editSaveBtn.disabled = true;
+      const res = await modifySale(editingSaleId, { items, total });
+      if (!res.ok) {
+        editStatusEl.textContent = res.error || 'Échec de la modification';
+        editStatusEl.hidden = false;
+        editSaveBtn.disabled = false;
+        return;
+      }
+      closeEdit();
+      toast('Ticket modifié');
+      await reload();
+    });
+
+    // ============ Cancel ============
+    async function doCancel(sale) {
+      if (!confirm(`Annuler la vente de ${formatHM(sale.createdAt)} (${formatDT(sale.total)}) ?`)) return;
+      const reason = prompt('Raison (optionnel) :', '') || '';
+      const res = await cancelSale(sale.id, reason);
+      if (!res.ok) {
+        toast(res.error || 'Échec', 'error');
+        return;
+      }
+      toast('Vente annulée');
+      await reload();
+    }
+  </script>
+</StaffLayout>

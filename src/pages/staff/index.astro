@@ -1,0 +1,34 @@
+---
+import StaffLayout from '../../layouts/StaffLayout.astro';
+---
+<StaffLayout title="Espace personnel" cream={false}>
+  <main class="staff-redirect-wrap">
+    <div class="staff-redirect-card">
+      <div class="staff-wordmark">Dadios</div>
+      <p>Chargement…</p>
+    </div>
+  </main>
+
+  <style>
+    .staff-redirect-wrap {
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .staff-redirect-card { text-align: center; color: var(--cream); }
+    .staff-wordmark {
+      font-family: var(--font-script);
+      font-size: 48px;
+      color: var(--gold);
+      margin-bottom: 8px;
+    }
+  </style>
+
+  <script>
+    import { isStaffLoggedIn } from '../../scripts/staffApi.js';
+    window.location.replace(isStaffLoggedIn() ? '/staff/sale' : '/staff/login');
+  </script>
+</StaffLayout>
