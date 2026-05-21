@@ -1,0 +1,102 @@
+---
+/**
+ * KPI tile. Renders title + value + optional delta meta line.
+ * Variants:
+ *   default — paper bg, ink text
+ *   emerald — emerald bg with gold accent value (used for primary KPIs)
+ *   gold    — gold bg with emerald-deep text
+ *
+ * The value / delta IDs let the page-level JS update them after fetch
+ * without re-rendering the markup. Pass distinct IDs per card so they
+ * don't collide.
+ */
+export interface Props {
+  title: string;
+  variant?: 'default' | 'emerald' | 'gold';
+  valueId: string;
+  metaId?: string;
+  initialValue?: string;
+  initialMeta?: string;
+  href?: string;
+  requiresPermission?: string;
+}
+const {
+  title,
+  variant = 'default',
+  valueId,
+  metaId,
+  initialValue = '—',
+  initialMeta = '',
+  href,
+  requiresPermission,
+} = Astro.props;
+
+const Tag = href ? 'a' : 'div';
+---
+<Tag
+  class={`kpi kpi--${variant}`}
+  href={href}
+  data-requires-permission={requiresPermission || undefined}
+>
+  <div class="kpi-label">{title}</div>
+  <div class="kpi-value" id={valueId}>{initialValue}</div>
+  {metaId && <div class="kpi-meta" id={metaId}>{initialMeta}</div>}
+  {href && <div class="kpi-arrow" aria-hidden="true">→</div>}
+</Tag>
+
+<style>
+  .kpi {
+    background: var(--ad-paper);
+    border: 1px solid var(--ad-border);
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(15, 81, 50, 0.04);
+    position: relative;
+    color: var(--ad-ink);
+    text-decoration: none;
+    transition: box-shadow .2s, transform .15s;
+    display: block;
+  }
+  a.kpi:hover { box-shadow: 0 4px 12px rgba(15, 81, 50, 0.1); transform: translateY(-1px); }
+  .kpi[hidden] { display: none; }
+
+  .kpi--emerald { background: var(--ad-emerald); color: var(--ad-cream); border-color: var(--ad-emerald); }
+  .kpi--gold    { background: var(--ad-gold);    color: var(--ad-emerald-deep); border-color: var(--ad-gold); }
+
+  .kpi-label {
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    opacity: 0.75;
+    margin-bottom: 8px;
+  }
+  .kpi-value {
+    font-family: var(--ad-font-display);
+    font-size: 32px;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+  }
+  .kpi--emerald .kpi-value { color: var(--ad-gold); }
+  .kpi-meta {
+    font-size: 12px;
+    opacity: 0.75;
+    margin-top: 8px;
+  }
+  /* Up/down delta colors, applied by JS via classes */
+  .kpi-meta.is-up   { color: #16a34a; opacity: 1; font-weight: 600; }
+  .kpi-meta.is-down { color: #dc2626; opacity: 1; font-weight: 600; }
+  .kpi--emerald .kpi-meta.is-up   { color: #86EFAC; }
+  .kpi--emerald .kpi-meta.is-down { color: #FCA5A5; }
+
+  .kpi-arrow {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    color: var(--ad-ink-mute);
+    font-size: 16px;
+    opacity: 0;
+    transition: opacity .15s, transform .15s;
+  }
+  a.kpi:hover .kpi-arrow { opacity: 1; transform: translateX(2px); }
+</style>

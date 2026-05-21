@@ -1,0 +1,56 @@
+---
+/**
+ * Alert chip (horizontal card) — emoji + label + link arrow.
+ *
+ * `hidden` by default; the dashboard JS flips it visible once the
+ * matching counter is > 0 and updates the `id`-target span with the
+ * count.
+ */
+export interface Props {
+  href: string;
+  icon: string;             // emoji or short string, e.g. '🔴'
+  variant: 'danger' | 'warning' | 'info' | 'success';
+  countId: string;          // id of the inner <strong> to populate
+  labelTemplate: string;    // text after the strong, e.g. 'avis en attente'
+  requiresPermission?: string;
+}
+const { href, icon, variant, countId, labelTemplate, requiresPermission } = Astro.props;
+---
+<a
+  class={`alert-card alert-card--${variant}`}
+  href={href}
+  data-requires-permission={requiresPermission || undefined}
+  hidden
+>
+  <span class="alert-icon" aria-hidden="true">{icon}</span>
+  <span class="alert-label"><strong id={countId}>0</strong> {labelTemplate}</span>
+  <span class="alert-arrow" aria-hidden="true">→</span>
+</a>
+
+<style>
+  .alert-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: var(--ad-paper);
+    border: 1px solid var(--ad-border);
+    border-left: 3px solid var(--ad-border);
+    border-radius: 10px;
+    color: var(--ad-ink);
+    text-decoration: none;
+    font-size: 14px;
+    transition: background .15s, transform .1s;
+  }
+  .alert-card:hover { background: var(--ad-cream); }
+  .alert-card:active { transform: scale(0.99); }
+  .alert-card[hidden] { display: none; }
+  .alert-card--danger  { border-left-color: var(--ad-danger); }
+  .alert-card--warning { border-left-color: var(--ad-warning); }
+  .alert-card--info    { border-left-color: var(--ad-info); }
+  .alert-card--success { border-left-color: var(--ad-success); }
+  .alert-icon { font-size: 18px; flex-shrink: 0; }
+  .alert-label { flex: 1; line-height: 1.4; }
+  .alert-label strong { font-weight: 600; }
+  .alert-arrow { color: var(--ad-ink-mute); }
+</style>
