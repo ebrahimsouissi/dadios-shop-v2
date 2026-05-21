@@ -1,0 +1,634 @@
+---
+/**
+ * Admin shell layout — wraps every /admin/* page.
+ *
+ * Provides:
+ *   - the login + not-admin gates (Phase 13 auth)
+ *   - sticky header + sidebar + mobile drawer + bottom nav + FAB
+ *   - global search modal (Ctrl+K / Cmd+K)
+ *   - shared inline JS for all chrome interactions
+ *
+ * Each page passes `current` (one of accueil, ventes, catalogue,
+ * clients, contenu, equipe) so the nav components highlight the
+ * right item. The page content goes in the default <slot/>.
+ *
+ * After the auto-login resolves the admin's permissions, the layout
+ * dispatches `document.dispatchEvent(new CustomEvent('admin:ready',
+ * { detail: { permissions } }))` so pages can defer data loading
+ * until they know the user can actually fetch.
+ *
+ * Standalone — does NOT wrap the public Base.astro (which renders
+ * the public nav + footer), so admin pages stay focused.
+ */
+
+import '../styles/global.css';
+import '../styles/admin.css';
+import AdminSidebar from '../components/admin/AdminSidebar.astro';
+import AdminHeader from '../components/admin/AdminHeader.astro';
+import AdminDrawer from '../components/admin/AdminDrawer.astro';
+import AdminBottomNav from '../components/admin/AdminBottomNav.astro';
+import AdminFab from '../components/admin/AdminFab.astro';
+
+export interface Props {
+  title: string;
+  current: string;  // accueil | ventes | catalogue | clients | contenu | equipe
+}
+const { title, current } = Astro.props;
+---
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0F5132" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>{title} — Admin Dadios</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body class="admin-body">
+  <!-- ===== AUTH GATES (visible before adminMain unlocks) ===== -->
+  <section id="notAdminGate" class="ad-gate" hidden>
+    <div class="ad-gate-card">
+      <div class="ad-gate-icon" aria-hidden="true">🔒</div>
+      <h2>Compte non administrateur</h2>
+      <p>
+        Vous êtes connecté à votre compte client, mais ce compte n'a pas
+        d'accès administrateur. Demandez à un super-administrateur de
+        vous promouvoir.
+      </p>
+      <a class="ad-btn ad-btn-outline" href="/compte/dashboard">← Retour au compte</a>
+    </div>
+  </section>
+
+  <section id="loginGate" class="ad-gate">
+    <div class="ad-gate-card">
+      <div class="admin-eyebrow">Administration</div>
+      <h2>Connexion</h2>
+      <p>
+        Connectez-vous via votre <a href="/compte">compte client</a>
+        avec une permission admin, ou utilisez le mot de passe d'urgence
+        ci-dessous.
+      </p>
+      <form id="loginForm" autocomplete="off">
+        <label class="ad-gate-label">
+          <span>Mot de passe administrateur</span>
+          <input type="password" id="loginPwd" required autocomplete="current-password" />
+        </label>
+        <p id="loginErr" class="ad-gate-err" hidden>Mot de passe incorrect.</p>
+        <button type="submit" class="ad-btn ad-btn-primary ad-btn-block">Se connecter</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ===== SHELL (hidden until adminMe resolves to isAdmin) ===== -->
+  <div class="admin-shell is-hidden" id="adminMain">
+    <AdminHeader />
+    <AdminSidebar current={current} />
+    <AdminDrawer current={current} />
+    <AdminBottomNav current={current} />
+
+    <main class="admin-content-area">
+      <slot />
+    </main>
+
+    <AdminFab />
+  </div>
+
+  <!-- ===== GLOBAL SEARCH MODAL (Ctrl+K) ===== -->
+  <div class="ad-modal" id="adminSearchModal" hidden>
+    <div class="ad-modal-overlay" id="adminSearchOverlay"></div>
+    <div class="ad-modal-box admin-search-modal-box" role="dialog" aria-modal="true" aria-label="Recherche">
+      <div class="admin-search-input-wrap">
+        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2"
+             fill="none" stroke-linecap="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"/>
+          <line x1="21" y1="21" x2="16.5" y2="16.5"/>
+        </svg>
+        <input type="search" id="adminSearchInput" placeholder="Chercher produit, client, commande…" autocomplete="off" />
+        <button type="button" id="adminSearchClose" class="ad-btn ad-btn-ghost ad-btn-sm">Esc</button>
+      </div>
+      <div class="admin-search-results" id="adminSearchResults">
+        <div class="admin-search-hint">
+          Commencez à taper pour rechercher.<br>
+          <span style="opacity:0.7">Astuce : <kbd>⌘K</kbd> ou <kbd>Ctrl+K</kbd> ouvre cette modal partout.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    /* Auth gates */
+    .ad-gate {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 24px;
+      background: var(--ad-cream);
+    }
+    .ad-gate-card {
+      max-width: 440px;
+      width: 100%;
+      background: var(--ad-paper);
+      border: 1px solid var(--ad-border);
+      border-radius: 16px;
+      padding: 32px 28px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(15, 81, 50, 0.06);
+    }
+    .ad-gate-icon { font-size: 38px; margin-bottom: 10px; }
+    .ad-gate-card h2 {
+      font-family: var(--ad-font-display);
+      font-size: 26px;
+      margin: 8px 0 12px;
+      font-weight: 500;
+    }
+    .ad-gate-card p {
+      color: var(--ad-ink-soft);
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 18px;
+    }
+    .ad-gate-card a { color: var(--ad-emerald); text-decoration: underline; }
+    .ad-gate-label {
+      display: block;
+      text-align: left;
+      margin-bottom: 12px;
+    }
+    .ad-gate-label > span {
+      display: block;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ad-ink-soft);
+      margin-bottom: 6px;
+    }
+    .ad-gate-label input {
+      width: 100%;
+      padding: 12px 14px;
+      min-height: 48px;
+      border: 1px solid var(--ad-border);
+      border-radius: 8px;
+      background: var(--ad-cream);
+      font-size: 16px;
+      font-family: var(--ad-font-body);
+      box-sizing: border-box;
+    }
+    .ad-gate-label input:focus { outline: none; border-color: var(--ad-emerald); }
+    .ad-gate-err {
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid var(--ad-danger);
+      color: #8a2a14;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+
+    /* Search modal layout (extends .ad-modal-box) */
+    .admin-search-modal-box { padding: 0; overflow: hidden; max-height: 80vh; display: flex; flex-direction: column; }
+    @media (min-width: 768px) {
+      .admin-search-modal-box { max-height: 70vh; width: min(560px, calc(100vw - 48px)); }
+    }
+    .admin-search-input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--ad-border);
+      color: var(--ad-ink-soft);
+    }
+    .admin-search-input-wrap input {
+      flex: 1;
+      border: none;
+      outline: none;
+      background: transparent;
+      font-size: 16px;
+      color: var(--ad-ink);
+      font-family: var(--ad-font-body);
+      padding: 6px 0;
+      min-height: 40px;
+    }
+    .admin-search-results { flex: 1; overflow-y: auto; padding: 8px; }
+    .admin-search-hint {
+      padding: 30px 20px;
+      text-align: center;
+      color: var(--ad-ink-mute);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .admin-search-hint kbd {
+      background: var(--ad-cream);
+      border: 1px solid var(--ad-border);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 11px;
+    }
+    .admin-search-group {
+      padding: 8px 12px 4px;
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ad-ink-mute);
+    }
+    .admin-search-result {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      color: var(--ad-ink);
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .admin-search-result:hover, .admin-search-result.is-focused {
+      background: var(--ad-cream);
+    }
+    .admin-search-result-meta { margin-left: auto; color: var(--ad-ink-mute); font-size: 12px; }
+  </style>
+
+  <script>
+    import { adminMe, getPassword, setPassword, clearPassword, checkPassword, fetchPublicProducts, adminListCustomers } from '../scripts/adminApi.js';
+
+    const loginGate = document.getElementById('loginGate');
+    const notAdminGate = document.getElementById('notAdminGate');
+    const adminMain = document.getElementById('adminMain');
+
+    // ============ Auth gate ============
+    async function trySessionAuth() {
+      try {
+        const res = await adminMe();
+        if (!res || !res.ok) return { state: 'guest' };
+        if (res.isAdmin) {
+          (window as any).__adminPerms = res.permissions || [];
+          (window as any).__adminMe = res;
+          return { state: 'admin', res };
+        }
+        if (res.isAuthenticated) return { state: 'notAdmin' };
+        return { state: 'guest' };
+      } catch { return { state: 'guest' }; }
+    }
+
+    function revealShell(res?: any) {
+      if (loginGate) (loginGate as HTMLElement).hidden = true;
+      if (notAdminGate) (notAdminGate as HTMLElement).hidden = true;
+      adminMain?.classList.remove('is-hidden');
+      filterByPermissions((window as any).__adminPerms || ['all']);
+      fillUserBadge(res || (window as any).__adminMe);
+      loadBellCounts();
+      document.dispatchEvent(new CustomEvent('admin:ready', {
+        detail: { permissions: (window as any).__adminPerms || [] }
+      }));
+    }
+    function revealNotAdmin() {
+      if (loginGate) (loginGate as HTMLElement).hidden = true;
+      if (notAdminGate) (notAdminGate as HTMLElement).hidden = false;
+    }
+    function revealLogin() {
+      if (loginGate) (loginGate as HTMLElement).hidden = false;
+      if (notAdminGate) (notAdminGate as HTMLElement).hidden = true;
+    }
+
+    (async () => {
+      const r = await trySessionAuth();
+      if (r.state === 'admin') {
+        revealShell(r.res);
+      } else if (r.state === 'notAdmin') {
+        revealNotAdmin();
+      } else if (getPassword()) {
+        const ok = await checkPassword(getPassword());
+        if (ok) {
+          (window as any).__adminPerms = ['all'];
+          revealShell({ customer: { name: 'Admin', phone: 'password-gate' } });
+        } else {
+          clearPassword();
+          revealLogin();
+        }
+      } else {
+        revealLogin();
+      }
+    })();
+
+    document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const pwd = (document.getElementById('loginPwd') as HTMLInputElement).value;
+      const err = document.getElementById('loginErr') as HTMLElement;
+      err.hidden = true;
+      setPassword(pwd);
+      const ok = await checkPassword(pwd);
+      if (!ok) {
+        clearPassword();
+        err.hidden = false;
+        return;
+      }
+      (window as any).__adminPerms = ['all'];
+      revealShell({ customer: { name: 'Admin', phone: 'password-gate' } });
+    });
+
+    function filterByPermissions(perms: string[]) {
+      const isSuper = perms.includes('all');
+      const allowed = (need: string) => !need || isSuper || perms.includes(need);
+      document.querySelectorAll<HTMLElement>('[data-requires-permission]').forEach((el) => {
+        const need = el.getAttribute('data-requires-permission') || '';
+        if (allowed(need)) el.removeAttribute('hidden');
+        else el.setAttribute('hidden', '');
+      });
+      const compound: Record<string, string[]> = {
+        ventes:   ['orders', 'sales'],
+        clients:  ['customers', 'tiers', 'perfume-requests'],
+        contenu:  ['articles', 'reviews'],
+      };
+      document.querySelectorAll<HTMLElement>('[data-nav-section]').forEach((el) => {
+        const sect = el.getAttribute('data-nav-section') || '';
+        if (sect === 'accueil') return;
+        const reqList = compound[sect];
+        if (!reqList) return;
+        const anyOk = reqList.some(allowed);
+        if (anyOk) el.removeAttribute('hidden');
+        else el.setAttribute('hidden', '');
+      });
+    }
+
+    // ============ User badge ============
+    function fillUserBadge(res: any) {
+      const avatarEl = document.getElementById('adminUserAvatar');
+      const nameEl = document.getElementById('adminUserName');
+      if (!avatarEl || !nameEl) return;
+      const name = res?.customer?.name || res?.customer?.phone || 'Admin';
+      nameEl.textContent = name.length > 18 ? name.slice(0, 16) + '…' : name;
+      const initial = (name.match(/[A-Za-zÀ-ÖØ-öø-ÿ]/) || ['A'])[0].toUpperCase();
+      avatarEl.textContent = initial;
+    }
+
+    // ============ Drawer ============
+    const burgerEl = document.getElementById('adminBurger');
+    const drawerEl = document.getElementById('adminDrawer');
+    const drawerBackdropEl = document.getElementById('adminDrawerBackdrop');
+    const drawerCloseEl = document.getElementById('adminDrawerClose');
+    const moreBtnEl = document.getElementById('adminMoreBtn');
+    function openDrawer() {
+      drawerEl?.classList.add('is-open');
+      drawerBackdropEl?.classList.add('is-open');
+      burgerEl?.setAttribute('aria-expanded', 'true');
+      document.body.classList.add('no-scroll');
+    }
+    function closeDrawer() {
+      drawerEl?.classList.remove('is-open');
+      drawerBackdropEl?.classList.remove('is-open');
+      burgerEl?.setAttribute('aria-expanded', 'false');
+      document.body.classList.remove('no-scroll');
+    }
+    burgerEl?.addEventListener('click', openDrawer);
+    drawerCloseEl?.addEventListener('click', closeDrawer);
+    drawerBackdropEl?.addEventListener('click', closeDrawer);
+    moreBtnEl?.addEventListener('click', openDrawer);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && drawerEl?.classList.contains('is-open')) closeDrawer();
+    });
+
+    // ============ User menu ============
+    const userBtnEl = document.getElementById('adminUserBtn');
+    const userMenuEl = document.getElementById('adminUserMenu');
+    function toggleUserMenu(force?: boolean) {
+      if (!userMenuEl) return;
+      const showing = !(userMenuEl as HTMLElement).hidden;
+      const want = force !== undefined ? force : !showing;
+      (userMenuEl as HTMLElement).hidden = !want;
+      userBtnEl?.setAttribute('aria-expanded', want ? 'true' : 'false');
+    }
+    userBtnEl?.addEventListener('click', (e) => { e.stopPropagation(); closeBellMenu(); toggleUserMenu(); });
+    document.addEventListener('click', (e) => {
+      const t = e.target as HTMLElement;
+      if (userMenuEl && !(userMenuEl as HTMLElement).hidden && !t.closest('#adminUserBtn') && !t.closest('#adminUserMenu')) {
+        toggleUserMenu(false);
+      }
+    });
+    document.getElementById('adminLogoutBtn')?.addEventListener('click', () => {
+      clearPassword();
+      try { localStorage.removeItem('dadios_admin_emergency'); } catch {}
+      location.reload();
+    });
+
+    // ============ Bell notifications ============
+    const bellBtnEl = document.getElementById('adminBellBtn');
+    const bellMenuEl = document.getElementById('adminBellMenu');
+    const bellBadgeEl = document.getElementById('adminBellBadge');
+    const bellListEl = document.getElementById('adminBellList');
+    function openBellMenu() { if (bellMenuEl) (bellMenuEl as HTMLElement).hidden = false; bellBtnEl?.setAttribute('aria-expanded', 'true'); }
+    function closeBellMenu() { if (bellMenuEl) (bellMenuEl as HTMLElement).hidden = true; bellBtnEl?.setAttribute('aria-expanded', 'false'); }
+    bellBtnEl?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleUserMenu(false);
+      if (bellMenuEl && (bellMenuEl as HTMLElement).hidden) openBellMenu();
+      else closeBellMenu();
+    });
+    document.addEventListener('click', (e) => {
+      const t = e.target as HTMLElement;
+      if (bellMenuEl && !(bellMenuEl as HTMLElement).hidden && !t.closest('#adminBellBtn') && !t.closest('#adminBellMenu')) {
+        closeBellMenu();
+      }
+    });
+
+    async function loadBellCounts() {
+      const perms = (window as any).__adminPerms || [];
+      const isSuper = perms.includes('all');
+      const allowed = (p) => isSuper || perms.includes(p);
+      const items: { icon: string; text: string; href: string }[] = [];
+      let total = 0;
+      const calls: Promise<void>[] = [];
+
+      if (allowed('reviews')) {
+        calls.push((async () => {
+          try {
+            const r = await (await import('../scripts/reviewsApi.js')).adminPendingReviewsCount();
+            if (r?.ok && r.count > 0) {
+              items.push({ icon: '⭐', text: `<strong>${r.count} avis</strong> en attente`, href: '/admin/contenu#avis' });
+              total += r.count;
+            }
+          } catch {}
+        })());
+      }
+      if (allowed('orders')) {
+        calls.push((async () => {
+          try {
+            const r = await (await import('../scripts/ordersApi.js')).adminListOrders();
+            const pending = (r?.orders || []).filter((o) => o.status === 'pending').length;
+            if (pending > 0) {
+              items.push({ icon: '💌', text: `<strong>${pending} commande${pending > 1 ? 's' : ''}</strong> en attente`, href: '/admin/ventes#en-ligne' });
+              total += pending;
+            }
+          } catch {}
+        })());
+      }
+      if (allowed('perfume-requests')) {
+        calls.push((async () => {
+          try {
+            const r = await (await import('../scripts/perfumeRequestsApi.js')).adminListPerfumeRequests('pending');
+            const n = (r?.requests || []).length;
+            if (n > 0) {
+              items.push({ icon: '🎁', text: `<strong>${n} demande${n > 1 ? 's' : ''} VIP</strong> en attente`, href: '/admin/clients#demandes' });
+              total += n;
+            }
+          } catch {}
+        })());
+      }
+
+      await Promise.all(calls);
+
+      if (bellBadgeEl) {
+        if (total > 0) {
+          bellBadgeEl.textContent = total > 99 ? '99+' : String(total);
+          (bellBadgeEl as HTMLElement).hidden = false;
+        } else {
+          (bellBadgeEl as HTMLElement).hidden = true;
+        }
+      }
+      if (bellListEl) {
+        bellListEl.innerHTML = items.length === 0
+          ? '<div class="admin-bell-empty">Tout est à jour ✨</div>'
+          : items.map((it) => `<a class="admin-bell-item" href="${it.href}"><span class="admin-bell-icon">${it.icon}</span><span class="admin-bell-text">${it.text}</span></a>`).join('');
+      }
+    }
+
+    // ============ FAB ============
+    const fabBtnEl = document.getElementById('adminFabBtn');
+    const fabMenuEl = document.getElementById('adminFabMenu');
+    function toggleFab(force?: boolean) {
+      if (!fabMenuEl) return;
+      const showing = !(fabMenuEl as HTMLElement).hidden;
+      const want = force !== undefined ? force : !showing;
+      (fabMenuEl as HTMLElement).hidden = !want;
+      fabBtnEl?.setAttribute('aria-expanded', want ? 'true' : 'false');
+    }
+    fabBtnEl?.addEventListener('click', (e) => { e.stopPropagation(); toggleFab(); });
+    document.addEventListener('click', (e) => {
+      const t = e.target as HTMLElement;
+      if (fabMenuEl && !(fabMenuEl as HTMLElement).hidden && !t.closest('#adminFabBtn') && !t.closest('#adminFabMenu')) {
+        toggleFab(false);
+      }
+    });
+
+    // ============ Ctrl+K search ============
+    const searchBtnEl = document.getElementById('adminSearchBtn');
+    const searchModalEl = document.getElementById('adminSearchModal');
+    const searchOverlayEl = document.getElementById('adminSearchOverlay');
+    const searchCloseEl = document.getElementById('adminSearchClose');
+    const searchInputEl = document.getElementById('adminSearchInput') as HTMLInputElement | null;
+    const searchResultsEl = document.getElementById('adminSearchResults');
+
+    function openSearch() {
+      if (!searchModalEl) return;
+      (searchModalEl as HTMLElement).hidden = false;
+      document.body.classList.add('no-scroll');
+      setTimeout(() => searchInputEl?.focus(), 50);
+    }
+    function closeSearch() {
+      if (!searchModalEl) return;
+      (searchModalEl as HTMLElement).hidden = true;
+      document.body.classList.remove('no-scroll');
+      if (searchInputEl) searchInputEl.value = '';
+      if (searchResultsEl) {
+        searchResultsEl.innerHTML = `
+          <div class="admin-search-hint">
+            Commencez à taper pour rechercher.<br>
+            <span style="opacity:0.7">Astuce : <kbd>⌘K</kbd> ou <kbd>Ctrl+K</kbd> ouvre cette modal partout.</span>
+          </div>`;
+      }
+    }
+    searchBtnEl?.addEventListener('click', openSearch);
+    searchOverlayEl?.addEventListener('click', closeSearch);
+    searchCloseEl?.addEventListener('click', closeSearch);
+    document.addEventListener('keydown', (e) => {
+      const adminVisible = adminMain && !adminMain.classList.contains('is-hidden');
+      if (!adminVisible) return;
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        if (searchModalEl && (searchModalEl as HTMLElement).hidden) openSearch();
+        else closeSearch();
+      } else if (e.key === 'Escape' && searchModalEl && !(searchModalEl as HTMLElement).hidden) {
+        closeSearch();
+      }
+    });
+
+    let searchProducts: any[] = [];
+    async function ensureProducts() {
+      if (searchProducts.length > 0) return;
+      try {
+        const list = await fetchPublicProducts('/products.json');
+        searchProducts = list || [];
+      } catch {}
+    }
+    function escSearch(s) {
+      return String(s ?? '').replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      }[c]!));
+    }
+    function highlight(text, q) {
+      const t = String(text || '');
+      const idx = t.toLowerCase().indexOf(q.toLowerCase());
+      if (idx < 0) return escSearch(t);
+      return escSearch(t.slice(0, idx)) +
+        '<mark style="background:rgba(212,175,55,0.3);color:inherit">' +
+        escSearch(t.slice(idx, idx + q.length)) + '</mark>' +
+        escSearch(t.slice(idx + q.length));
+    }
+
+    let searchTimer: any = null;
+    searchInputEl?.addEventListener('input', () => {
+      if (searchTimer) clearTimeout(searchTimer);
+      searchTimer = setTimeout(runSearch, 200);
+    });
+    async function runSearch() {
+      if (!searchInputEl || !searchResultsEl) return;
+      const q = searchInputEl.value.trim();
+      if (q.length < 2) {
+        searchResultsEl.innerHTML = `<div class="admin-search-hint">Tapez au moins 2 caractères…</div>`;
+        return;
+      }
+      const ql = q.toLowerCase();
+      const perms = (window as any).__adminPerms || [];
+      const has = (p) => perms.includes('all') || perms.includes(p);
+
+      await ensureProducts();
+      const matchProducts = has('products') ? searchProducts.filter((p) => {
+        const hay = `${p.name || ''} ${p.inspiredBy || ''}`.toLowerCase();
+        return hay.includes(ql);
+      }).slice(0, 5) : [];
+
+      let matchCustomers: any[] = [];
+      if (has('customers')) {
+        try {
+          const r = await adminListCustomers({ search: q });
+          if (r.ok) matchCustomers = (r.customers || []).slice(0, 5);
+        } catch {}
+      }
+
+      const parts: string[] = [];
+      if (matchProducts.length > 0) {
+        parts.push(`<div class="admin-search-group">Produits (${matchProducts.length})</div>`);
+        matchProducts.forEach((p) => {
+          parts.push(`<a class="admin-search-result" href="/admin/catalogue?focus=${escSearch(p.slug)}"><span style="font-size:18px">📦</span><span>${highlight(p.name, q)}${p.inspiredBy ? `<br><small style="color:var(--ad-ink-mute)">inspiré de ${escSearch(p.inspiredBy)}</small>` : ''}</span><span class="admin-search-result-meta">Catalogue</span></a>`);
+        });
+      }
+      if (matchCustomers.length > 0) {
+        parts.push(`<div class="admin-search-group">Clients (${matchCustomers.length})</div>`);
+        matchCustomers.forEach((c) => {
+          const tierBadge = c.tier && c.tier !== 'regular' ? ` <span style="color:var(--ad-gold)">· ${escSearch(c.tier.toUpperCase())}</span>` : '';
+          parts.push(`<a class="admin-search-result" href="/admin/clients?phone=${encodeURIComponent(c.phone)}"><span style="font-size:18px">👥</span><span>${highlight(c.name || c.phone, q)}${tierBadge}<br><small style="color:var(--ad-ink-mute)">${escSearch(c.phone)}</small></span><span class="admin-search-result-meta">Clients</span></a>`);
+        });
+      }
+      if (parts.length === 0) {
+        searchResultsEl.innerHTML = `<div class="admin-search-hint" style="padding:30px 20px">Aucun résultat pour <strong>${escSearch(q)}</strong>.</div>`;
+        return;
+      }
+      searchResultsEl.innerHTML = parts.join('');
+      searchResultsEl.querySelectorAll<HTMLAnchorElement>('.admin-search-result').forEach((a) => {
+        a.addEventListener('click', () => closeSearch());
+      });
+    }
+  </script>
+</body>
+</html>

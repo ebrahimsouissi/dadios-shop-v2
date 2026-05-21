@@ -1,0 +1,61 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+---
+<AdminLayout title="Tableau de bord" current="accueil">
+  <header class="admin-section-head">
+    <div>
+      <div class="admin-eyebrow">Administration</div>
+      <h1>Tableau de bord</h1>
+      <p class="help">
+        Vue d'ensemble de l'activité Dadios — KPIs, alertes, activité récente.
+      </p>
+    </div>
+  </header>
+
+  <div class="placeholder-card">
+    <div class="placeholder-icon" aria-hidden="true">🏗️</div>
+    <h2>Refonte en cours — Commit 1 / 3</h2>
+    <p>
+      Le nouveau shell admin est en place (sidebar, header, mobile drawer,
+      bottom-nav, FAB, recherche ⌘K, notifications).
+    </p>
+    <p>
+      Le contenu de cette page d'accueil — KPIs / alertes / courbe CA /
+      activité récente / quick actions — arrive dans le <strong>Commit 2</strong>.
+      Les sous-pages Ventes / Catalogue / Clients / Contenu / Équipe arrivent
+      dans le <strong>Commit 3</strong>.
+    </p>
+    <p style="margin-top:12px;font-size:13px;color:var(--ad-ink-mute)">
+      En attendant, la navigation latérale est fonctionnelle (mais pointe sur
+      des routes qui n'existent pas encore — tu verras un 404 si tu cliques
+      sur Ventes / Catalogue / etc.).
+    </p>
+  </div>
+
+  <style>
+    .placeholder-card {
+      background: var(--ad-paper);
+      border: 1px solid var(--ad-border);
+      border-radius: 16px;
+      padding: clamp(28px, 5vw, 56px);
+      text-align: center;
+      box-shadow: 0 1px 3px rgba(15, 81, 50, 0.04);
+      max-width: 640px;
+      margin: 0 auto;
+    }
+    .placeholder-icon { font-size: 44px; margin-bottom: 16px; }
+    .placeholder-card h2 {
+      font-family: var(--ad-font-display);
+      font-size: 24px;
+      margin-bottom: 12px;
+      font-weight: 500;
+    }
+    .placeholder-card p {
+      color: var(--ad-ink-soft);
+      line-height: 1.6;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+    .placeholder-card strong { color: var(--ad-emerald); }
+  </style>
+</AdminLayout>

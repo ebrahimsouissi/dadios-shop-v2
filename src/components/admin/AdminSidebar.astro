@@ -1,0 +1,167 @@
+---
+/**
+ * Desktop sidebar (visible >= 1024px). Grouped nav with icon + label.
+ * `current` prop drives the active state.
+ *
+ * Sections requiring no specific permission render normally; those with
+ * a `perm` get a data-requires-permission attribute that the layout's
+ * inline auth script reads to hide unavailable items.
+ */
+export interface Props {
+  current: string;
+}
+const { current } = Astro.props;
+
+const NAV = [
+  { group: null, items: [
+    { id: 'accueil', label: 'Accueil', icon: '🏠', href: '/admin', perm: null },
+  ]},
+  { group: 'Ventes', items: [
+    { id: 'ventes', label: 'Commandes & Boutique', icon: '🛒', href: '/admin/ventes', perm: null /* shown if orders OR sales */ },
+  ]},
+  { group: 'Catalogue', items: [
+    { id: 'catalogue', label: 'Produits', icon: '📦', href: '/admin/catalogue', perm: 'products' },
+  ]},
+  { group: 'Clients', items: [
+    { id: 'clients', label: 'Clientèle', icon: '👥', href: '/admin/clients', perm: null /* shown if customers OR tiers OR perfume-requests */ },
+  ]},
+  { group: 'Contenu', items: [
+    { id: 'contenu', label: 'Blog & avis', icon: '✍️', href: '/admin/contenu', perm: null /* shown if articles OR reviews */ },
+  ]},
+  { group: 'Équipe', items: [
+    { id: 'equipe', label: 'Équipe & réglages', icon: '⚙️', href: '/admin/equipe', perm: 'all' },
+  ]},
+];
+---
+<aside class="admin-sidebar" aria-label="Navigation principale">
+  <a href="/admin" class="admin-sidebar-brand-link">
+    <span class="admin-sidebar-brand">Dadios</span>
+    <span class="admin-sidebar-brand-tag">Administration</span>
+  </a>
+
+  <nav class="admin-sidebar-nav">
+    {NAV.map((group) => (
+      <>
+        {group.group && (
+          <div class="admin-nav-group" data-group-id={group.items[0].id}>{group.group}</div>
+        )}
+        {group.items.map((item) => (
+          <a
+            href={item.href}
+            class={`admin-nav-item ${current === item.id ? 'is-active' : ''}`}
+            data-nav-section={item.id}
+            data-requires-permission={item.perm || undefined}
+          >
+            <span class="admin-nav-icon" aria-hidden="true">{item.icon}</span>
+            <span class="admin-nav-label">{item.label}</span>
+          </a>
+        ))}
+      </>
+    ))}
+  </nav>
+
+  <div class="admin-sidebar-foot">
+    <div class="admin-sidebar-mode">Mode administrateur</div>
+    <div class="admin-sidebar-version">DADIOS · v2</div>
+  </div>
+</aside>
+
+<style>
+  .admin-sidebar {
+    display: none;
+    grid-area: sidebar;
+    background: var(--ad-emerald);
+    color: var(--ad-cream);
+    padding: 24px 12px 20px;
+    flex-direction: column;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  @media (min-width: 1024px) {
+    .admin-sidebar { display: flex; }
+  }
+  .admin-sidebar-brand-link {
+    display: block;
+    padding: 4px 12px 14px;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.18);
+    margin-bottom: 4px;
+    text-decoration: none;
+  }
+  .admin-sidebar-brand {
+    font-family: var(--ad-font-display);
+    font-style: italic;
+    font-size: 28px;
+    color: var(--ad-gold);
+    line-height: 1;
+    display: block;
+    letter-spacing: 0.01em;
+  }
+  .admin-sidebar-brand-tag {
+    font-family: var(--ad-font-body);
+    font-size: 10px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: rgba(250, 246, 240, 0.6);
+    margin-top: 4px;
+    display: block;
+  }
+  .admin-sidebar-nav {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .admin-nav-group {
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: rgba(212, 175, 55, 0.7);
+    padding: 14px 12px 6px;
+    user-select: none;
+  }
+  .admin-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    min-height: 44px;
+    border-radius: 8px;
+    color: var(--ad-cream);
+    font-size: 14px;
+    font-family: var(--ad-font-body);
+    text-decoration: none;
+    border-left: 3px solid transparent;
+    transition: background .15s, border-color .15s;
+  }
+  .admin-nav-item:hover { background: rgba(250, 246, 240, 0.07); }
+  .admin-nav-item.is-active {
+    background: rgba(212, 175, 55, 0.12);
+    border-left-color: var(--ad-gold);
+  }
+  .admin-nav-item.is-active .admin-nav-label { color: var(--ad-gold); }
+  .admin-nav-item[hidden] { display: none; }
+  .admin-nav-icon {
+    width: 22px;
+    text-align: center;
+    font-size: 17px;
+    flex-shrink: 0;
+  }
+  .admin-nav-label { font-weight: 500; letter-spacing: 0.02em; }
+
+  .admin-sidebar-foot {
+    padding: 12px;
+    border-top: 1px solid rgba(212, 175, 55, 0.15);
+    color: rgba(250, 246, 240, 0.5);
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  .admin-sidebar-mode {
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ad-gold);
+    margin-bottom: 4px;
+  }
+</style>
