@@ -170,6 +170,28 @@ const sizes = data.sizes;
     </div>
   </header>
 
+  <!-- Sub-tab pills (populated by JS per active section) -->
+  <nav class="admin-subtabs" id="sectionSubtabs" role="tablist" hidden></nav>
+
+  <!-- Loyalty placeholder (Clients > Fidélité) -->
+  <div class="admin-block admin-placeholder-block" data-section="clients" data-subsection="fidelite" hidden>
+    <div class="admin-accueil-card">
+      <div class="admin-accueil-icon" aria-hidden="true">🎁</div>
+      <h2>Cartes de fidélité</h2>
+      <p>
+        L'interface admin de gestion des cartes de fidélité (liste,
+        ajout manuel de tampons, suivi des récompenses) sera disponible
+        dans une mise à jour future.
+      </p>
+      <p class="admin-accueil-hint">
+        En attendant, les clients ajoutent leurs tampons via la page
+        <a href="/" target="_blank" rel="noopener" style="color:var(--admin-emerald);text-decoration:underline">publique de leur carte</a>,
+        et chaque vente en boutique liée à un client connu ajoute un
+        tampon automatiquement.
+      </p>
+    </div>
+  </div>
+
   <!-- Per-section empty state: shown when the active section has no visible block -->
   <div id="adminSectionEmpty" class="admin-section-empty" hidden>
     <p><strong>Aucun module accessible dans cette section</strong> avec vos permissions actuelles.</p>
@@ -297,7 +319,7 @@ const sizes = data.sizes;
     </p>
   </div>
 
-  <div class="products-block admin-block" data-section="catalogue" data-requires-permission="products" hidden>
+  <div class="products-block admin-block" data-section="catalogue" data-subsection="produits" data-requires-permission="products" hidden>
     <div class="admin-tabs">
       <button class="tab-btn active" data-filter="all">Tous</button>
       <button class="tab-btn" data-filter="homme">Homme</button>
@@ -327,7 +349,7 @@ const sizes = data.sizes;
   </div>
 
   <!-- ============ CUSTOMER MANAGEMENT ============ -->
-  <div class="customers-block admin-block" data-section="clients" data-requires-permission="customers" hidden>
+  <div class="customers-block admin-block" data-section="clients" data-subsection="tous" data-requires-permission="customers" hidden>
     <div class="customers-head">
       <div class="eyebrow">Gestion des comptes clients</div>
       <h2>Recherche &amp; mot de passe</h2>
@@ -376,7 +398,7 @@ const sizes = data.sizes;
   </div>
 
   <!-- ============ ORDERS MANAGEMENT ============ -->
-  <div class="orders-block admin-block" data-section="ventes" data-requires-permission="orders" hidden>
+  <div class="orders-block admin-block" data-section="ventes" data-subsection="en-ligne" data-requires-permission="orders" hidden>
     <div class="orders-head">
       <div>
         <div class="eyebrow">Commandes</div>
@@ -419,7 +441,7 @@ const sizes = data.sizes;
   </div>
 
   <!-- ============ JOURNAL (articles) ============ -->
-  <div class="articles-block admin-block" data-section="contenu" data-requires-permission="articles" hidden>
+  <div class="articles-block admin-block" data-section="contenu" data-subsection="blog" data-requires-permission="articles" hidden>
     <div class="articles-head">
       <div>
         <div class="eyebrow">Journal</div>
@@ -460,7 +482,7 @@ const sizes = data.sizes;
   </div>
 
   <!-- ============ CLIENTS (tier management) ============ -->
-  <div class="clients-block admin-block" data-section="clients" data-requires-permission="tiers" hidden>
+  <div class="clients-block admin-block" data-section="clients" data-subsection="tous vip reseller" data-requires-permission="tiers" hidden>
     <div class="clients-head">
       <div>
         <div class="eyebrow">Clientèle</div>
@@ -502,7 +524,7 @@ const sizes = data.sizes;
   </div>
 
   <!-- ============ PERFUME REQUESTS (concierge) ============ -->
-  <div class="perfreq-block admin-block" data-section="clients" data-requires-permission="perfume-requests" hidden>
+  <div class="perfreq-block admin-block" data-section="clients" data-subsection="demandes" data-requires-permission="perfume-requests" hidden>
     <div class="perfreq-head">
       <div>
         <div class="eyebrow">Concierge</div>
@@ -543,7 +565,7 @@ const sizes = data.sizes;
   </div>
 
   <!-- ============ REVIEWS (avis clients) ============ -->
-  <div class="reviews-block admin-block" data-section="contenu" data-requires-permission="reviews" hidden>
+  <div class="reviews-block admin-block" data-section="contenu" data-subsection="avis" data-requires-permission="reviews" hidden>
     <div class="reviews-head">
       <div>
         <div class="eyebrow">Avis</div>
@@ -585,39 +607,41 @@ const sizes = data.sizes;
 
   <!-- ============ ADMINISTRATEURS (super-admin only) ============ -->
   <div class="admins-block admin-block" data-section="equipe" data-requires-permission="all" hidden>
-    <div class="admins-head">
-      <div>
-        <div class="eyebrow">Administration</div>
-        <h2>Administrateurs &amp; journal d'audit</h2>
-        <p class="admins-help">
-          Gérez les autres administrateurs et consultez l'historique des actions.
-          Toutes vos actions ici sont également tracées.
-        </p>
+    <div class="admins-subsection" data-subsection="admins">
+      <div class="admins-head">
+        <div>
+          <div class="eyebrow">Administration</div>
+          <h2>Administrateurs</h2>
+          <p class="admins-help">
+            Gérez les autres administrateurs. Toutes vos actions ici sont
+            également tracées dans le journal d'audit.
+          </p>
+        </div>
+        <button type="button" id="adminsAddBtn" class="btn btn-primary btn-sm">+ Promouvoir un client</button>
       </div>
-      <button type="button" id="adminsAddBtn" class="btn btn-primary btn-sm">+ Promouvoir un client</button>
+
+      <div class="admins-tablewrap">
+        <table class="admin-table admins-admin-table">
+          <thead>
+            <tr>
+              <th>Nom</th>
+              <th>Téléphone</th>
+              <th>Permissions</th>
+              <th>Promu le</th>
+              <th>Par</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="adminsRows">
+            <tr><td colspan="6" style="text-align:center;padding:24px">Chargement…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p id="adminsStatus" class="status-msg hidden"></p>
     </div>
 
-    <div class="admins-tablewrap">
-      <table class="admin-table admins-admin-table">
-        <thead>
-          <tr>
-            <th>Nom</th>
-            <th>Téléphone</th>
-            <th>Permissions</th>
-            <th>Promu le</th>
-            <th>Par</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="adminsRows">
-          <tr><td colspan="6" style="text-align:center;padding:24px">Chargement…</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <p id="adminsStatus" class="status-msg hidden"></p>
-
-    <div class="logs-section">
+    <div class="logs-section" data-subsection="logs">
       <h3 style="margin-top: 28px;font-size: 18px;">Journal d'audit (90 jours)</h3>
       <div class="logs-filters">
         <input type="text" id="logActionFilter" placeholder="Filtrer par action (ex. tier.grant)" />
@@ -644,7 +668,7 @@ const sizes = data.sizes;
   </div>
 
   <!-- ============ VENTES BOUTIQUE (Phase 4) ============ -->
-  <div class="sales-block admin-block" data-section="ventes" data-requires-permission="sales" hidden>
+  <div class="sales-block admin-block" data-section="ventes equipe" data-subsection="boutique tableau-de-bord employes" data-requires-permission="sales" hidden>
     <div class="sales-head">
       <div>
         <div class="eyebrow">Boutique</div>
@@ -1970,12 +1994,87 @@ const sizes = data.sizes;
 
   .admin-shell[data-active-section="accueil"] .admin-section[data-section="accueil"] { display: block; }
 
-  .admin-shell[data-active-section="ventes"] .admin-block[data-section="ventes"]:not([hidden]),
-  .admin-shell[data-active-section="catalogue"] .admin-block[data-section="catalogue"]:not([hidden]),
-  .admin-shell[data-active-section="clients"] .admin-block[data-section="clients"]:not([hidden]),
-  .admin-shell[data-active-section="contenu"] .admin-block[data-section="contenu"]:not([hidden]),
-  .admin-shell[data-active-section="equipe"] .admin-block[data-section="equipe"]:not([hidden]) {
+  /* Slice 3: blocks with data-subsection are hidden by default, only the
+     ones whose section AND subsection match the shell's active state are
+     revealed. data-section / data-subsection support space-separated
+     values (matched via attribute word-match ~=) so sales-block can live
+     in both 'ventes' and 'equipe', etc. */
+  .admin-shell .admin-block[data-subsection] { display: none; }
+
+  .admin-shell[data-active-section="ventes"][data-active-subsection="en-ligne"] .admin-block[data-section~="ventes"][data-subsection~="en-ligne"]:not([hidden]),
+  .admin-shell[data-active-section="ventes"][data-active-subsection="boutique"] .admin-block[data-section~="ventes"][data-subsection~="boutique"]:not([hidden]),
+  .admin-shell[data-active-section="ventes"][data-active-subsection="tableau-de-bord"] .admin-block[data-section~="ventes"][data-subsection~="tableau-de-bord"]:not([hidden]),
+
+  .admin-shell[data-active-section="catalogue"][data-active-subsection="produits"] .admin-block[data-section~="catalogue"][data-subsection~="produits"]:not([hidden]),
+
+  .admin-shell[data-active-section="clients"][data-active-subsection="tous"] .admin-block[data-section~="clients"][data-subsection~="tous"]:not([hidden]),
+  .admin-shell[data-active-section="clients"][data-active-subsection="vip"] .admin-block[data-section~="clients"][data-subsection~="vip"]:not([hidden]),
+  .admin-shell[data-active-section="clients"][data-active-subsection="reseller"] .admin-block[data-section~="clients"][data-subsection~="reseller"]:not([hidden]),
+  .admin-shell[data-active-section="clients"][data-active-subsection="fidelite"] .admin-block[data-section~="clients"][data-subsection~="fidelite"]:not([hidden]),
+  .admin-shell[data-active-section="clients"][data-active-subsection="demandes"] .admin-block[data-section~="clients"][data-subsection~="demandes"]:not([hidden]),
+
+  .admin-shell[data-active-section="contenu"][data-active-subsection="blog"] .admin-block[data-section~="contenu"][data-subsection~="blog"]:not([hidden]),
+  .admin-shell[data-active-section="contenu"][data-active-subsection="avis"] .admin-block[data-section~="contenu"][data-subsection~="avis"]:not([hidden]),
+
+  .admin-shell[data-active-section="equipe"][data-active-subsection="admins"] .admin-block[data-section~="equipe"]:not([data-subsection]):not([hidden]),
+  .admin-shell[data-active-section="equipe"][data-active-subsection="logs"] .admin-block[data-section~="equipe"]:not([data-subsection]):not([hidden]),
+  .admin-shell[data-active-section="equipe"][data-active-subsection="employes"] .admin-block[data-section~="equipe"][data-subsection~="employes"]:not([hidden]) {
     display: block;
+  }
+
+  /* Inside admins-block (no data-subsection on the block itself, since
+     it has TWO internal subsections), show only the matching child. */
+  .admin-shell .admins-block > [data-subsection] { display: none; }
+  .admin-shell[data-active-section="equipe"][data-active-subsection="admins"] .admins-block > [data-subsection~="admins"] { display: block; }
+  .admin-shell[data-active-section="equipe"][data-active-subsection="logs"] .admins-block > [data-subsection~="logs"] { display: block; }
+
+  /* Hide sales-block's internal subtab nav — the section-level pills
+     replace it. JS still programmatically clicks .sales-subtab buttons
+     to flip which internal .sales-panel is visible. */
+  .admin-shell .sales-block .sales-subtabs { display: none; }
+
+  /* Same for clients-block internal tier filter — section subtabs drive
+     the tier filter via JS dispatch. Keep the search input visible. */
+  .admin-shell .clients-block .clients-filters { display: none; }
+  /* Keep visible when on the 'Tous' subtab so the user can flip tier */
+  .admin-shell[data-active-section="clients"][data-active-subsection="tous"] .clients-block .clients-filters { display: flex; }
+
+  /* ============ SUB-TAB PILLS ============ */
+  .admin-subtabs {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    padding: 4px;
+    background: var(--admin-paper);
+    border: 1px solid var(--admin-border);
+    border-radius: 12px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .admin-subtabs[hidden] { display: none; }
+  .admin-subtab {
+    padding: 8px 16px;
+    min-height: 36px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: var(--admin-ink-soft);
+    font-size: 13px;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    font-family: var(--font-body);
+    white-space: nowrap;
+    transition: background .15s, color .15s;
+  }
+  .admin-subtab:hover { color: var(--admin-ink); }
+  .admin-subtab.is-active {
+    background: var(--admin-emerald);
+    color: var(--admin-cream);
+  }
+  .admin-subtab.is-disabled {
+    opacity: 0.4;
+    pointer-events: none;
   }
 
   /* Per-section action buttons in the section-current header — only the
@@ -5769,17 +5868,89 @@ const sizes = data.sizes;
   const userAvatarEl = document.getElementById('adminUserAvatar');
   const userNameEl = document.getElementById('adminUserName');
 
-  function currentSection(): string {
+  // Slice 3 — sub-tab configuration per section.
+  // `perm` is the worker permission required for the subtab content
+  // (null = always available; usually a placeholder block).
+  const SECTION_SUBTABS: Record<string, { id: string; label: string; perm?: string | null }[] | null> = {
+    accueil: null,
+    ventes: [
+      { id: 'en-ligne',         label: 'En ligne',         perm: 'orders' },
+      { id: 'boutique',         label: 'Boutique',         perm: 'sales'  },
+      { id: 'tableau-de-bord',  label: 'Tableau de bord',  perm: 'sales'  },
+    ],
+    catalogue: null,
+    clients: [
+      { id: 'tous',      label: 'Tous',          perm: null },          // visible if customers OR tiers
+      { id: 'vip',       label: 'VIP',           perm: 'tiers' },
+      { id: 'reseller',  label: 'Reseller',      perm: 'tiers' },
+      { id: 'fidelite',  label: 'Fidélité',      perm: null },          // placeholder, always available
+      { id: 'demandes',  label: 'Demandes VIP',  perm: 'perfume-requests' },
+    ],
+    contenu: [
+      { id: 'blog', label: 'Blog', perm: 'articles' },
+      { id: 'avis', label: 'Avis', perm: 'reviews' },
+    ],
+    equipe: [
+      { id: 'admins',   label: 'Administrateurs',  perm: 'all' },
+      { id: 'employes', label: 'Employés boutique', perm: 'sales' },
+      { id: 'logs',     label: 'Journal d\'audit',  perm: 'all' },
+    ],
+  };
+
+  function parseHash(): { section: string; subId: string | null } {
     const h = (window.location.hash || '').replace('#', '').trim();
-    return VALID_SECTIONS.includes(h) ? h : 'accueil';
+    const [section, subId] = h.split('/');
+    return {
+      section: VALID_SECTIONS.includes(section) ? section : 'accueil',
+      subId: subId || null,
+    };
+  }
+  function currentSection(): string { return parseHash().section; }
+
+  function isSubtabAvailable(section: string, subId: string): boolean {
+    // Static placeholders are always available regardless of perms.
+    if (section === 'clients' && subId === 'fidelite') return true;
+    // For 'clients > tous' we need EITHER customers OR tiers blocks visible.
+    if (section === 'clients' && subId === 'tous') {
+      const customersOk = !document.querySelector<HTMLElement>('.customers-block')?.hasAttribute('hidden');
+      const clientsOk = !document.querySelector<HTMLElement>('.clients-block')?.hasAttribute('hidden');
+      return customersOk || clientsOk;
+    }
+    // Équipe admins/logs share the admins-block (no data-subsection on the
+    // block itself — the inner divs carry it). Check the block visibility.
+    if (section === 'equipe' && (subId === 'admins' || subId === 'logs')) {
+      const adminsBlock = document.querySelector<HTMLElement>('.admins-block');
+      return !!(adminsBlock && !adminsBlock.hasAttribute('hidden'));
+    }
+    // Default: any block matching this (section, subsection) that the
+    // perm filter hasn't hidden.
+    const blocks = document.querySelectorAll<HTMLElement>(
+      `.admin-block[data-section~="${section}"][data-subsection~="${subId}"]`
+    );
+    for (const b of blocks) if (!b.hasAttribute('hidden')) return true;
+    return false;
+  }
+
+  function defaultSubtabFor(section: string): string | null {
+    const tabs = SECTION_SUBTABS[section];
+    if (!tabs) return null;
+    for (const t of tabs) {
+      if (isSubtabAvailable(section, t.id)) return t.id;
+    }
+    return tabs[0].id; // fallback so the pill renders even if all disabled
   }
 
   function hasVisibleBlock(section: string): boolean {
     if (section === 'accueil') return true;
-    const blocks = document.querySelectorAll<HTMLElement>(`.admin-block[data-section="${section}"]`);
-    for (const b of blocks) {
-      if (!b.hasAttribute('hidden')) return true;
+    // Section is visible if ANY of its subtabs is available.
+    const tabs = SECTION_SUBTABS[section];
+    if (!tabs) {
+      // Single-panel section (e.g. catalogue) — check any block in section.
+      const blocks = document.querySelectorAll<HTMLElement>(`.admin-block[data-section~="${section}"]`);
+      for (const b of blocks) if (!b.hasAttribute('hidden')) return true;
+      return false;
     }
+    for (const t of tabs) if (isSubtabAvailable(section, t.id)) return true;
     return false;
   }
 
@@ -5797,7 +5968,7 @@ const sizes = data.sizes;
     });
   }
 
-  function setActiveSection(section: string, options: { fromHashEvent?: boolean } = {}) {
+  function setActiveSection(section: string, opts: { fromHashEvent?: boolean; subId?: string | null } = {}) {
     if (!VALID_SECTIONS.includes(section)) section = 'accueil';
     // If user clicked a disabled section, fall back to accueil silently.
     const navItem = document.querySelector<HTMLElement>(`[data-nav-section="${section}"]`);
@@ -5815,19 +5986,32 @@ const sizes = data.sizes;
     // countLine is products-specific
     if (countLineEl) countLineEl.hidden = (section !== 'catalogue');
 
-    // Sync URL hash without firing another hashchange
-    if (!options.fromHashEvent) {
-      const target = '#' + section;
-      if (window.location.hash !== target) {
-        history.replaceState(null, '', target);
-      }
-    }
-
     // Mark all nav items
     document.querySelectorAll<HTMLElement>('[data-nav]').forEach((el) => {
       if (el.getAttribute('data-nav') === section) el.classList.add('is-active');
       else el.classList.remove('is-active');
     });
+
+    // Sub-tabs: render pills, pick a default, and apply.
+    renderSubtabs(section);
+    const tabs = SECTION_SUBTABS[section];
+    if (tabs) {
+      let target = opts.subId && tabs.some((t) => t.id === opts.subId) ? opts.subId : defaultSubtabFor(section);
+      // Skip disabled targets when possible
+      if (target && !isSubtabAvailable(section, target)) target = defaultSubtabFor(section);
+      setActiveSubsection(section, target, { fromHashEvent: opts.fromHashEvent, suppressHash: true });
+    } else {
+      shellEl?.removeAttribute('data-active-subsection');
+    }
+
+    // Sync URL hash without firing another hashchange
+    if (!opts.fromHashEvent) {
+      const sub = shellEl?.getAttribute('data-active-subsection') || '';
+      const target = '#' + section + (sub && SECTION_SUBTABS[section] ? '/' + sub : '');
+      if (window.location.hash !== target) {
+        history.replaceState(null, '', target);
+      }
+    }
 
     // Empty-state if the section has zero visible blocks
     if (sectionEmptyEl) {
@@ -5835,8 +6019,71 @@ const sizes = data.sizes;
       (sectionEmptyEl as HTMLElement).hidden = !empty;
     }
 
-    // Scroll back to top on section change
     window.scrollTo({ top: 0, behavior: 'auto' });
+  }
+
+  const subtabsEl = document.getElementById('sectionSubtabs');
+
+  function renderSubtabs(section: string) {
+    if (!subtabsEl) return;
+    const tabs = SECTION_SUBTABS[section];
+    if (!tabs) {
+      (subtabsEl as HTMLElement).hidden = true;
+      subtabsEl.innerHTML = '';
+      return;
+    }
+    (subtabsEl as HTMLElement).hidden = false;
+    subtabsEl.innerHTML = tabs.map((t) => {
+      const avail = isSubtabAvailable(section, t.id);
+      return `<button type="button" class="admin-subtab${avail ? '' : ' is-disabled'}" data-subtab="${t.id}" role="tab"${avail ? '' : ' aria-disabled="true"'}>${t.label}</button>`;
+    }).join('');
+  }
+
+  function setActiveSubsection(section: string, subId: string | null, opts: { fromHashEvent?: boolean; suppressHash?: boolean } = {}) {
+    if (!subId) {
+      shellEl?.removeAttribute('data-active-subsection');
+      return;
+    }
+    shellEl?.setAttribute('data-active-subsection', subId);
+
+    // Active pill state
+    subtabsEl?.querySelectorAll<HTMLElement>('.admin-subtab').forEach((b) => {
+      b.classList.toggle('is-active', b.dataset.subtab === subId);
+    });
+
+    // ===== Special wiring: sync internal block state with the section subtab =====
+
+    // Ventes: sales-block has internal subtabs (.sales-subtab[data-subtab=...]).
+    // 'boutique' → click 'tickets' panel; 'tableau-de-bord' → click 'dashboard'.
+    if (section === 'ventes' && (subId === 'boutique' || subId === 'tableau-de-bord')) {
+      const target = subId === 'boutique' ? 'tickets' : 'dashboard';
+      const btn = document.querySelector<HTMLButtonElement>(`.sales-subtab[data-subtab="${target}"]`);
+      // Only click if not already active to avoid unnecessary loads.
+      if (btn && !btn.classList.contains('is-active')) btn.click();
+    }
+
+    // Équipe: 'employes' → click sales-block 'employees' panel.
+    if (section === 'equipe' && subId === 'employes') {
+      const btn = document.querySelector<HTMLButtonElement>('.sales-subtab[data-subtab="employees"]');
+      if (btn && !btn.classList.contains('is-active')) btn.click();
+    }
+
+    // Clients: 'tous' / 'vip' / 'reseller' → flip the clients-block tier filter.
+    if (section === 'clients' && (subId === 'tous' || subId === 'vip' || subId === 'reseller')) {
+      const tierMap: Record<string, string> = { tous: '', vip: 'vip', reseller: 'reseller' };
+      const tierAttr = tierMap[subId];
+      const pill = document.querySelector<HTMLButtonElement>(`#clientsFilters .filter-pill[data-tier="${tierAttr}"]`);
+      if (pill && !pill.classList.contains('active')) pill.click();
+    }
+
+    // URL hash sync — only when called directly (not from setActiveSection chain
+    // or a hashchange event, which handle their own hash writes).
+    if (!opts.fromHashEvent && !opts.suppressHash) {
+      const target = '#' + section + '/' + subId;
+      if (window.location.hash !== target) {
+        history.replaceState(null, '', target);
+      }
+    }
   }
 
   // Event delegation: any [data-nav] anchor/button switches the section.
@@ -5861,8 +6108,20 @@ const sizes = data.sizes;
     }
   });
 
-  // Hash change (back/forward buttons)
-  window.addEventListener('hashchange', () => setActiveSection(currentSection(), { fromHashEvent: true }));
+  // Sub-tab pill clicks
+  subtabsEl?.addEventListener('click', (e) => {
+    const t = (e.target as HTMLElement).closest<HTMLButtonElement>('.admin-subtab');
+    if (!t || t.classList.contains('is-disabled')) return;
+    const subId = t.dataset.subtab;
+    const section = shellEl?.getAttribute('data-active-section') || 'accueil';
+    if (subId) setActiveSubsection(section, subId);
+  });
+
+  // Hash change (back/forward buttons) — re-parse section/subsection.
+  window.addEventListener('hashchange', () => {
+    const { section, subId } = parseHash();
+    setActiveSection(section, { fromHashEvent: true, subId });
+  });
 
   // ============ Drawer ============
   function openDrawer() {
@@ -6478,7 +6737,8 @@ const sizes = data.sizes;
   // runs the moment adminMain loses .hidden). We observe class change.
   function bootShell() {
     refreshNavAvailability();
-    setActiveSection(currentSection());
+    const { section, subId } = parseHash();
+    setActiveSection(section, { subId });
     fillUserBadge();
   }
   if (adminMain && !adminMain.classList.contains('hidden')) {
