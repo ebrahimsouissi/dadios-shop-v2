@@ -129,6 +129,9 @@ const { title, current } = Astro.props;
       padding: 48px 24px;
       background: var(--ad-cream);
     }
+    /* Author class would otherwise override user-agent [hidden] { display:none }
+       — make the gates honour the attribute. */
+    .ad-gate[hidden] { display: none !important; }
     .ad-gate-card {
       max-width: 440px;
       width: 100%;

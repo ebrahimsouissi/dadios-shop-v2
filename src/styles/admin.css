@@ -284,6 +284,12 @@ body.admin-body.no-scroll { overflow: hidden; }
    customers, clients, perfreq, reviews, admins, sales,
    plus all related modals.
    ===================================================== */
+  /* Legacy utility class — the migrated controllers rely on
+     element.classList.add('hidden') to close modals + show/hide
+     status messages. admin.css is scoped to /admin/* only (loaded
+     via AdminLayout), so this won't affect public pages. */
+  .hidden { display: none !important; }
+
   /* ====== ADMIN ====== */
   .admin {
     max-width: 1280px;
