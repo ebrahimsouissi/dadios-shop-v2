@@ -1,13 +1,16 @@
 /**
  * Single source of truth for the Worker base URL.
  *
- * The site is hosted on Cloudflare Pages, but all /api/* endpoints live on a
- * separate Worker. From the Pages origin, relative /api/ calls hit Pages
- * (which has no functions for those paths) and return 405. Cross-origin to
- * the Worker is allowed via the Worker's `Access-Control-Allow-Origin: *`.
+ * Default is the empty string — i.e. all client calls go to relative
+ * `/api/*` and are intercepted by the Pages Function proxy at
+ * `functions/api/[[path]].js`, which forwards them to the Worker
+ * same-origin. This avoids the CORS preflight that hits intermittent
+ * issues on Pages preview URLs (every preview gets a fresh hash hostname).
  *
- * Override at build time with PUBLIC_API_BASE (Vite/Astro public env var) if
- * the Worker URL ever moves.
+ * Build-time SSR code (e.g. journal pages' getStaticPaths) can't use the
+ * proxy and keeps its own absolute URL inline. Override at build time
+ * with PUBLIC_API_BASE (Vite/Astro public env var) if you ever need to
+ * point client calls at a different Worker.
  */
 const ENV_BASE =
   (typeof import.meta !== 'undefined' &&
@@ -15,8 +18,7 @@ const ENV_BASE =
     import.meta.env.PUBLIC_API_BASE) ||
   '';
 
-export const API_BASE =
-  ENV_BASE || 'https://cold-cloud-895a.dadios-fragrances.workers.dev';
+export const API_BASE = ENV_BASE;  // '' = same-origin → Pages Function proxy
 
 export function apiUrl(path) {
   return `${API_BASE}${path.startsWith('/') ? path : '/' + path}`;
