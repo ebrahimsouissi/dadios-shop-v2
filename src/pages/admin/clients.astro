@@ -1,0 +1,736 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+---
+<AdminLayout title="Clients" current="clients">
+  <header class="admin-section-head">
+    <div>
+      <div class="admin-eyebrow">Clientèle</div>
+      <h1>Clients</h1>
+      <p class="help">Comptes, tiers VIP/Reseller, demandes conciergerie.</p>
+    </div>
+  </header>
+
+  <div class="customers-block" data-requires-permission="customers">
+    <div class="customers-head">
+      <div class="eyebrow">Gestion des comptes clients</div>
+      <h2>Recherche &amp; mot de passe</h2>
+      <p class="customers-help">
+        Cherchez un client par numéro de téléphone. Vous pouvez réinitialiser
+        son mot de passe — le client recevra le nouveau par WhatsApp.
+      </p>
+    </div>
+
+    <form id="customerSearchForm" class="customer-search">
+      <input
+        type="tel"
+        id="customerSearchPhone"
+        placeholder="Téléphone (ex. +216 56 731 891)"
+        autocomplete="off"
+        inputmode="tel"
+      />
+      <button type="submit" class="btn btn-primary btn-sm">Rechercher</button>
+    </form>
+
+    <div id="customerResult" class="customer-result hidden">
+      <div class="customer-row">
+        <div>
+          <div class="eyebrow">Nom</div>
+          <div class="customer-val" id="custName"></div>
+        </div>
+        <div>
+          <div class="eyebrow">Téléphone</div>
+          <div class="customer-val" id="custPhone"></div>
+        </div>
+        <div>
+          <div class="eyebrow">Adresse</div>
+          <div class="customer-val" id="custAddress"></div>
+        </div>
+        <div>
+
+  <div class="clients-block" data-requires-permission="tiers">
+    <div class="clients-head">
+      <div>
+        <div class="eyebrow">Clientèle</div>
+        <h2>Gestion des clients</h2>
+        <p class="clients-help">
+          Filtrer par tier, rechercher, accorder ou révoquer VIP / Reseller.
+        </p>
+      </div>
+    </div>
+
+    <div class="clients-filters" id="clientsFilters" role="tablist">
+      <button type="button" class="filter-pill active" data-tier="" role="tab">Tous <span class="count">0</span></button>
+      <button type="button" class="filter-pill" data-tier="regular" role="tab">Réguliers <span class="count">0</span></button>
+      <button type="button" class="filter-pill" data-tier="vip" role="tab">VIP <span class="count">0</span></button>
+      <button type="button" class="filter-pill" data-tier="reseller" role="tab">Resellers <span class="count">0</span></button>
+    </div>
+
+    <input type="search" id="clientsSearch" class="clients-search" placeholder="Rechercher par téléphone ou nom" autocomplete="off" />
+
+    <div class="clients-tablewrap">
+      <table class="admin-table clients-admin-table">
+        <thead>
+          <tr>
+            <th>Téléphone</th>
+            <th>Nom</th>
+            <th>Tier</th>
+            <th>Fidélité</th>
+            <th>Inscription</th>
+
+  <div class="perfreq-block" data-requires-permission="perfume-requests">
+    <div class="perfreq-head">
+      <div>
+        <div class="eyebrow">Concierge</div>
+        <h2>Demandes de parfums</h2>
+        <p class="perfreq-help">
+          Suivi des demandes envoyées par les membres VIP.
+        </p>
+      </div>
+    </div>
+
+    <div class="perfreq-filters" id="perfreqFilters" role="tablist">
+      <button type="button" class="filter-pill active" data-status="" role="tab">Toutes <span class="count">0</span></button>
+      <button type="button" class="filter-pill" data-status="pending" role="tab">En attente <span class="count">0</span></button>
+      <button type="button" class="filter-pill" data-status="in_progress" role="tab">Recherche <span class="count">0</span></button>
+      <button type="button" class="filter-pill" data-status="fulfilled" role="tab">Trouvées <span class="count">0</span></button>
+      <button type="button" class="filter-pill" data-status="declined" role="tab">Refusées <span class="count">0</span></button>
+    </div>
+
+    <div class="perfreq-tablewrap">
+      <table class="admin-table perfreq-admin-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Client</th>
+            <th>Parfum demandé</th>
+            <th>Marque</th>
+            <th>Statut</th>
+
+  <!-- ===== Modals ===== -->
+<div class="modal hidden" id="tierModal">
+  <div class="modal-overlay" id="tierOverlay"></div>
+  <div class="modal-box small">
+    <button type="button" class="modal-close" id="tierClose" aria-label="Fermer">×</button>
+    <div class="eyebrow">Statut client</div>
+    <h2 id="tierTitle">Changer le statut</h2>
+    <p style="color:var(--ink-soft);margin-bottom:16px" id="tierSubtitle"></p>
+    <form id="tierForm">
+      <label>
+        <span>Tier *</span>
+        <select id="tierSelect">
+          <option value="regular">Régulier</option>
+          <option value="vip">VIP</option>
+          <option value="reseller">Reseller</option>
+        </select>
+      </label>
+      <div id="tierResellerFields" hidden>
+        <label>
+          <span>Nom de la société</span>
+          <input type="text" id="tierCompany" />
+        </label>
+        <label>
+          <span>Matricule Fiscale</span>
+          <input type="text" id="tierMatricule" />
+        </label>
+        <label>
+          <span>Adresse de livraison</span>
+          <textarea id="tierDelivery" rows="2"></textarea>
+        </label>
+      </div>
+      <p id="tierErr" class="status-msg error hidden" style="margin-top:12px"></p>
+      <div class="form-actions">
+        <button type="button" class="btn btn-outline" id="tierCancel">Annuler</button>
+        <button type="submit" class="btn btn-primary" id="tierSave">Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal hidden" id="perfreqModal">
+  <div class="modal-overlay" id="perfreqOverlay"></div>
+  <div class="modal-box order-modal-box">
+    <button type="button" class="modal-close" id="perfreqClose" aria-label="Fermer">×</button>
+    <div class="eyebrow">Demande</div>
+    <h2 id="perfreqTitle">Détails</h2>
+    <p id="perfreqMeta" class="order-meta-line"></p>
+
+    <div class="order-modal-grid">
+      <div>
+        <div class="eyebrow" style="margin-bottom:10px">Parfum demandé</div>
+        <p style="font-family:var(--font-display);font-size:18px;color:var(--ink)" id="perfreqPerfume"></p>
+        <p style="color:var(--ink-mute);margin:4px 0 14px" id="perfreqBrand"></p>
+        <div class="eyebrow" style="margin-bottom:8px">Notes du client</div>
+        <p id="perfreqCustNotes" style="color:var(--ink-soft);white-space:pre-line">—</p>
+      </div>
+      <div>
+        <div class="eyebrow" style="margin-bottom:10px">Client</div>
+        <p class="order-customer-line" id="perfreqCustName"></p>
+        <p class="order-customer-line" id="perfreqCustPhone"></p>
+        <div class="order-customer-actions" id="perfreqCustActions"></div>
+
+        <div class="eyebrow" style="margin:18px 0 10px">Notes internes</div>
+        <textarea id="perfreqAdminNotes" rows="4" placeholder="Pistes, fournisseurs, prix…"></textarea>
+        <div class="order-notes-actions">
+          <button type="button" class="btn btn-primary btn-sm" id="perfreqSaveNotes">Enregistrer les notes</button>
+          <span id="perfreqNotesStatus" class="order-notes-status"></span>
+        </div>
+      </div>
+    </div>
+
+    <p class="order-modal-stamps" id="perfreqStamps"></p>
+  </div>
+</div>
+
+<div class="modal hidden" id="custPwModal">
+  <div class="modal-overlay" id="custPwOverlay"></div>
+  <div class="modal-box small">
+    <button type="button" class="modal-close" id="custPwClose" aria-label="Fermer">×</button>
+    <div class="eyebrow">Compte client</div>
+    <h2 id="custPwTitle">Nouveau mot de passe</h2>
+    <p style="color:var(--ink-soft);margin-bottom:16px">
+      Le client utilisera ce mot de passe lors de sa prochaine connexion.
+      Communiquez-le par WhatsApp.
+    </p>
+    <form id="custPwForm">
+      <label>
+        <span>Nouveau mot de passe *</span>
+        <input type="text" id="custPwInput" required minlength="6" placeholder="6 caractères minimum" />
+        <small>Visible ici pour pouvoir le communiquer au client.</small>
+      </label>
+      <p id="custPwErr" class="status-msg error hidden" style="margin-top:12px"></p>
+      <div class="form-actions">
+        <button type="button" class="btn btn-outline" id="custPwCancel">Annuler</button>
+        <button type="submit" class="btn btn-primary" id="custPwSave">Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+  <script>
+    import { getPassword, adminGetCustomer, adminResetCustomerPassword, adminListCustomers, adminGrantTier, adminRevokeTier } from '../../scripts/adminApi.js';
+    import { adminListPerfumeRequests, adminUpdatePerfumeRequest, PERFUME_REQUEST_STATUS_LABELS, PERFUME_REQUEST_TRANSITIONS } from '../../scripts/perfumeRequestsApi.js';
+
+    const adminMain = document.getElementById('adminMain');
+
+  // ============ CUSTOMER MANAGEMENT ============
+  const customerSearchForm = document.getElementById('customerSearchForm') as HTMLFormElement;
+  const customerSearchPhone = document.getElementById('customerSearchPhone') as HTMLInputElement;
+  const customerResult = document.getElementById('customerResult') as HTMLElement;
+  const customerStatus = document.getElementById('customerStatus') as HTMLElement;
+  const custName = document.getElementById('custName') as HTMLElement;
+  const custPhone = document.getElementById('custPhone') as HTMLElement;
+  const custAddress = document.getElementById('custAddress') as HTMLElement;
+  const custLoyalty = document.getElementById('custLoyalty') as HTMLElement;
+  const custResetBtn = document.getElementById('custResetBtn') as HTMLButtonElement;
+  const custPwModal = document.getElementById('custPwModal') as HTMLElement;
+  const custPwOverlay = document.getElementById('custPwOverlay') as HTMLElement;
+  const custPwClose = document.getElementById('custPwClose') as HTMLButtonElement;
+  const custPwCancel = document.getElementById('custPwCancel') as HTMLButtonElement;
+  const custPwForm = document.getElementById('custPwForm') as HTMLFormElement;
+  const custPwInput = document.getElementById('custPwInput') as HTMLInputElement;
+  const custPwTitle = document.getElementById('custPwTitle') as HTMLElement;
+  const custPwErr = document.getElementById('custPwErr') as HTMLElement;
+  const custPwSave = document.getElementById('custPwSave') as HTMLButtonElement;
+
+  // Track which customer is currently loaded in the result panel; used by
+  // the reset modal so a stale search result can't accidentally target the
+  // wrong account.
+  let loadedCustomerPhone: string | null = null;
+
+  function showCustomerStatus(msg: string, kind: 'success' | 'error' | '' = '') {
+    customerStatus.textContent = msg;
+    customerStatus.className = 'status-msg ' + (kind || '');
+    customerStatus.classList.remove('hidden');
+  }
+  function hideCustomerStatus() {
+    customerStatus.classList.add('hidden');
+    customerStatus.textContent = '';
+  }
+
+  function renderCustomer(c: any) {
+    loadedCustomerPhone = c.phone;
+    custName.textContent = c.name || '\u2014';
+    custName.classList.toggle('muted', !c.name);
+    custPhone.textContent = c.phone || '\u2014';
+    custAddress.textContent = c.address || '\u2014';
+    custAddress.classList.toggle('muted', !c.address);
+    if (c.loyalty && c.loyalty.code) {
+      custLoyalty.textContent = `${c.loyalty.code} \u2014 ${c.loyalty.stamps}/8 tampons, ${c.loyalty.rewards} cadeau${c.loyalty.rewards > 1 ? 'x' : ''}`;
+      custLoyalty.classList.remove('muted');
+    } else {
+      custLoyalty.textContent = 'Pas de carte li\u00e9e';
+      custLoyalty.classList.add('muted');
+    }
+    customerResult.classList.remove('hidden');
+  }
+
+  customerSearchForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideCustomerStatus();
+    customerResult.classList.add('hidden');
+    loadedCustomerPhone = null;
+    const phone = customerSearchPhone.value.trim();
+    if (!phone) return;
+    const res = await adminGetCustomer(phone);
+    if (res.ok && res.customer) {
+      renderCustomer(res.customer);
+    } else {
+      showCustomerStatus(res.error || 'Compte introuvable.', 'error');
+    }
+  });
+
+  // ===== Reset password modal =====
+  function openCustPwModal() {
+    if (!loadedCustomerPhone) return;
+    custPwTitle.textContent = `Mot de passe pour ${loadedCustomerPhone}`;
+    custPwInput.value = '';
+    custPwErr.classList.add('hidden');
+    custPwModal.classList.remove('hidden');
+    setTimeout(() => custPwInput.focus(), 50);
+  }
+  function closeCustPwModal() {
+    custPwModal.classList.add('hidden');
+  }
+  custResetBtn.addEventListener('click', openCustPwModal);
+  custPwClose.addEventListener('click', closeCustPwModal);
+  custPwCancel.addEventListener('click', closeCustPwModal);
+  custPwOverlay.addEventListener('click', closeCustPwModal);
+
+  custPwForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!loadedCustomerPhone) return;
+    custPwErr.classList.add('hidden');
+    const newPassword = custPwInput.value;
+    if (!newPassword || newPassword.length < 6) {
+      custPwErr.textContent = 'Mot de passe : 6 caract\u00e8res minimum.';
+      custPwErr.classList.remove('hidden');
+      return;
+    }
+    custPwSave.disabled = true;
+    custPwSave.textContent = 'Enregistrement\u2026';
+    try {
+      const res = await adminResetCustomerPassword(loadedCustomerPhone, newPassword);
+      if (res.ok) {
+        closeCustPwModal();
+        showCustomerStatus(`\u2713 Mot de passe r\u00e9initialis\u00e9 pour ${loadedCustomerPhone}.`, 'success');
+        setTimeout(hideCustomerStatus, 4000);
+      } else {
+        custPwErr.textContent = res.error || 'R\u00e9initialisation impossible.';
+        custPwErr.classList.remove('hidden');
+      }
+    } finally {
+      custPwSave.disabled = false;
+      custPwSave.textContent = 'Enregistrer';
+    }
+  });
+
+  // ============ CLIENTS (tier management) ============
+  const clientsFiltersEl = document.getElementById('clientsFilters') as HTMLElement;
+  const clientsRowsEl = document.getElementById('clientsRows') as HTMLElement;
+  const clientsStatusEl = document.getElementById('clientsStatus') as HTMLElement;
+  const clientsSearchEl = document.getElementById('clientsSearch') as HTMLInputElement;
+
+  const tierModal = document.getElementById('tierModal') as HTMLElement;
+  const tierOverlay = document.getElementById('tierOverlay') as HTMLElement;
+  const tierClose = document.getElementById('tierClose') as HTMLButtonElement;
+  const tierCancel = document.getElementById('tierCancel') as HTMLButtonElement;
+  const tierForm = document.getElementById('tierForm') as HTMLFormElement;
+  const tierSelect = document.getElementById('tierSelect') as HTMLSelectElement;
+  const tierResellerFields = document.getElementById('tierResellerFields') as HTMLElement;
+  const tierCompany = document.getElementById('tierCompany') as HTMLInputElement;
+  const tierMatricule = document.getElementById('tierMatricule') as HTMLInputElement;
+  const tierDelivery = document.getElementById('tierDelivery') as HTMLTextAreaElement;
+  const tierErr = document.getElementById('tierErr') as HTMLElement;
+  const tierSave = document.getElementById('tierSave') as HTMLButtonElement;
+  const tierTitle = document.getElementById('tierTitle') as HTMLElement;
+  const tierSubtitle = document.getElementById('tierSubtitle') as HTMLElement;
+
+  const TIER_LABEL: Record<string, string> = {
+    regular: 'Régulier', vip: 'VIP', reseller: 'Reseller',
+  };
+
+  let allClients: any[] = [];
+  let currentClientFilter = '';
+  let editingClientPhone = '';
+
+  function escC(s: any) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    })[c]!);
+  }
+
+  function clientFilteredView() {
+    const tier = currentClientFilter;
+    const q = (clientsSearchEl.value || '').trim().toLowerCase();
+    return allClients.filter((c) => {
+      if (tier && (c.tier || 'regular') !== tier) return false;
+      if (q) {
+        const hay = `${c.phone || ''} ${c.name || ''}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }
+
+  function renderClientsTable() {
+    const filtered = clientFilteredView();
+    if (!filtered.length) {
+      clientsRowsEl.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--ink-mute);font-style:italic">Aucun client.</td></tr>`;
+      return;
+    }
+    clientsRowsEl.innerHTML = filtered.map((c) => {
+      const tier = c.tier || 'regular';
+      return `<tr data-phone="${escC(c.phone)}">
+        <td>${escC(c.phone || '')}</td>
+        <td>${escC(c.name || '—')}</td>
+        <td><span class="tier-cell ${escC(tier)}">${escC(TIER_LABEL[tier] || tier)}</span></td>
+        <td>${c.loyaltyCode ? escC(c.loyaltyCode) : '<span class="muted">—</span>'}</td>
+        <td class="art-date-cell">${escC(frenchRelativeDate(c.createdAt))}</td>
+        <td>
+          <button type="button" class="link-btn" data-action="change-tier" data-phone="${escC(c.phone)}">Changer le statut</button>
+          ${tier !== 'regular' ? `<button type="button" class="link-btn danger" data-action="revoke" data-phone="${escC(c.phone)}">Révoquer</button>` : ''}
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  function updateClientFilterCounts() {
+    const counts: Record<string, number> = { '': allClients.length, regular: 0, vip: 0, reseller: 0 };
+    allClients.forEach((c) => {
+      const t = c.tier || 'regular';
+      counts[t] = (counts[t] || 0) + 1;
+    });
+    clientsFiltersEl.querySelectorAll('.filter-pill').forEach((p) => {
+      const tier = (p as HTMLElement).dataset.tier || '';
+      const c = p.querySelector('.count');
+      if (c) c.textContent = String(counts[tier] ?? 0);
+    });
+  }
+
+  async function loadClients() {
+    clientsRowsEl.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px">Chargement…</td></tr>`;
+    const res = await adminListCustomers();
+    if (!res.ok) {
+      clientsRowsEl.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:#B23A1F">Erreur : ${escC(res.error || 'chargement impossible')}</td></tr>`;
+      return;
+    }
+    allClients = res.customers || [];
+    updateClientFilterCounts();
+    renderClientsTable();
+  }
+
+  clientsFiltersEl.addEventListener('click', (e) => {
+    const pill = (e.target as HTMLElement).closest('.filter-pill') as HTMLElement | null;
+    if (!pill) return;
+    clientsFiltersEl.querySelectorAll('.filter-pill').forEach((p) => p.classList.remove('active'));
+    pill.classList.add('active');
+    currentClientFilter = pill.dataset.tier || '';
+    renderClientsTable();
+  });
+
+  clientsSearchEl?.addEventListener('input', () => renderClientsTable());
+
+  function showClientStatus(msg: string, kind: 'success' | 'error' | '' = '') {
+    clientsStatusEl.textContent = msg;
+    clientsStatusEl.className = 'status-msg ' + (kind || '');
+    clientsStatusEl.classList.remove('hidden');
+    setTimeout(() => clientsStatusEl.classList.add('hidden'), 4000);
+  }
+
+  clientsRowsEl.addEventListener('click', async (e) => {
+    const btn = (e.target as HTMLElement).closest('button[data-action]') as HTMLElement | null;
+    if (!btn) return;
+    const phone = btn.dataset.phone || '';
+    const action = btn.dataset.action;
+    if (action === 'change-tier') {
+      const c = allClients.find((x) => x.phone === phone);
+      openTierModal(c);
+    } else if (action === 'revoke') {
+      if (!confirm(`Révoquer le statut de ${phone} (retour à Régulier) ?`)) return;
+      const res = await adminRevokeTier(phone);
+      if (res.ok) {
+        const idx = allClients.findIndex((x) => x.phone === phone);
+        if (idx >= 0) allClients[idx].tier = 'regular';
+        updateClientFilterCounts();
+        renderClientsTable();
+        showClientStatus('✓ Statut révoqué.', 'success');
+      } else {
+        showClientStatus(res.error || 'Échec.', 'error');
+      }
+    }
+  });
+
+  function openTierModal(c: any) {
+    if (!c) return;
+    editingClientPhone = c.phone;
+    tierTitle.textContent = `Statut de ${c.name || c.phone}`;
+    tierSubtitle.textContent = `Téléphone : ${c.phone}`;
+    tierSelect.value = c.tier || 'regular';
+    tierCompany.value = c.companyName || '';
+    tierMatricule.value = c.matriculeFiscale || '';
+    tierDelivery.value = c.deliveryAddress || '';
+    tierResellerFields.hidden = tierSelect.value !== 'reseller';
+    tierErr.classList.add('hidden');
+    tierModal.classList.remove('hidden');
+  }
+  function closeTierModal() {
+    tierModal.classList.add('hidden');
+    editingClientPhone = '';
+  }
+  tierSelect.addEventListener('change', () => {
+    tierResellerFields.hidden = tierSelect.value !== 'reseller';
+  });
+  tierClose.addEventListener('click', closeTierModal);
+  tierCancel.addEventListener('click', closeTierModal);
+  tierOverlay.addEventListener('click', closeTierModal);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !tierModal.classList.contains('hidden')) closeTierModal();
+  });
+
+  tierForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!editingClientPhone) return;
+    tierErr.classList.add('hidden');
+    tierSave.disabled = true;
+    tierSave.textContent = 'Enregistrement…';
+    const tier = tierSelect.value;
+    const extras: any = {};
+    if (tier === 'reseller') {
+      extras.companyName = tierCompany.value.trim();
+      extras.matriculeFiscale = tierMatricule.value.trim();
+      extras.deliveryAddress = tierDelivery.value.trim();
+    }
+    const res = await adminGrantTier(editingClientPhone, tier, extras);
+    tierSave.disabled = false;
+    tierSave.textContent = 'Enregistrer';
+    if (!res.ok || !res.customer) {
+      tierErr.textContent = res.error || 'Échec.';
+      tierErr.classList.remove('hidden');
+      return;
+    }
+    const idx = allClients.findIndex((x) => x.phone === editingClientPhone);
+    if (idx >= 0) {
+      allClients[idx] = { ...allClients[idx], ...res.customer };
+    }
+    closeTierModal();
+    updateClientFilterCounts();
+    renderClientsTable();
+    showClientStatus('✓ Statut mis à jour.', 'success');
+  });
+
+  const clientsObserver = new MutationObserver(() => {
+    if (!adminMain?.classList.contains('hidden')) {
+      clientsObserver.disconnect();
+      loadClients();
+    }
+  });
+  if (adminMain) clientsObserver.observe(adminMain, { attributes: true, attributeFilter: ['class'] });
+  if (adminMain && !adminMain.classList.contains('hidden')) loadClients();
+
+  // ============ PERFUME REQUESTS (concierge) ============
+  const perfreqFiltersEl = document.getElementById('perfreqFilters') as HTMLElement;
+  const perfreqRowsEl = document.getElementById('perfreqRows') as HTMLElement;
+  const perfreqStatusEl = document.getElementById('perfreqStatus') as HTMLElement;
+
+  const perfreqModal = document.getElementById('perfreqModal') as HTMLElement;
+  const perfreqOverlay = document.getElementById('perfreqOverlay') as HTMLElement;
+  const perfreqClose = document.getElementById('perfreqClose') as HTMLButtonElement;
+  const perfreqTitle = document.getElementById('perfreqTitle') as HTMLElement;
+  const perfreqMeta = document.getElementById('perfreqMeta') as HTMLElement;
+  const perfreqPerfume = document.getElementById('perfreqPerfume') as HTMLElement;
+  const perfreqBrand = document.getElementById('perfreqBrand') as HTMLElement;
+  const perfreqCustNotes = document.getElementById('perfreqCustNotes') as HTMLElement;
+  const perfreqCustName = document.getElementById('perfreqCustName') as HTMLElement;
+  const perfreqCustPhone = document.getElementById('perfreqCustPhone') as HTMLElement;
+  const perfreqCustActions = document.getElementById('perfreqCustActions') as HTMLElement;
+  const perfreqAdminNotes = document.getElementById('perfreqAdminNotes') as HTMLTextAreaElement;
+  const perfreqSaveNotes = document.getElementById('perfreqSaveNotes') as HTMLButtonElement;
+  const perfreqNotesStatus = document.getElementById('perfreqNotesStatus') as HTMLElement;
+  const perfreqStamps = document.getElementById('perfreqStamps') as HTMLElement;
+
+  let allPerfReqs: any[] = [];
+  let currentPerfReqFilter = '';
+  let modalPerfReqId = '';
+
+  function pfStatusSelect(reqId: string, status: string) {
+    const allowed = PERFUME_REQUEST_TRANSITIONS[status] || [];
+    const terminal = allowed.length === 0;
+    const visible = [status, ...allowed];
+    const opts = visible.map((s) =>
+      `<option value="${escC(s)}" ${s === status ? 'selected' : ''}>${escC(PERFUME_REQUEST_STATUS_LABELS[s] || s)}</option>`
+    ).join('');
+    return `<select data-request-id="${escC(reqId)}" data-current="${escC(status)}" ${terminal ? 'disabled' : ''}>${opts}</select>`;
+  }
+
+  function renderPerfReqRow(r: any) {
+    return `<tr data-request-id="${escC(r.id)}">
+      <td>${escC(frenchRelativeDate(r.createdAt))}</td>
+      <td>
+        <strong>${escC(r.customerName || '—')}</strong>
+        <div class="cust-phone">${escC(r.phone || '')}</div>
+      </td>
+      <td>${escC(r.perfumeName || '')}</td>
+      <td>${escC(r.brand || '—')}</td>
+      <td class="status-cell">${pfStatusSelect(r.id, r.status || 'pending')}</td>
+      <td><button type="button" class="link-btn pf-details-btn" data-request-id="${escC(r.id)}">Détails</button></td>
+    </tr>`;
+  }
+
+  function updatePerfReqCounts() {
+    const counts: Record<string, number> = {
+      '': allPerfReqs.length,
+      pending: 0, in_progress: 0, fulfilled: 0, declined: 0,
+    };
+    allPerfReqs.forEach((r) => {
+      const s = String(r.status || 'pending');
+      counts[s] = (counts[s] || 0) + 1;
+    });
+    perfreqFiltersEl.querySelectorAll('.filter-pill').forEach((p) => {
+      const status = (p as HTMLElement).dataset.status || '';
+      const c = p.querySelector('.count');
+      if (c) c.textContent = String(counts[status] ?? 0);
+    });
+  }
+
+  function renderPerfReqTable() {
+    const filtered = currentPerfReqFilter
+      ? allPerfReqs.filter((r) => r.status === currentPerfReqFilter)
+      : allPerfReqs;
+    if (!filtered.length) {
+      perfreqRowsEl.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--ink-mute);font-style:italic">Aucune demande${currentPerfReqFilter ? ' dans cette catégorie' : ''}.</td></tr>`;
+      return;
+    }
+    perfreqRowsEl.innerHTML = filtered.map(renderPerfReqRow).join('');
+  }
+
+  function showPerfReqStatus(msg: string, kind: 'success' | 'error' | '' = '') {
+    perfreqStatusEl.textContent = msg;
+    perfreqStatusEl.className = 'status-msg ' + (kind || '');
+    perfreqStatusEl.classList.remove('hidden');
+    setTimeout(() => perfreqStatusEl.classList.add('hidden'), 4000);
+  }
+
+  async function loadPerfReqs() {
+    perfreqRowsEl.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px">Chargement…</td></tr>`;
+    const res = await adminListPerfumeRequests();
+    if (!res.ok) {
+      perfreqRowsEl.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:#B23A1F">Erreur : ${escC(res.error || 'chargement impossible')}</td></tr>`;
+      return;
+    }
+    allPerfReqs = res.requests || [];
+    updatePerfReqCounts();
+    renderPerfReqTable();
+  }
+
+  perfreqFiltersEl.addEventListener('click', (e) => {
+    const pill = (e.target as HTMLElement).closest('.filter-pill') as HTMLElement | null;
+    if (!pill) return;
+    perfreqFiltersEl.querySelectorAll('.filter-pill').forEach((p) => p.classList.remove('active'));
+    pill.classList.add('active');
+    currentPerfReqFilter = pill.dataset.status || '';
+    renderPerfReqTable();
+  });
+
+  perfreqRowsEl.addEventListener('change', async (e) => {
+    const sel = (e.target as HTMLElement).closest('select[data-request-id]') as HTMLSelectElement | null;
+    if (!sel) return;
+    const requestId = sel.dataset.requestId!;
+    const current = sel.dataset.current || '';
+    const newStatus = sel.value;
+    if (newStatus === current) return;
+    sel.disabled = true;
+    const res = await adminUpdatePerfumeRequest(requestId, { status: newStatus });
+    sel.disabled = false;
+    if (!res.ok || !res.request) {
+      sel.value = current;
+      showPerfReqStatus(res.error || 'Mise à jour impossible.', 'error');
+      return;
+    }
+    const idx = allPerfReqs.findIndex((r) => r.id === requestId);
+    if (idx >= 0) allPerfReqs[idx] = res.request;
+    updatePerfReqCounts();
+    renderPerfReqTable();
+    showPerfReqStatus(`Statut → ${PERFUME_REQUEST_STATUS_LABELS[newStatus] || newStatus}`, 'success');
+  });
+
+  perfreqRowsEl.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest('.pf-details-btn') as HTMLElement | null;
+    if (!btn) return;
+    const id = btn.dataset.requestId!;
+    const r = allPerfReqs.find((x) => x.id === id);
+    if (r) openPerfReqModal(r);
+  });
+
+  function openPerfReqModal(r: any) {
+    modalPerfReqId = r.id;
+    perfreqTitle.textContent = `Demande — ${r.perfumeName}`;
+    perfreqMeta.textContent = `Statut : ${PERFUME_REQUEST_STATUS_LABELS[r.status] || r.status} · ${frenchRelativeDate(r.createdAt)}`;
+    perfreqPerfume.textContent = r.perfumeName || '—';
+    perfreqBrand.textContent = r.brand ? `Marque : ${r.brand}` : 'Marque : —';
+    perfreqCustNotes.textContent = r.notes || '—';
+    perfreqCustName.textContent = r.customerName || 'Client VIP';
+    perfreqCustName.classList.toggle('muted', !r.customerName);
+    if (r.phone) {
+      perfreqCustPhone.innerHTML = `<a href="tel:${escC(r.phone)}">${escC(r.phone)}</a>`;
+      perfreqCustActions.innerHTML = `
+        <a class="btn btn-gold btn-sm" href="https://wa.me/${encodeURIComponent(r.phone.replace(/[^\d+]/g,''))}" target="_blank" rel="noopener">WhatsApp</a>
+        <a class="btn btn-outline btn-sm" href="tel:${escC(r.phone)}">Appeler</a>
+      `;
+    } else {
+      perfreqCustPhone.textContent = '—';
+      perfreqCustActions.innerHTML = '';
+    }
+    perfreqAdminNotes.value = r.adminNotes || '';
+    perfreqNotesStatus.textContent = '';
+    perfreqNotesStatus.classList.remove('visible');
+    perfreqStamps.textContent = `Créée le ${frenchRelativeDate(r.createdAt)} · Dernière mise à jour ${frenchRelativeDate(r.updatedAt)}`;
+    perfreqModal.classList.remove('hidden');
+  }
+  function closePerfReqModal() {
+    perfreqModal.classList.add('hidden');
+    modalPerfReqId = '';
+  }
+  perfreqClose.addEventListener('click', closePerfReqModal);
+  perfreqOverlay.addEventListener('click', closePerfReqModal);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !perfreqModal.classList.contains('hidden')) closePerfReqModal();
+  });
+
+  perfreqSaveNotes.addEventListener('click', async () => {
+    if (!modalPerfReqId) return;
+    perfreqSaveNotes.disabled = true;
+    perfreqSaveNotes.textContent = 'Enregistrement…';
+    const res = await adminUpdatePerfumeRequest(modalPerfReqId, { adminNotes: perfreqAdminNotes.value });
+    perfreqSaveNotes.disabled = false;
+    perfreqSaveNotes.textContent = 'Enregistrer les notes';
+    if (!res.ok || !res.request) {
+      perfreqNotesStatus.textContent = res.error || 'Échec';
+      perfreqNotesStatus.style.color = '#B23A1F';
+      perfreqNotesStatus.classList.add('visible');
+      return;
+    }
+    const idx = allPerfReqs.findIndex((r) => r.id === modalPerfReqId);
+    if (idx >= 0) allPerfReqs[idx] = res.request;
+    perfreqNotesStatus.textContent = '✓ Notes enregistrées';
+    perfreqNotesStatus.style.color = '';
+    perfreqNotesStatus.classList.add('visible');
+    setTimeout(() => perfreqNotesStatus.classList.remove('visible'), 2400);
+  });
+
+  const perfreqObserver = new MutationObserver(() => {
+    if (!adminMain?.classList.contains('hidden')) {
+      perfreqObserver.disconnect();
+      loadPerfReqs();
+    }
+  });
+  if (adminMain) perfreqObserver.observe(adminMain, { attributes: true, attributeFilter: ['class'] });
+  if (adminMain && !adminMain.classList.contains('hidden')) loadPerfReqs();
+
+    function bootClients() {
+      try { if (typeof loadClients === 'function') loadClients(); } catch {}
+      try { if (typeof loadPerfumeRequests === 'function') loadPerfumeRequests(); } catch {}
+    }
+    document.addEventListener('admin:ready', bootClients);
+    if ((window as any).__adminPerms) bootClients();
+  </script>
+</AdminLayout>

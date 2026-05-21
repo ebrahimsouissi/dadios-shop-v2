@@ -1,0 +1,377 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+---
+<AdminLayout title="Contenu" current="contenu">
+  <header class="admin-section-head">
+    <div>
+      <div class="admin-eyebrow">Contenu</div>
+      <h1>Blog &amp; avis</h1>
+      <p class="help">Articles du journal et modération des avis clients.</p>
+    </div>
+  </header>
+
+  <div class="articles-block" data-requires-permission="articles">
+    <div class="articles-head">
+      <div>
+        <div class="eyebrow">Journal</div>
+        <h2>Articles</h2>
+        <p class="articles-help">
+          Publiez vos articles. Visibles publiquement sur /journal après le
+          prochain déploiement du site (push sur main).
+        </p>
+      </div>
+      <a class="btn btn-primary btn-sm" href="/admin/articles/new">+ Nouvel article</a>
+    </div>
+
+    <div class="articles-filters" id="articlesFilters" role="tablist">
+      <button type="button" class="filter-pill active" data-status="" role="tab">Tous <span class="count">0</span></button>
+      <button type="button" class="filter-pill" data-status="published" role="tab">Publiés <span class="count">0</span></button>
+      <button type="button" class="filter-pill" data-status="draft" role="tab">Brouillons <span class="count">0</span></button>
+    </div>
+
+    <div class="articles-tablewrap">
+      <table class="admin-table articles-admin-table">
+        <thead>
+          <tr>
+            <th>Image</th>
+            <th>Titre</th>
+            <th>Tags</th>
+            <th>Statut</th>
+            <th>Date</th>
+
+  <div class="reviews-block" data-requires-permission="reviews">
+    <div class="reviews-head">
+      <div>
+        <div class="eyebrow">Avis</div>
+        <h2>Modération des avis <span id="revPendingBadge" class="rev-pending-badge" hidden>0</span></h2>
+        <p class="reviews-help">
+          Les avis postés par les clients ayant déjà reçu le produit sont
+          publiés automatiquement. Les autres attendent votre validation.
+        </p>
+      </div>
+    </div>
+
+    <div class="reviews-filters" id="reviewsFilters" role="tablist">
+      <button type="button" class="filter-pill active" data-status="pending" role="tab">En attente <span class="count">0</span></button>
+      <button type="button" class="filter-pill" data-status="approved" role="tab">Approuvés <span class="count">0</span></button>
+      <button type="button" class="filter-pill" data-status="" role="tab">Tous <span class="count">0</span></button>
+    </div>
+
+    <div class="reviews-tablewrap">
+      <table class="admin-table reviews-admin-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Client</th>
+            <th>Produit</th>
+            <th>Note</th>
+            <th>Avis</th>
+            <th>Statut</th>
+
+  <script>
+    import { adminListArticles, adminDeleteArticle, adminPublishArticle, adminUnpublishArticle, frenchRelativeDate } from '../../scripts/articlesApi.js';
+    import { adminListReviews, adminListPendingReviews, adminPendingReviewsCount, adminApproveReview, adminRejectReview, adminDeleteReview, starsHtml as revStarsHtml, formatReviewDate } from '../../scripts/reviewsApi.js';
+
+    const adminMain = document.getElementById('adminMain');
+
+  // ============ JOURNAL (articles) ============
+  const articlesFiltersEl = document.getElementById('articlesFilters') as HTMLElement;
+  const articlesRowsEl = document.getElementById('articlesRows') as HTMLElement;
+  const articlesStatusEl = document.getElementById('articlesStatus') as HTMLElement;
+
+  let allArticles: any[] = [];
+  let currentArticleFilter = '';
+
+  function escA(s: any) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    })[c]!);
+  }
+  function showArticlesStatus(msg: string, kind: 'success' | 'error' | '' = '') {
+    articlesStatusEl.textContent = msg;
+    articlesStatusEl.className = 'status-msg ' + (kind || '');
+    articlesStatusEl.classList.remove('hidden');
+    setTimeout(() => articlesStatusEl.classList.add('hidden'), 4000);
+  }
+
+  function renderArticleRow(a: any) {
+    const thumb = a.heroImage
+      ? `<div class="art-thumb"><img src="${escA(a.heroImage)}" alt=""/></div>`
+      : `<div class="art-thumb empty">D</div>`;
+    const tagsHtml = (a.tags || []).slice(0, 3).map((t: string) =>
+      `<span class="art-status-chip" style="background:var(--cream-warm);color:var(--ink-soft);border:1px solid var(--border)">${escA(t)}</span>`
+    ).join('');
+    const status = a.status === 'published' ? 'published' : 'draft';
+    const statusLabel = status === 'published' ? 'Publié' : 'Brouillon';
+    const dateLabel = frenchRelativeDate(a.publishedAt || a.updatedAt || a.createdAt);
+    const previewBtn = status === 'published'
+      ? `<a class="link-btn" href="/journal/${escA(a.slug)}" target="_blank" rel="noopener">Aperçu</a>`
+      : `<a class="link-btn" href="/journal/${escA(a.slug)}?preview=1" target="_blank" rel="noopener">Aperçu</a>`;
+    const pubBtn = status === 'published'
+      ? `<button type="button" class="link-btn" data-action="unpublish" data-slug="${escA(a.slug)}">Dépublier</button>`
+      : `<button type="button" class="link-btn" data-action="publish"   data-slug="${escA(a.slug)}">Publier</button>`;
+
+    return `<tr data-slug="${escA(a.slug)}">
+      <td>${thumb}</td>
+      <td>
+        <strong>${escA(a.title)}</strong>
+        <div class="cust-phone">/journal/${escA(a.slug)}</div>
+      </td>
+      <td class="art-tags-cell">${tagsHtml || '<span class="muted">—</span>'}</td>
+      <td><span class="art-status-chip ${status}">${statusLabel}</span></td>
+      <td class="art-date-cell">${escA(dateLabel)}</td>
+      <td>
+        <a class="link-btn" href="/admin/articles/new?slug=${encodeURIComponent(a.slug)}">Modifier</a>
+        ${previewBtn}
+        ${pubBtn}
+        <button type="button" class="link-btn danger" data-action="delete" data-slug="${escA(a.slug)}">Supprimer</button>
+      </td>
+    </tr>`;
+  }
+
+  function updateArticleFilterCounts() {
+    const counts: Record<string, number> = { '': allArticles.length, published: 0, draft: 0 };
+    allArticles.forEach((a) => {
+      const s = a.status === 'published' ? 'published' : 'draft';
+      counts[s] = (counts[s] || 0) + 1;
+    });
+    articlesFiltersEl.querySelectorAll('.filter-pill').forEach((p) => {
+      const status = (p as HTMLElement).dataset.status || '';
+      const c = p.querySelector('.count');
+      if (c) c.textContent = String(counts[status] ?? 0);
+    });
+  }
+
+  function renderArticlesTable() {
+    const filtered = currentArticleFilter
+      ? allArticles.filter((a) => (a.status === 'published' ? 'published' : 'draft') === currentArticleFilter)
+      : allArticles;
+    if (!filtered.length) {
+      articlesRowsEl.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--ink-mute);font-style:italic">Aucun article${currentArticleFilter ? ' dans cette catégorie' : ''}.</td></tr>`;
+      return;
+    }
+    articlesRowsEl.innerHTML = filtered.map(renderArticleRow).join('');
+  }
+
+  async function loadAdminArticles() {
+    articlesRowsEl.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px">Chargement des articles…</td></tr>`;
+    const res = await adminListArticles();
+    if (!res.ok) {
+      articlesRowsEl.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:#B23A1F">Erreur : ${escA(res.error || 'chargement impossible')}</td></tr>`;
+      return;
+    }
+    allArticles = (res.articles || []) as any[];
+    updateArticleFilterCounts();
+    renderArticlesTable();
+  }
+
+  articlesFiltersEl.addEventListener('click', (e) => {
+    const pill = (e.target as HTMLElement).closest('.filter-pill') as HTMLElement | null;
+    if (!pill) return;
+    articlesFiltersEl.querySelectorAll('.filter-pill').forEach((p) => p.classList.remove('active'));
+    pill.classList.add('active');
+    currentArticleFilter = pill.dataset.status || '';
+    renderArticlesTable();
+  });
+
+  articlesRowsEl.addEventListener('click', async (e) => {
+    const btn = (e.target as HTMLElement).closest('button[data-action]') as HTMLElement | null;
+    if (!btn) return;
+    const action = btn.dataset.action;
+    const slug = btn.dataset.slug;
+    if (!slug || !action) return;
+
+    if (action === 'delete') {
+      const a = allArticles.find((x) => x.slug === slug);
+      if (!confirm(`Supprimer l'article "${a?.title || slug}" ? Action irréversible.`)) return;
+      const res = await adminDeleteArticle(slug);
+      if (res.ok) {
+        allArticles = allArticles.filter((x) => x.slug !== slug);
+        updateArticleFilterCounts();
+        renderArticlesTable();
+        showArticlesStatus('✓ Article supprimé.', 'success');
+      } else {
+        showArticlesStatus(res.error || 'Suppression impossible.', 'error');
+      }
+    } else if (action === 'publish' || action === 'unpublish') {
+      btn.setAttribute('disabled', 'true');
+      const res = action === 'publish'
+        ? await adminPublishArticle(slug)
+        : await adminUnpublishArticle(slug);
+      btn.removeAttribute('disabled');
+      if (res.ok && res.article) {
+        const idx = allArticles.findIndex((x) => x.slug === slug);
+        if (idx >= 0) allArticles[idx] = { ...allArticles[idx], ...res.article };
+        updateArticleFilterCounts();
+        renderArticlesTable();
+        showArticlesStatus(action === 'publish' ? '✓ Article publié.' : '✓ Article dépublié.', 'success');
+      } else {
+        showArticlesStatus(res.error || 'Opération impossible.', 'error');
+      }
+    }
+  });
+
+  // Load articles once we're past the admin gate (same observer pattern as orders).
+  const articlesObserver = new MutationObserver(() => {
+    if (!adminMain?.classList.contains('hidden')) {
+      articlesObserver.disconnect();
+      loadAdminArticles();
+    }
+  });
+  if (adminMain) articlesObserver.observe(adminMain, { attributes: true, attributeFilter: ['class'] });
+  if (adminMain && !adminMain.classList.contains('hidden')) loadAdminArticles();
+
+  // ============ REVIEWS (avis clients) ============
+  const reviewsFiltersEl = document.getElementById('reviewsFilters') as HTMLElement;
+  const reviewsRowsEl = document.getElementById('reviewsRows') as HTMLElement;
+  const reviewsStatusEl = document.getElementById('reviewsStatus') as HTMLElement;
+  const revPendingBadge = document.getElementById('revPendingBadge') as HTMLElement;
+
+  const REV_STATUS_LABEL: Record<string, string> = {
+    approved: 'Approuvé',
+    pending: 'En attente',
+    rejected: 'Refusé',
+  };
+
+  let allReviews: any[] = [];
+  let currentReviewFilter = 'pending';
+
+  function escR(s: any) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    })[c]!);
+  }
+
+  function reviewRowHtml(r: any) {
+    const status = r.status || 'pending';
+    const actions: string[] = [];
+    if (status !== 'approved') {
+      actions.push(`<button type="button" class="link-btn rev-approve" data-id="${escR(r.id)}">Approuver</button>`);
+    }
+    if (status !== 'rejected') {
+      actions.push(`<button type="button" class="link-btn rev-reject" data-id="${escR(r.id)}">Rejeter</button>`);
+    }
+    actions.push(`<button type="button" class="link-btn danger rev-delete" data-id="${escR(r.id)}">Supprimer</button>`);
+    return `<tr data-id="${escR(r.id)}">
+      <td class="art-date-cell">${escR(formatReviewDate(r.createdAt))}</td>
+      <td>${escR(r.customerName || 'Client Dadios')}</td>
+      <td><a href="/parfums/${escR(r.productId)}" target="_blank" rel="noopener">${escR(r.productId)}</a></td>
+      <td><span class="rev-rating-cell"><span class="rev-stars">${revStarsHtml(r.rating, 14)}</span></span></td>
+      <td class="rev-text-cell">${escR(r.text || '')}</td>
+      <td>
+        <span class="rev-status-cell ${escR(status)}">${escR(REV_STATUS_LABEL[status] || status)}</span>
+        ${r.verified ? '<span class="rev-verified-tag">Vérifié</span>' : ''}
+      </td>
+      <td>${actions.join(' ')}</td>
+    </tr>`;
+  }
+
+  function renderReviewsTable() {
+    if (!allReviews.length) {
+      reviewsRowsEl.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--ink-mute);font-style:italic">Aucun avis dans cette catégorie.</td></tr>`;
+      return;
+    }
+    reviewsRowsEl.innerHTML = allReviews.map(reviewRowHtml).join('');
+  }
+
+  function updateReviewFilterCounts(counts: { pending: number; approved: number; all: number }) {
+    reviewsFiltersEl.querySelectorAll('.filter-pill').forEach((p) => {
+      const status = (p as HTMLElement).dataset.status || '';
+      const c = p.querySelector('.count');
+      if (!c) return;
+      if (status === '') c.textContent = String(counts.all);
+      else if (status === 'pending') c.textContent = String(counts.pending);
+      else if (status === 'approved') c.textContent = String(counts.approved);
+    });
+    if (counts.pending > 0) {
+      revPendingBadge.textContent = String(counts.pending);
+      revPendingBadge.hidden = false;
+    } else {
+      revPendingBadge.hidden = true;
+    }
+  }
+
+  async function loadReviews(status?: string) {
+    reviewsRowsEl.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px">Chargement…</td></tr>`;
+    const res = status === 'pending'
+      ? await adminListPendingReviews()
+      : await adminListReviews({ status: status || undefined });
+    if (!res.ok) {
+      reviewsRowsEl.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:#B23A1F">Erreur : ${escR(res.error || 'chargement impossible')}</td></tr>`;
+      return;
+    }
+    allReviews = res.reviews || [];
+    renderReviewsTable();
+    // Refresh counts by hitting all three lists in parallel — the pending
+    // count drives the badge so we always want it fresh.
+    const [pendingRes, approvedRes, allRes] = await Promise.all([
+      adminListPendingReviews(),
+      adminListReviews({ status: 'approved' }),
+      adminListReviews(),
+    ]);
+    updateReviewFilterCounts({
+      pending: pendingRes.ok ? (pendingRes.reviews || []).length : 0,
+      approved: approvedRes.ok ? (approvedRes.reviews || []).length : 0,
+      all: allRes.ok ? (allRes.reviews || []).length : 0,
+    });
+  }
+
+  reviewsFiltersEl.addEventListener('click', (e) => {
+    const pill = (e.target as HTMLElement).closest('.filter-pill') as HTMLElement | null;
+    if (!pill) return;
+    reviewsFiltersEl.querySelectorAll('.filter-pill').forEach((p) => p.classList.remove('active'));
+    pill.classList.add('active');
+    currentReviewFilter = pill.dataset.status || '';
+    loadReviews(currentReviewFilter);
+  });
+
+  function showRevStatus(msg: string, kind: 'success' | 'error' | '' = '') {
+    reviewsStatusEl.textContent = msg;
+    reviewsStatusEl.className = 'status-msg ' + (kind || '');
+    reviewsStatusEl.classList.remove('hidden');
+    setTimeout(() => reviewsStatusEl.classList.add('hidden'), 4000);
+  }
+
+  reviewsRowsEl.addEventListener('click', async (e) => {
+    const target = e.target as HTMLElement;
+    const approveBtn = target.closest('.rev-approve') as HTMLElement | null;
+    const rejectBtn = target.closest('.rev-reject') as HTMLElement | null;
+    const deleteBtn = target.closest('.rev-delete') as HTMLElement | null;
+    if (!approveBtn && !rejectBtn && !deleteBtn) return;
+    const id = (approveBtn || rejectBtn || deleteBtn)!.dataset.id!;
+    if (approveBtn) {
+      const r = await adminApproveReview(id);
+      if (!r.ok) { showRevStatus(r.error || 'Échec.', 'error'); return; }
+      showRevStatus('✓ Avis approuvé.', 'success');
+      loadReviews(currentReviewFilter);
+    } else if (rejectBtn) {
+      const r = await adminRejectReview(id);
+      if (!r.ok) { showRevStatus(r.error || 'Échec.', 'error'); return; }
+      showRevStatus('Avis rejeté.', 'success');
+      loadReviews(currentReviewFilter);
+    } else if (deleteBtn) {
+      if (!confirm('Supprimer définitivement cet avis ?')) return;
+      const r = await adminDeleteReview(id);
+      if (!r.ok) { showRevStatus(r.error || 'Échec.', 'error'); return; }
+      showRevStatus('Avis supprimé.', 'success');
+      loadReviews(currentReviewFilter);
+    }
+  });
+
+  const reviewsObserver = new MutationObserver(() => {
+    if (!adminMain?.classList.contains('hidden')) {
+      reviewsObserver.disconnect();
+      loadReviews(currentReviewFilter);
+    }
+  });
+  if (adminMain) reviewsObserver.observe(adminMain, { attributes: true, attributeFilter: ['class'] });
+  if (adminMain && !adminMain.classList.contains('hidden')) loadReviews(currentReviewFilter);
+
+    function bootContenu() {
+      try { if (typeof loadArticles === 'function') loadArticles(); } catch {}
+      try { if (typeof loadReviews === 'function') loadReviews(); } catch {}
+    }
+    document.addEventListener('admin:ready', bootContenu);
+    if ((window as any).__adminPerms) bootContenu();
+  </script>
+</AdminLayout>
