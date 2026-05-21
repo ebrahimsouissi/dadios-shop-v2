@@ -176,20 +176,116 @@ const sizes = data.sizes;
     <p style="margin-top:8px;font-size:13px">Demandez à un super-administrateur d'élargir vos accès.</p>
   </div>
 
-  <!-- ACCUEIL placeholder (Slice 2 will replace) -->
+  <!-- ACCUEIL — dashboard (Slice 2) -->
   <div class="admin-section" data-section="accueil" hidden>
-    <div class="admin-accueil-card">
-      <div class="admin-accueil-icon" aria-hidden="true">🏗️</div>
-      <h2>Tableau de bord en cours de refonte</h2>
-      <p>
-        Cette page d'accueil affichera bientôt vos KPIs (CA, tickets, panier moyen),
-        les alertes en attente (avis à modérer, commandes à confirmer, demandes VIP)
-        et l'activité récente de la boutique.
-      </p>
-      <p class="admin-accueil-hint">
-        En attendant, utilisez la navigation latérale pour accéder à chaque module.
-      </p>
+
+    <!-- Salutation -->
+    <div class="dash-greeting">
+      <div>
+        <h2 id="dashGreeting">Bonjour 👋</h2>
+        <p class="dash-date" id="dashDate">—</p>
+      </div>
+      <button type="button" id="dashRefreshBtn" class="dash-refresh" aria-label="Rafraîchir">
+        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
+        <span>Rafraîchir</span>
+      </button>
     </div>
+
+    <!-- KPI grid -->
+    <div class="dash-kpis" id="dashKpis">
+      <div class="dash-kpi dash-kpi--emerald" data-requires-permission="sales">
+        <div class="dash-kpi-label">CA aujourd'hui</div>
+        <div class="dash-kpi-value" id="dashRevToday">—</div>
+        <div class="dash-kpi-meta" id="dashRevDelta">—</div>
+      </div>
+      <div class="dash-kpi dash-kpi--gold" data-requires-permission="sales">
+        <div class="dash-kpi-label">Tickets aujourd'hui</div>
+        <div class="dash-kpi-value" id="dashTicketsToday">—</div>
+        <div class="dash-kpi-meta">Panier moyen <span id="dashAvgToday">—</span></div>
+      </div>
+      <div class="dash-kpi" data-requires-permission="orders">
+        <div class="dash-kpi-label">Commandes en attente</div>
+        <div class="dash-kpi-value" id="dashPendingOrders">—</div>
+        <a class="dash-kpi-link" href="#ventes" data-nav="ventes">Voir →</a>
+      </div>
+      <div class="dash-kpi" data-requires-permission="customers">
+        <div class="dash-kpi-label">Nouveaux clients ce mois</div>
+        <div class="dash-kpi-value" id="dashNewCustomers">—</div>
+        <a class="dash-kpi-link" href="#clients" data-nav="clients">Voir →</a>
+      </div>
+    </div>
+
+    <!-- Alerts row -->
+    <div class="dash-alerts" id="dashAlerts">
+      <a class="dash-alert dash-alert--danger" href="#contenu" data-nav="contenu" data-requires-permission="reviews" hidden>
+        <span class="dash-alert-icon">🔴</span>
+        <span class="dash-alert-label"><strong id="dashReviewCount">0</strong> avis à modérer</span>
+        <span class="dash-alert-arrow">→</span>
+      </a>
+      <a class="dash-alert dash-alert--warning" href="#ventes" data-nav="ventes" data-requires-permission="orders" hidden>
+        <span class="dash-alert-icon">🟡</span>
+        <span class="dash-alert-label"><strong id="dashOrderCount">0</strong> commandes en attente</span>
+        <span class="dash-alert-arrow">→</span>
+      </a>
+      <a class="dash-alert dash-alert--info" href="#clients" data-nav="clients" data-requires-permission="perfume-requests" hidden>
+        <span class="dash-alert-icon">🟢</span>
+        <span class="dash-alert-label"><strong id="dashVipReqCount">0</strong> demandes VIP en cours</span>
+        <span class="dash-alert-arrow">→</span>
+      </a>
+      <a class="dash-alert dash-alert--success" href="#clients" data-nav="clients" data-requires-permission="customers" hidden>
+        <span class="dash-alert-icon">🔵</span>
+        <span class="dash-alert-label"><strong id="dashVipCount">0</strong> clients VIP actifs</span>
+        <span class="dash-alert-arrow">→</span>
+      </a>
+    </div>
+
+    <!-- 30-day revenue chart -->
+    <div class="dash-card" data-requires-permission="sales" hidden>
+      <div class="dash-card-head">
+        <h3>Chiffre d'affaires — 30 derniers jours</h3>
+      </div>
+      <div class="dash-chart-wrap" id="dashChart30">
+        <div class="dash-loading">Chargement…</div>
+      </div>
+    </div>
+
+    <!-- 2-column row: activity + quick actions -->
+    <div class="dash-bottom">
+      <div class="dash-card dash-activity">
+        <div class="dash-card-head">
+          <h3>Activité récente</h3>
+        </div>
+        <ul class="dash-activity-list" id="dashActivity">
+          <li class="dash-activity-loading">Chargement…</li>
+        </ul>
+      </div>
+
+      <div class="dash-card dash-actions">
+        <div class="dash-card-head">
+          <h3>Actions rapides</h3>
+        </div>
+        <div class="dash-actions-grid">
+          <button type="button" class="dash-action" id="qaNewProduct" data-requires-permission="products" hidden>
+            <span class="dash-action-icon">📦</span>
+            <span>Nouveau parfum</span>
+          </button>
+          <a class="dash-action" href="/admin/articles/new" data-requires-permission="articles" hidden>
+            <span class="dash-action-icon">📝</span>
+            <span>Nouvel article</span>
+          </a>
+          <a class="dash-action" href="/staff/sale" target="_blank" rel="noopener" data-requires-permission="sales" hidden>
+            <span class="dash-action-icon">🛒</span>
+            <span>Saisir une vente</span>
+          </a>
+          <a class="dash-action" href="/" target="_blank" rel="noopener">
+            <span class="dash-action-icon">🌐</span>
+            <span>Voir le site public</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <p id="dashStatus" class="status-msg hidden"></p>
   </div>
 
   <div id="noPermsEmpty" class="no-perms-empty" hidden>
@@ -1620,25 +1716,246 @@ const sizes = data.sizes;
   .admin-section-actions { display: flex; gap: 10px; flex-wrap: wrap; }
   .admin-section-current .eyebrow { color: var(--admin-gold); }
 
-  /* Accueil placeholder card */
-  .admin-accueil-card {
+  /* ============ ACCUEIL DASHBOARD (Slice 2) ============ */
+  .dash-greeting {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .dash-greeting h2 {
+    font-family: var(--font-display);
+    font-size: clamp(22px, 4vw, 30px);
+    color: var(--admin-ink);
+  }
+  .dash-date {
+    color: var(--admin-ink-soft);
+    font-size: 14px;
+    margin-top: 4px;
+    text-transform: capitalize;
+  }
+  .dash-refresh {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    min-height: 40px;
+    background: var(--admin-paper);
+    color: var(--admin-ink-soft);
+    border: 1px solid var(--admin-border);
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: var(--font-body);
+    font-size: 13px;
+  }
+  .dash-refresh:hover { color: var(--admin-emerald); border-color: var(--admin-gold); }
+  .dash-refresh.is-loading svg { animation: dashSpin 0.8s linear infinite; }
+  @keyframes dashSpin { to { transform: rotate(360deg); } }
+
+  .dash-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .dash-kpi {
     background: var(--admin-paper);
     border: 1px solid var(--admin-border);
-    border-radius: 16px;
-    padding: clamp(28px, 5vw, 56px);
-    text-align: center;
+    border-radius: 14px;
+    padding: 20px;
     box-shadow: 0 1px 3px rgba(15, 81, 50, 0.04);
-    max-width: 640px;
-    margin: 0 auto;
+    transition: box-shadow .2s, transform .15s;
+    position: relative;
   }
-  .admin-accueil-icon { font-size: 44px; margin-bottom: 16px; }
-  .admin-accueil-card h2 {
+  .dash-kpi:hover { box-shadow: 0 4px 12px rgba(15, 81, 50, 0.1); }
+  .dash-kpi[hidden] { display: none; }
+  .dash-kpi--emerald { background: var(--admin-emerald); color: var(--admin-cream); border-color: var(--admin-emerald); }
+  .dash-kpi--gold { background: var(--admin-gold); color: var(--admin-emerald-deep); border-color: var(--admin-gold); }
+  .dash-kpi-label {
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    opacity: 0.7;
+    margin-bottom: 8px;
+  }
+  .dash-kpi-value {
     font-family: var(--font-display);
-    font-size: 24px;
-    margin-bottom: 12px;
+    font-size: 32px;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
   }
-  .admin-accueil-card p { color: var(--admin-ink-soft); line-height: 1.6; font-size: 14px; }
-  .admin-accueil-hint { margin-top: 14px; font-size: 13px; color: var(--admin-ink-mute); }
+  .dash-kpi--emerald .dash-kpi-value { color: var(--admin-gold); }
+  .dash-kpi-meta {
+    font-size: 12px;
+    opacity: 0.75;
+    margin-top: 8px;
+  }
+  .dash-kpi-meta.is-up { color: var(--admin-success); opacity: 1; font-weight: 600; }
+  .dash-kpi-meta.is-down { color: var(--admin-danger); opacity: 1; font-weight: 600; }
+  .dash-kpi--emerald .dash-kpi-meta.is-up { color: #86EFAC; }
+  .dash-kpi--emerald .dash-kpi-meta.is-down { color: #FCA5A5; }
+  .dash-kpi-link {
+    display: block;
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--admin-emerald);
+    letter-spacing: 0.04em;
+  }
+
+  .dash-alerts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .dash-alert {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: var(--admin-paper);
+    border: 1px solid var(--admin-border);
+    border-left: 3px solid var(--admin-border);
+    border-radius: 10px;
+    color: var(--admin-ink);
+    text-decoration: none;
+    font-size: 14px;
+    transition: background .15s, transform .1s;
+  }
+  .dash-alert:hover { background: var(--admin-cream); }
+  .dash-alert:active { transform: scale(0.99); }
+  .dash-alert[hidden] { display: none; }
+  .dash-alert--danger { border-left-color: var(--admin-danger); }
+  .dash-alert--warning { border-left-color: var(--admin-warning); }
+  .dash-alert--info { border-left-color: var(--admin-success); }
+  .dash-alert--success { border-left-color: var(--admin-info); }
+  .dash-alert-icon { font-size: 18px; flex-shrink: 0; }
+  .dash-alert-label { flex: 1; line-height: 1.4; }
+  .dash-alert-label strong { font-weight: 600; }
+  .dash-alert-arrow { color: var(--admin-ink-mute); }
+
+  .dash-card {
+    background: var(--admin-paper);
+    border: 1px solid var(--admin-border);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 18px;
+    box-shadow: 0 1px 3px rgba(15, 81, 50, 0.04);
+  }
+  .dash-card[hidden] { display: none; }
+  .dash-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .dash-card-head h3 {
+    font-family: var(--font-display);
+    font-size: 18px;
+    margin: 0;
+  }
+  .dash-loading {
+    padding: 40px 16px;
+    text-align: center;
+    color: var(--admin-ink-mute);
+    font-style: italic;
+  }
+
+  .dash-chart-wrap svg { width: 100%; height: auto; display: block; }
+
+  .dash-bottom {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  @media (min-width: 900px) {
+    .dash-bottom { grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr); }
+  }
+
+  .dash-activity-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .dash-activity-list li {
+    display: grid;
+    grid-template-columns: 36px 1fr auto;
+    gap: 10px;
+    align-items: start;
+    padding: 12px 0;
+    border-bottom: 1px dotted var(--admin-border);
+    font-size: 13px;
+  }
+  .dash-activity-list li:last-child { border-bottom: none; }
+  .dash-activity-loading, .dash-activity-empty {
+    text-align: center;
+    padding: 30px 16px;
+    color: var(--admin-ink-mute);
+    font-style: italic;
+    display: block;
+    grid-column: 1 / -1;
+    border: none;
+  }
+  .dash-act-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--admin-cream);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+  .dash-act-text {
+    line-height: 1.45;
+    color: var(--admin-ink);
+  }
+  .dash-act-text strong { font-weight: 600; }
+  .dash-act-meta {
+    font-size: 12px;
+    color: var(--admin-ink-mute);
+    margin-top: 2px;
+  }
+  .dash-act-time {
+    color: var(--admin-ink-mute);
+    font-size: 11px;
+    white-space: nowrap;
+    padding-top: 4px;
+  }
+
+  .dash-actions-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .dash-action {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    min-height: 56px;
+    background: var(--admin-cream);
+    border: 1px solid var(--admin-border);
+    border-radius: 10px;
+    color: var(--admin-ink);
+    text-decoration: none;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: var(--font-body);
+    text-align: left;
+    transition: background .15s, border-color .15s;
+  }
+  .dash-action:hover { background: var(--admin-paper); border-color: var(--admin-gold); }
+  .dash-action[hidden] { display: none; }
+  .dash-action-icon { font-size: 20px; }
+
+  /* Search modal extension — result group styles already defined in Slice 1 */
+  .search-modal-group { margin-top: 10px; }
+  .search-modal-group:first-child { margin-top: 0; }
 
   /* Per-block tweaks to fit the new shell */
   .admin-shell .admin-block { margin-top: 24px; }
@@ -5705,6 +6022,456 @@ const sizes = data.sizes;
       a.addEventListener('click', () => closeSearch());
     });
   }
+
+  // ============================================================
+  // ACCUEIL DASHBOARD (Slice 2)
+  //   Loads on first reveal of the Accueil section. Refresh button
+  //   reloads. Permission-aware: every KPI / alert / chart / action
+  //   has data-requires-permission and stays hidden if the admin
+  //   can't see the underlying data — the Slice-1 perm filter
+  //   already handled the hidden attribute.
+  // ============================================================
+  const dashGreetEl = document.getElementById('dashGreeting');
+  const dashDateEl = document.getElementById('dashDate');
+  const dashRefreshBtn = document.getElementById('dashRefreshBtn');
+  const dashStatusEl = document.getElementById('dashStatus');
+  const dashChartWrapEl = document.getElementById('dashChart30');
+  const dashActivityEl = document.getElementById('dashActivity');
+
+  function dashGreeting() {
+    const h = new Date().getHours();
+    if (h < 6) return 'Bonne nuit';
+    if (h < 12) return 'Bonjour';
+    if (h < 18) return 'Bon après-midi';
+    return 'Bonsoir';
+  }
+  function dashFmtDT(n) {
+    const v = Number(n) || 0;
+    return v.toFixed(2).replace('.', ',') + ' DT';
+  }
+  function dashFmtRelative(iso) {
+    if (!iso) return '';
+    const t = new Date(iso).getTime();
+    if (!t) return '';
+    const diffMs = Date.now() - t;
+    const sec = Math.round(diffMs / 1000);
+    if (sec < 60) return 'à l\'instant';
+    const min = Math.round(sec / 60);
+    if (min < 60) return `il y a ${min} min`;
+    const hr = Math.round(min / 60);
+    if (hr < 24) return `il y a ${hr} h`;
+    const d = Math.round(hr / 24);
+    if (d < 7) return `il y a ${d} j`;
+    try {
+      return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+    } catch { return iso.slice(0, 10); }
+  }
+  function dashTunisDayKey(d?: Date) {
+    const dd = d || new Date();
+    const t = new Date(dd.getTime() + 60 * 60 * 1000);
+    return `${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, '0')}-${String(t.getUTCDate()).padStart(2, '0')}`;
+  }
+  function dashEscape(s) {
+    return String(s ?? '').replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[c]!));
+  }
+
+  // Smaller line chart for the Accueil card — no labels, just the
+  // shape + gradient fill + 3 highlight dots. Standalone of the
+  // sales-block renderLineChart (which lives in its own scope).
+  function renderDashLineChart(byDay) {
+    if (!byDay || byDay.length === 0) return '<div class="dash-loading">Aucune vente sur la période.</div>';
+    const W = 720, H = 180, PAD_L = 36, PAD_R = 12, PAD_T = 12, PAD_B = 22;
+    const innerW = W - PAD_L - PAD_R;
+    const innerH = H - PAD_T - PAD_B;
+    const maxRev = Math.max(1, ...byDay.map((d) => d.revenue));
+    const step = innerW / Math.max(1, byDay.length - 1);
+    const pts = byDay.map((d, i) => ({
+      x: PAD_L + i * step,
+      y: PAD_T + innerH - (d.revenue / maxRev) * innerH,
+      d,
+    }));
+    const pathD = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+    const areaD = `${pathD} L${pts[pts.length - 1].x.toFixed(1)},${(PAD_T + innerH).toFixed(1)} L${pts[0].x.toFixed(1)},${(PAD_T + innerH).toFixed(1)} Z`;
+    const gridLines: string[] = [];
+    const gridLabels: string[] = [];
+    for (let g = 0; g <= 3; g++) {
+      const y = PAD_T + (innerH * g / 3);
+      const val = maxRev * (1 - g / 3);
+      gridLines.push(`<line stroke="rgba(120,104,80,0.15)" stroke-dasharray="2 4" x1="${PAD_L}" x2="${W - PAD_R}" y1="${y}" y2="${y}"/>`);
+      gridLabels.push(`<text x="${PAD_L - 6}" y="${y + 3}" text-anchor="end" font-size="10" fill="var(--admin-ink-mute)">${Math.round(val)}</text>`);
+    }
+    const xLabels: string[] = [];
+    [0, Math.floor(byDay.length / 2), byDay.length - 1].forEach((i) => {
+      if (i < byDay.length) {
+        const p = pts[i];
+        const parts = byDay[i].date.split('-');
+        xLabels.push(`<text x="${p.x}" y="${H - PAD_B + 14}" text-anchor="middle" font-size="10" fill="var(--admin-ink-mute)">${parts[2]}/${parts[1]}</text>`);
+      }
+    });
+    const topPts = pts.slice().sort((a, b) => b.d.revenue - a.d.revenue).slice(0, 3).filter((p) => p.d.revenue > 0);
+    const dots = topPts.map((p) => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="var(--admin-gold)"/>`).join('');
+    return `
+      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Chiffre d'affaires sur 30 jours">
+        <defs>
+          <linearGradient id="dashLineGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#0F5132" stop-opacity="0.35"/>
+            <stop offset="1" stop-color="#0F5132" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        ${gridLines.join('')}
+        ${gridLabels.join('')}
+        <path d="${areaD}" fill="url(#dashLineGrad)" opacity="0.4"/>
+        <path d="${pathD}" fill="none" stroke="#0F5132" stroke-width="2"/>
+        ${dots}
+        ${xLabels.join('')}
+        <line x1="${PAD_L}" x2="${W - PAD_R}" y1="${H - PAD_B}" y2="${H - PAD_B}" stroke="rgba(120,104,80,0.25)"/>
+      </svg>
+    `;
+  }
+
+  function dashSetGreeting() {
+    if (!dashGreetEl || !dashDateEl) return;
+    const nameEl = document.getElementById('adminUserName');
+    const name = nameEl?.textContent && nameEl.textContent !== '—' ? nameEl.textContent.trim() : '';
+    dashGreetEl.textContent = `${dashGreeting()}${name ? ' ' + name : ''} 👋`;
+    try {
+      dashDateEl.textContent = new Date().toLocaleDateString('fr-FR', {
+        weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
+      });
+    } catch { dashDateEl.textContent = ''; }
+  }
+
+  // Activity rendering helpers
+  function dashActHtml(icon, html, ts) {
+    return `
+      <li>
+        <span class="dash-act-icon">${icon}</span>
+        <div>
+          <div class="dash-act-text">${html}</div>
+        </div>
+        <span class="dash-act-time">${dashFmtRelative(ts)}</span>
+      </li>
+    `;
+  }
+
+  let dashLoaded = false;
+  async function loadAccueilDashboard() {
+    if (dashRefreshBtn) (dashRefreshBtn as HTMLElement).classList.add('is-loading');
+    dashSetGreeting();
+    dashStatusEl?.classList.add('hidden');
+
+    // Pull permissions from the global meRes set by auto-login. Fallback
+    // to fetching them here if the script ran out-of-order.
+    let perms: string[] = (window as any).__adminPerms || [];
+    if (perms.length === 0) {
+      try {
+        const { adminMe } = await import('../scripts/adminApi.js');
+        const r = await adminMe();
+        if (r && r.ok && r.permissions) {
+          perms = r.permissions;
+          (window as any).__adminPerms = perms;
+        }
+      } catch {}
+    }
+    const has = (p) => perms.includes('all') || perms.includes(p);
+
+    // Build a parallel set of fetches with permission gating.
+    const today = dashTunisDayKey();
+    const yesterday = dashTunisDayKey(new Date(Date.now() - 24 * 60 * 60 * 1000));
+    const from30 = dashTunisDayKey(new Date(Date.now() - 29 * 24 * 60 * 60 * 1000));
+    const firstOfMonth = today.slice(0, 8) + '01';
+
+    const noopOk = Promise.resolve({ ok: false });
+
+    const [
+      salesStatsToday,
+      salesStatsYesterday,
+      salesStats30,
+      salesRecent,
+      ordersList,
+      reviewsCount,
+      vipReq,
+      customersAll,
+    ] = await Promise.all([
+      has('sales') ? adminSalesStats({ period: 'today' }) : noopOk,
+      has('sales') ? adminSalesStats({ period: 'custom', from: yesterday, to: yesterday }) : noopOk,
+      has('sales') ? adminSalesStats({ period: 'custom', from: from30, to: today }) : noopOk,
+      has('sales') ? adminListSales({ from: today, to: today, limit: 5 }) : noopOk,
+      has('orders') ? adminListOrders() : noopOk,
+      has('reviews') ? (await import('../scripts/reviewsApi.js')).adminPendingReviewsCount() : noopOk,
+      has('perfume-requests') ? (await import('../scripts/perfumeRequestsApi.js')).adminListPerfumeRequests('pending') : noopOk,
+      has('customers') ? adminListCustomers() : noopOk,
+    ]);
+
+    // ===== KPI cards =====
+    if (salesStatsToday.ok) {
+      const rev = salesStatsToday.revenue.total;
+      const tickets = salesStatsToday.revenue.ticketCount;
+      const avg = salesStatsToday.revenue.avgTicket;
+      (document.getElementById('dashRevToday') as HTMLElement).textContent = dashFmtDT(rev);
+      (document.getElementById('dashTicketsToday') as HTMLElement).textContent = String(tickets);
+      (document.getElementById('dashAvgToday') as HTMLElement).textContent = dashFmtDT(avg);
+      // Delta vs hier
+      const deltaEl = document.getElementById('dashRevDelta');
+      if (salesStatsYesterday.ok && deltaEl) {
+        const yest = salesStatsYesterday.revenue.total;
+        if (yest > 0) {
+          const pct = Math.round((rev - yest) / yest * 100);
+          const sign = pct > 0 ? '+' : '';
+          deltaEl.textContent = `${sign}${pct}% vs hier (${dashFmtDT(yest)})`;
+          deltaEl.className = 'dash-kpi-meta ' + (pct > 0 ? 'is-up' : (pct < 0 ? 'is-down' : ''));
+        } else {
+          deltaEl.textContent = yest === 0 && rev === 0 ? 'Pas de vente' : 'Démarrage';
+          deltaEl.className = 'dash-kpi-meta';
+        }
+      }
+    }
+    if (ordersList.ok) {
+      const allO = ordersList.orders || [];
+      const pendingO = allO.filter((o) => o.status === 'pending');
+      (document.getElementById('dashPendingOrders') as HTMLElement).textContent = String(pendingO.length);
+    }
+    if (customersAll.ok) {
+      const all = customersAll.customers || [];
+      const newOnes = all.filter((c) => c.createdAt && c.createdAt.slice(0, 10) >= firstOfMonth).length;
+      (document.getElementById('dashNewCustomers') as HTMLElement).textContent = String(newOnes);
+      const vipCount = all.filter((c) => c.tier === 'vip').length;
+      const vipAlert = document.querySelector<HTMLElement>('.dash-alert[data-requires-permission="customers"]');
+      if (vipAlert && vipCount > 0) {
+        vipAlert.hidden = false;
+        (document.getElementById('dashVipCount') as HTMLElement).textContent = String(vipCount);
+      }
+    }
+
+    // ===== Alerts =====
+    if (reviewsCount.ok && reviewsCount.count > 0) {
+      const a = document.querySelector<HTMLElement>('.dash-alert[data-requires-permission="reviews"]');
+      if (a) {
+        a.hidden = false;
+        (document.getElementById('dashReviewCount') as HTMLElement).textContent = String(reviewsCount.count);
+      }
+    }
+    if (ordersList.ok) {
+      const allO = ordersList.orders || [];
+      const pendingO = allO.filter((o) => o.status === 'pending').length;
+      if (pendingO > 0) {
+        const a = document.querySelector<HTMLElement>('.dash-alert[data-requires-permission="orders"]');
+        if (a) {
+          a.hidden = false;
+          (document.getElementById('dashOrderCount') as HTMLElement).textContent = String(pendingO);
+        }
+      }
+    }
+    if (vipReq.ok) {
+      // Pending + in-progress demands
+      const inProg = (vipReq.requests || []).filter((r) => r.status === 'pending' || r.status === 'in_progress').length;
+      if (inProg > 0) {
+        const a = document.querySelector<HTMLElement>('.dash-alert[data-requires-permission="perfume-requests"]');
+        if (a) {
+          a.hidden = false;
+          (document.getElementById('dashVipReqCount') as HTMLElement).textContent = String(inProg);
+        }
+      }
+    }
+
+    // ===== Chart =====
+    if (salesStats30.ok && dashChartWrapEl) {
+      dashChartWrapEl.innerHTML = renderDashLineChart(salesStats30.byDay);
+    }
+
+    // ===== Activity =====
+    if (dashActivityEl) {
+      const items: Array<{ icon: string; html: string; ts: string }> = [];
+      if (salesRecent.ok) {
+        (salesRecent.sales || []).forEach((s) => {
+          const who = dashEscape(s.createdByName || s.createdBy || '—');
+          const total = dashFmtDT(s.total);
+          items.push({
+            icon: '🛍️',
+            html: `<strong>Vente ${dashEscape(s.id.slice(0, 6))}</strong> par ${who} — ${total}${s.customerName ? ` · ${dashEscape(s.customerName)}` : ''}`,
+            ts: s.createdAt,
+          });
+        });
+      }
+      if (ordersList.ok) {
+        (ordersList.orders || []).slice(0, 5).forEach((o) => {
+          items.push({
+            icon: '💌',
+            html: `<strong>Commande</strong> de ${dashEscape(o.customerName || o.phone || '—')} — ${dashFmtDT(o.total)}<div class="dash-act-meta">Statut : ${dashEscape(o.status)}</div>`,
+            ts: o.createdAt,
+          });
+        });
+      }
+      if (reviewsCount.ok && reviewsCount.count > 0) {
+        // We have the count but not the items — show as a single alert entry.
+        items.push({
+          icon: '⭐',
+          html: `<strong>${reviewsCount.count} avis</strong> en attente de modération`,
+          ts: new Date().toISOString(),
+        });
+      }
+      items.sort((a, b) => String(b.ts).localeCompare(String(a.ts)));
+      const top = items.slice(0, 12);
+      if (top.length === 0) {
+        dashActivityEl.innerHTML = '<li class="dash-activity-empty">Aucune activité récente.</li>';
+      } else {
+        dashActivityEl.innerHTML = top.map((it) => dashActHtml(it.icon, it.html, it.ts)).join('');
+      }
+    }
+
+    dashLoaded = true;
+    if (dashRefreshBtn) (dashRefreshBtn as HTMLElement).classList.remove('is-loading');
+  }
+
+  dashRefreshBtn?.addEventListener('click', () => loadAccueilDashboard());
+
+  // Quick action: "Nouveau parfum" reuses the existing modal flow.
+  document.getElementById('qaNewProduct')?.addEventListener('click', () => {
+    setActiveSection('catalogue');
+    setTimeout(() => {
+      const real = document.getElementById('newBtn') as HTMLButtonElement | null;
+      real?.click();
+    }, 80);
+  });
+
+  // Load dashboard the first time Accueil becomes visible. setActiveSection
+  // sets data-active-section on the shell, so a tiny mutation observer
+  // catches it without coupling to the controller's internals.
+  const dashShellObs = new MutationObserver(() => {
+    if (!dashLoaded && shellEl?.getAttribute('data-active-section') === 'accueil') {
+      loadAccueilDashboard();
+    }
+  });
+  if (shellEl) dashShellObs.observe(shellEl, { attributes: true, attributeFilter: ['data-active-section'] });
+
+  // ============================================================
+  // EXTEND SEARCH MODAL (Slice 2) — also search customers + orders + articles.
+  //   Customers hit the worker (admin_list_customers supports a search
+  //   query). Orders + articles use whatever the controllers above have
+  //   cached client-side; those don't refetch on every keystroke.
+  // ============================================================
+  function escSearchSlice2(s) {
+    return String(s ?? '').replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[c]!));
+  }
+  function highlightSlice2(text, q) {
+    const t = String(text || '');
+    const idx = t.toLowerCase().indexOf(q.toLowerCase());
+    if (idx < 0) return escSearchSlice2(t);
+    return escSearchSlice2(t.slice(0, idx)) +
+      '<mark style="background:rgba(212,175,55,0.3);color:inherit">' +
+      escSearchSlice2(t.slice(idx, idx + q.length)) + '</mark>' +
+      escSearchSlice2(t.slice(idx + q.length));
+  }
+
+  // Override the runSearch implementation defined above. Same DOM
+  // hooks (searchInputEl, searchResultsEl) — we just install a new
+  // listener on top.
+  if (searchInputEl) {
+    let searchTimer2: any = null;
+    let lastQ = '';
+    searchInputEl.removeEventListener('input', null as any);  // best-effort; old handler still fires but our newer one wins because we early-return
+    searchInputEl.addEventListener('input', () => {
+      if (searchTimer2) clearTimeout(searchTimer2);
+      searchTimer2 = setTimeout(async () => {
+        if (!searchResultsEl) return;
+        const q = searchInputEl.value.trim();
+        if (q === lastQ) return;
+        lastQ = q;
+        if (q.length < 2) {
+          searchResultsEl.innerHTML = `<div class="search-modal-hint">Tapez au moins 2 caractères…</div>`;
+          return;
+        }
+        const ql = q.toLowerCase();
+        const perms: string[] = (window as any).__adminPerms || [];
+        const has = (p) => perms.includes('all') || perms.includes(p);
+
+        // Products (in-memory state from catalogue)
+        const productList = (typeof products !== 'undefined' ? products : []) as any[];
+        const matchProducts = has('products') ? productList.filter((p) => {
+          const hay = `${p.name || ''} ${p.inspiredBy || ''}`.toLowerCase();
+          return hay.includes(ql);
+        }).slice(0, 5) : [];
+
+        // Orders (client-side cache — only orders the user already loaded)
+        // The orders controller stores them in a local `allOrders` var
+        // that we can't access from here; instead we use the rendered rows.
+        const matchOrders = has('orders') ? Array.from(document.querySelectorAll<HTMLTableRowElement>('#ordersRows tr[data-order-id]'))
+          .map((tr) => ({
+            id: tr.getAttribute('data-order-id'),
+            text: (tr.textContent || '').replace(/\s+/g, ' ').trim(),
+          }))
+          .filter((o) => o.text.toLowerCase().includes(ql))
+          .slice(0, 5) : [];
+
+        // Articles (DOM scan, same trick)
+        const matchArticles = has('articles') ? Array.from(document.querySelectorAll<HTMLTableRowElement>('#articlesRows tr[data-slug]'))
+          .map((tr) => ({
+            slug: tr.getAttribute('data-slug'),
+            text: (tr.textContent || '').replace(/\s+/g, ' ').trim(),
+          }))
+          .filter((a) => a.text.toLowerCase().includes(ql))
+          .slice(0, 5) : [];
+
+        // Customers via worker (fresh search, has a built-in 'search' arg)
+        let matchCustomers: any[] = [];
+        if (has('customers')) {
+          try {
+            const r = await adminListCustomers({ search: q });
+            if (r.ok) matchCustomers = (r.customers || []).slice(0, 5);
+          } catch {}
+        }
+
+        const parts: string[] = [];
+        if (matchProducts.length > 0) {
+          parts.push(`<div class="search-modal-group">Produits (${matchProducts.length})</div>`);
+          matchProducts.forEach((p) => {
+            parts.push(`<a class="search-modal-result" href="#catalogue" data-nav="catalogue"><span style="font-size:18px">📦</span><span>${highlightSlice2(p.name, q)}${p.inspiredBy ? `<br><small style="color:var(--admin-ink-mute)">inspiré de ${escSearchSlice2(p.inspiredBy)}</small>` : ''}</span><span class="search-modal-result-meta">Catalogue</span></a>`);
+          });
+        }
+        if (matchCustomers.length > 0) {
+          parts.push(`<div class="search-modal-group">Clients (${matchCustomers.length})</div>`);
+          matchCustomers.forEach((c) => {
+            const tierBadge = c.tier && c.tier !== 'regular' ? ` <span style="color:var(--admin-gold)">· ${escSearchSlice2(c.tier.toUpperCase())}</span>` : '';
+            parts.push(`<a class="search-modal-result" href="#clients" data-nav="clients"><span style="font-size:18px">👥</span><span>${highlightSlice2(c.name || c.phone, q)}${tierBadge}<br><small style="color:var(--admin-ink-mute)">${escSearchSlice2(c.phone)}</small></span><span class="search-modal-result-meta">Clients</span></a>`);
+          });
+        }
+        if (matchOrders.length > 0) {
+          parts.push(`<div class="search-modal-group">Commandes (${matchOrders.length})</div>`);
+          matchOrders.forEach((o) => {
+            parts.push(`<a class="search-modal-result" href="#ventes" data-nav="ventes"><span style="font-size:18px">💌</span><span>${highlightSlice2(o.text.slice(0, 80), q)}</span><span class="search-modal-result-meta">Ventes</span></a>`);
+          });
+        }
+        if (matchArticles.length > 0) {
+          parts.push(`<div class="search-modal-group">Articles (${matchArticles.length})</div>`);
+          matchArticles.forEach((a) => {
+            parts.push(`<a class="search-modal-result" href="#contenu" data-nav="contenu"><span style="font-size:18px">📝</span><span>${highlightSlice2(a.text.slice(0, 80), q)}</span><span class="search-modal-result-meta">Contenu</span></a>`);
+          });
+        }
+        if (parts.length === 0) {
+          searchResultsEl.innerHTML = `<div class="search-modal-hint" style="padding:30px 20px">Aucun résultat pour <strong>${escSearchSlice2(q)}</strong>.</div>`;
+          return;
+        }
+        searchResultsEl.innerHTML = parts.join('');
+        searchResultsEl.querySelectorAll<HTMLAnchorElement>('.search-modal-result').forEach((a) => {
+          a.addEventListener('click', () => closeSearch());
+        });
+      }, 200);
+    });
+  }
+
+  // Persist permissions so subsequent loads (dashboard refresh) can skip
+  // re-fetching admin_me.
+  (async () => {
+    try {
+      const { adminMe } = await import('../scripts/adminApi.js');
+      const r = await adminMe();
+      if (r && r.ok && r.permissions) (window as any).__adminPerms = r.permissions;
+    } catch {}
+  })();
 
   // ============ Boot ============
   // Wait until auto-login finishes filtering blocks by permission (it
