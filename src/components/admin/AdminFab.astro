@@ -1,0 +1,111 @@
+---
+/**
+ * Floating action button (bottom-right). On tap reveals a vertical menu
+ * of quick actions. Items with data-requires-permission are hidden by
+ * the layout's auth script when the admin lacks the right.
+ *
+ * Several actions trigger modals owned by other pages (e.g. "Nouveau
+ * parfum" is the catalogue page's modal). We navigate to that page with
+ * a hash like #new and let the page intercept the hash to open its
+ * modal directly.
+ */
+---
+<button type="button" class="admin-fab" id="adminFabBtn" aria-label="Actions rapides" aria-expanded="false">
+  <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2.5"
+       fill="none" stroke-linecap="round" aria-hidden="true">
+    <line x1="12" y1="5" x2="12" y2="19"/>
+    <line x1="5" y1="12" x2="19" y2="12"/>
+  </svg>
+</button>
+
+<div class="admin-fab-menu" id="adminFabMenu" hidden role="menu" aria-label="Actions rapides">
+  <a href="/admin/catalogue#new" role="menuitem" data-requires-permission="products">
+    <span class="admin-fab-icon">📦</span>
+    <span>Nouveau parfum</span>
+  </a>
+  <a href="/admin/articles/new" role="menuitem" data-requires-permission="articles">
+    <span class="admin-fab-icon">📝</span>
+    <span>Nouvel article</span>
+  </a>
+  <a href="/admin/clients#promote" role="menuitem" data-requires-permission="tiers">
+    <span class="admin-fab-icon">⭐</span>
+    <span>Promouvoir client VIP</span>
+  </a>
+  <a href="/staff/sale" target="_blank" rel="noopener" role="menuitem" data-requires-permission="sales">
+    <span class="admin-fab-icon">🛒</span>
+    <span>Saisir une vente ↗</span>
+  </a>
+</div>
+
+<style>
+  .admin-fab {
+    position: fixed;
+    right: max(16px, env(safe-area-inset-right));
+    bottom: calc(var(--ad-bottomnav-h) + 16px + env(safe-area-inset-bottom));
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--ad-emerald);
+    color: var(--ad-gold);
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 12px 24px -8px rgba(15, 81, 50, 0.45);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform .15s, background .15s;
+    z-index: 80;
+  }
+  .admin-fab:hover { background: var(--ad-emerald-dark); transform: translateY(-2px); }
+  .admin-fab:active { transform: scale(0.95); }
+  .admin-fab[aria-expanded="true"] { background: var(--ad-emerald-dark); transform: rotate(45deg); }
+
+  @media (min-width: 1024px) {
+    .admin-fab {
+      right: 28px;
+      bottom: 28px;
+      width: 60px;
+      height: 60px;
+    }
+  }
+
+  .admin-fab-menu {
+    position: fixed;
+    right: max(16px, env(safe-area-inset-right));
+    bottom: calc(var(--ad-bottomnav-h) + 84px + env(safe-area-inset-bottom));
+    min-width: 240px;
+    background: var(--ad-paper);
+    border: 1px solid var(--ad-border);
+    border-radius: 12px;
+    box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.18);
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    z-index: 80;
+    animation: adFabFade .15s ease-out;
+  }
+  .admin-fab-menu[hidden] { display: none; }
+  @keyframes adFabFade {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @media (min-width: 1024px) {
+    .admin-fab-menu { right: 28px; bottom: 100px; }
+  }
+
+  .admin-fab-menu a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    min-height: 48px;
+    color: var(--ad-ink);
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+  .admin-fab-menu a:hover { background: var(--ad-cream); }
+  .admin-fab-menu a[hidden] { display: none; }
+  .admin-fab-icon { font-size: 18px; width: 24px; text-align: center; }
+</style>

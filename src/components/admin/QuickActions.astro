@@ -1,0 +1,66 @@
+---
+/**
+ * Quick action grid (Accueil bloc 6). Identical perm gating to the FAB
+ * but laid out as a card grid for desktop.
+ */
+---
+<div class="qa-card">
+  <div class="qa-head"><h3>Actions rapides</h3></div>
+  <div class="qa-grid">
+    <a class="qa-tile" href="/admin/catalogue#new" data-requires-permission="products" hidden>
+      <span class="qa-icon">📦</span>
+      <span>Nouveau parfum</span>
+    </a>
+    <a class="qa-tile" href="/admin/articles/new" data-requires-permission="articles" hidden>
+      <span class="qa-icon">📝</span>
+      <span>Nouvel article</span>
+    </a>
+    <a class="qa-tile" href="/staff/sale" target="_blank" rel="noopener" data-requires-permission="sales" hidden>
+      <span class="qa-icon">🛒</span>
+      <span>Saisir une vente ↗</span>
+    </a>
+    <a class="qa-tile" href="/" target="_blank" rel="noopener">
+      <span class="qa-icon">🌐</span>
+      <span>Voir le site public ↗</span>
+    </a>
+  </div>
+</div>
+
+<style>
+  .qa-card {
+    background: var(--ad-paper);
+    border: 1px solid var(--ad-border);
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(15, 81, 50, 0.04);
+  }
+  .qa-head { margin-bottom: 14px; }
+  .qa-head h3 {
+    font-family: var(--ad-font-display);
+    font-size: 18px;
+    margin: 0;
+    font-weight: 500;
+  }
+  .qa-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .qa-tile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    min-height: 56px;
+    background: var(--ad-cream);
+    border: 1px solid var(--ad-border);
+    border-radius: 10px;
+    color: var(--ad-ink);
+    text-decoration: none;
+    font-size: 14px;
+    transition: background .15s, border-color .15s;
+  }
+  .qa-tile:hover { background: var(--ad-paper); border-color: var(--ad-gold); }
+  .qa-tile[hidden] { display: none; }
+  .qa-icon { font-size: 20px; }
+</style>

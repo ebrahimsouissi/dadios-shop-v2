@@ -1,0 +1,455 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import KPICard from '../../components/admin/KPICard.astro';
+import AlertCard from '../../components/admin/AlertCard.astro';
+import ActivityFeed from '../../components/admin/ActivityFeed.astro';
+import QuickActions from '../../components/admin/QuickActions.astro';
+---
+<AdminLayout title="Tableau de bord" current="accueil">
+  <!-- Greeting -->
+  <header class="dash-greet">
+    <div>
+      <h1 id="greeting">Bonjour 👋</h1>
+      <p class="dash-date" id="greetDate">—</p>
+    </div>
+    <button type="button" id="dashRefresh" class="ad-btn ad-btn-outline ad-btn-sm">
+      <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
+      Rafraîchir
+    </button>
+  </header>
+
+  <!-- KPI grid -->
+  <div class="dash-kpis">
+    <KPICard
+      title="CA aujourd'hui"
+      variant="emerald"
+      valueId="kpiRevToday"
+      metaId="kpiRevDelta"
+      initialMeta="—"
+      requiresPermission="sales"
+    />
+    <KPICard
+      title="Commandes en attente"
+      valueId="kpiPendingOrders"
+      metaId="kpiPendingOrdersMeta"
+      initialMeta="—"
+      href="/admin/ventes"
+      requiresPermission="orders"
+    />
+    <KPICard
+      title="Avis à modérer"
+      variant="gold"
+      valueId="kpiPendingReviews"
+      metaId="kpiPendingReviewsMeta"
+      initialMeta="—"
+      href="/admin/contenu"
+      requiresPermission="reviews"
+    />
+    <KPICard
+      title="Demandes VIP"
+      valueId="kpiVipReqs"
+      metaId="kpiVipReqsMeta"
+      initialMeta="—"
+      href="/admin/clients"
+      requiresPermission="perfume-requests"
+    />
+  </div>
+
+  <!-- Alerts -->
+  <div class="dash-alerts">
+    <AlertCard
+      href="/admin/contenu#avis"
+      icon="🔴"
+      variant="danger"
+      countId="alertReviews"
+      labelTemplate="avis attendent votre validation"
+      requiresPermission="reviews"
+    />
+    <AlertCard
+      href="/admin/ventes#en-ligne"
+      icon="🟡"
+      variant="warning"
+      countId="alertOrders"
+      labelTemplate="commandes en attente de confirmation"
+      requiresPermission="orders"
+    />
+    <AlertCard
+      href="/admin/clients#demandes"
+      icon="🟢"
+      variant="info"
+      countId="alertVipReqs"
+      labelTemplate="demandes VIP en cours"
+      requiresPermission="perfume-requests"
+    />
+  </div>
+
+  <!-- 30-day revenue chart -->
+  <div class="dash-card chart-card" data-requires-permission="sales" hidden>
+    <div class="dash-card-head">
+      <h3>Chiffre d'affaires — 30 derniers jours</h3>
+    </div>
+    <div class="dash-chart" id="dashChart30">
+      <div class="dash-chart-loading">Chargement…</div>
+    </div>
+  </div>
+
+  <!-- Activity + Quick actions -->
+  <div class="dash-bottom">
+    <ActivityFeed id="dashActivity" />
+    <QuickActions />
+  </div>
+
+  <p id="dashStatus" class="dash-status" hidden></p>
+
+  <style>
+    .dash-greet {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .dash-greet h1 {
+      font-family: var(--ad-font-display);
+      font-size: clamp(22px, 4vw, 30px);
+      margin: 0;
+      font-weight: 500;
+      color: var(--ad-ink);
+    }
+    .dash-date {
+      color: var(--ad-ink-soft);
+      font-size: 14px;
+      margin: 4px 0 0;
+      text-transform: capitalize;
+    }
+    #dashRefresh.is-loading svg { animation: dashSpin 0.8s linear infinite; }
+    @keyframes dashSpin { to { transform: rotate(360deg); } }
+
+    .dash-kpis {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    .dash-alerts {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .dash-card {
+      background: var(--ad-paper);
+      border: 1px solid var(--ad-border);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 18px;
+      box-shadow: 0 1px 3px rgba(15, 81, 50, 0.04);
+    }
+    .dash-card[hidden] { display: none; }
+    .dash-card-head { margin-bottom: 14px; }
+    .dash-card-head h3 {
+      font-family: var(--ad-font-display);
+      font-size: 18px;
+      margin: 0;
+      font-weight: 500;
+    }
+    .dash-chart { width: 100%; overflow-x: auto; }
+    .dash-chart svg { width: 100%; height: auto; display: block; }
+    .dash-chart-loading {
+      padding: 40px 16px;
+      text-align: center;
+      color: var(--ad-ink-mute);
+      font-style: italic;
+    }
+
+    .dash-bottom {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 18px;
+    }
+    @media (min-width: 900px) {
+      .dash-bottom { grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr); }
+    }
+
+    .dash-status {
+      margin-top: 16px;
+      padding: 10px 12px;
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid var(--ad-danger);
+      color: #8a2a14;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+    .dash-status[hidden] { display: none; }
+  </style>
+
+  <script>
+    import { adminSalesStats, adminListEmployees } from '../../scripts/adminApi.js';
+    import { adminListOrders } from '../../scripts/ordersApi.js';
+    import { adminPendingReviewsCount } from '../../scripts/reviewsApi.js';
+    import { adminListPerfumeRequests } from '../../scripts/perfumeRequestsApi.js';
+    import { adminListSales } from '../../scripts/adminApi.js';
+
+    // Helpers
+    const $ = (id: string) => document.getElementById(id);
+    function greeting() {
+      const h = new Date().getHours();
+      if (h < 6)  return 'Bonne nuit';
+      if (h < 12) return 'Bonjour';
+      if (h < 18) return 'Bon après-midi';
+      return 'Bonsoir';
+    }
+    function fmtDT(n) { return (Number(n) || 0).toFixed(2).replace('.', ',') + ' DT'; }
+    function fmtRel(iso) {
+      if (!iso) return '';
+      const t = new Date(iso).getTime();
+      if (!t) return '';
+      const diff = Date.now() - t;
+      const sec = Math.round(diff / 1000);
+      if (sec < 60) return 'à l\'instant';
+      const min = Math.round(sec / 60);
+      if (min < 60) return `il y a ${min} min`;
+      const hr = Math.round(min / 60);
+      if (hr < 24) return `il y a ${hr} h`;
+      const d = Math.round(hr / 24);
+      if (d < 7) return `il y a ${d} j`;
+      try { return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }); }
+      catch { return iso.slice(0, 10); }
+    }
+    function tunisDay(d?: Date) {
+      const dd = d || new Date();
+      const t = new Date(dd.getTime() + 60 * 60 * 1000);
+      return `${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, '0')}-${String(t.getUTCDate()).padStart(2, '0')}`;
+    }
+    function esc(s) {
+      return String(s ?? '').replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      }[c]!));
+    }
+
+    // 30-day SVG line chart — preserves the visual identity of the
+    // existing /admin chart.
+    function renderChart30(byDay) {
+      if (!byDay || byDay.length === 0) {
+        return '<div class="dash-chart-loading">Aucune vente sur la période.</div>';
+      }
+      const W = 720, H = 220, PAD_L = 40, PAD_R = 12, PAD_T = 14, PAD_B = 26;
+      const innerW = W - PAD_L - PAD_R;
+      const innerH = H - PAD_T - PAD_B;
+      const maxRev = Math.max(1, ...byDay.map((d) => d.revenue));
+      const step = innerW / Math.max(1, byDay.length - 1);
+      const pts = byDay.map((d, i) => ({
+        x: PAD_L + i * step,
+        y: PAD_T + innerH - (d.revenue / maxRev) * innerH,
+        d,
+      }));
+      const pathD = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+      const areaD = `${pathD} L${pts[pts.length - 1].x.toFixed(1)},${(PAD_T + innerH).toFixed(1)} L${pts[0].x.toFixed(1)},${(PAD_T + innerH).toFixed(1)} Z`;
+      const gridLines: string[] = [];
+      const gridLabels: string[] = [];
+      for (let g = 0; g <= 3; g++) {
+        const y = PAD_T + (innerH * g / 3);
+        const val = maxRev * (1 - g / 3);
+        gridLines.push(`<line stroke="rgba(120,104,80,0.15)" stroke-dasharray="2 4" x1="${PAD_L}" x2="${W - PAD_R}" y1="${y}" y2="${y}"/>`);
+        gridLabels.push(`<text x="${PAD_L - 6}" y="${y + 3}" text-anchor="end" font-size="10" fill="#9B9B9B">${Math.round(val)}</text>`);
+      }
+      const xLabels: string[] = [];
+      [0, Math.floor(byDay.length / 2), byDay.length - 1].forEach((i) => {
+        if (i < byDay.length) {
+          const p = pts[i];
+          const parts = byDay[i].date.split('-');
+          xLabels.push(`<text x="${p.x}" y="${H - PAD_B + 16}" text-anchor="middle" font-size="10" fill="#9B9B9B">${parts[2]}/${parts[1]}</text>`);
+        }
+      });
+      const topPts = pts.slice().sort((a, b) => b.d.revenue - a.d.revenue).slice(0, 3).filter((p) => p.d.revenue > 0);
+      const dots = topPts.map((p) => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="#D4AF37"/>`).join('');
+      return `
+        <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Chiffre d'affaires sur 30 jours">
+          <defs>
+            <linearGradient id="dashChartGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#0F5132" stop-opacity="0.35"/>
+              <stop offset="1" stop-color="#0F5132" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          ${gridLines.join('')}
+          ${gridLabels.join('')}
+          <path d="${areaD}" fill="url(#dashChartGrad)" opacity="0.45"/>
+          <path d="${pathD}" fill="none" stroke="#0F5132" stroke-width="2"/>
+          ${dots}
+          ${xLabels.join('')}
+          <line x1="${PAD_L}" x2="${W - PAD_R}" y1="${H - PAD_B}" y2="${H - PAD_B}" stroke="rgba(120,104,80,0.25)"/>
+        </svg>
+      `;
+    }
+
+    function setGreeting(perms?: string[]) {
+      const greetEl = $('greeting');
+      const dateEl = $('greetDate');
+      const nameEl = document.getElementById('adminUserName');
+      const name = nameEl?.textContent && nameEl.textContent !== '—' ? nameEl.textContent.trim() : '';
+      if (greetEl) greetEl.textContent = `${greeting()}${name ? ' ' + name : ''} 👋`;
+      try {
+        if (dateEl) dateEl.textContent = new Date().toLocaleDateString('fr-FR', {
+          weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
+        });
+      } catch {}
+    }
+
+    async function loadDashboard(perms: string[]) {
+      const refreshBtn = $('dashRefresh');
+      refreshBtn?.classList.add('is-loading');
+
+      const isSuper = perms.includes('all');
+      const has = (p) => isSuper || perms.includes(p);
+
+      const today = tunisDay();
+      const yesterday = tunisDay(new Date(Date.now() - 24 * 60 * 60 * 1000));
+      const from30 = tunisDay(new Date(Date.now() - 29 * 24 * 60 * 60 * 1000));
+      const noop = Promise.resolve({ ok: false });
+
+      const [statsToday, statsYesterday, stats30, ordersR, reviewsR, vipR, recentSalesR] = await Promise.all([
+        has('sales') ? adminSalesStats({ period: 'today' }) : noop,
+        has('sales') ? adminSalesStats({ period: 'custom', from: yesterday, to: yesterday }) : noop,
+        has('sales') ? adminSalesStats({ period: 'custom', from: from30, to: today }) : noop,
+        has('orders') ? adminListOrders() : noop,
+        has('reviews') ? adminPendingReviewsCount() : noop,
+        has('perfume-requests') ? adminListPerfumeRequests('pending') : noop,
+        has('sales') ? adminListSales({ from: today, to: today, limit: 5 }) : noop,
+      ]);
+
+      // KPI: CA aujourd'hui + delta
+      if (statsToday.ok) {
+        $('kpiRevToday')!.textContent = fmtDT(statsToday.revenue.total);
+        const deltaEl = $('kpiRevDelta');
+        if (statsYesterday.ok && deltaEl) {
+          const yest = statsYesterday.revenue.total;
+          const today = statsToday.revenue.total;
+          if (yest > 0) {
+            const pct = Math.round((today - yest) / yest * 100);
+            const sign = pct > 0 ? '+' : '';
+            deltaEl.textContent = `${sign}${pct}% vs hier (${fmtDT(yest)})`;
+            deltaEl.className = 'kpi-meta ' + (pct > 0 ? 'is-up' : (pct < 0 ? 'is-down' : ''));
+          } else {
+            deltaEl.textContent = today > 0 ? 'Démarrage' : 'Pas de vente';
+          }
+        }
+      }
+
+      // KPI: commandes en attente
+      if (ordersR.ok) {
+        const pending = (ordersR.orders || []).filter((o) => o.status === 'pending').length;
+        $('kpiPendingOrders')!.textContent = String(pending);
+        const m = $('kpiPendingOrdersMeta');
+        if (m) m.textContent = pending > 0 ? 'À confirmer' : 'Tout est traité';
+      }
+
+      // KPI + alert: avis à modérer
+      if (reviewsR.ok) {
+        const n = Number(reviewsR.count || 0);
+        $('kpiPendingReviews')!.textContent = String(n);
+        const m = $('kpiPendingReviewsMeta');
+        if (m) m.textContent = n > 0 ? 'En attente' : 'À jour';
+        if (n > 0) {
+          const al = document.querySelector<HTMLElement>('.alert-card[data-requires-permission="reviews"]');
+          if (al) { al.hidden = false; const c = $('alertReviews'); if (c) c.textContent = String(n); }
+        }
+      }
+
+      // KPI + alert: demandes VIP
+      if (vipR.ok) {
+        const n = (vipR.requests || []).length;
+        $('kpiVipReqs')!.textContent = String(n);
+        const m = $('kpiVipReqsMeta');
+        if (m) m.textContent = n > 0 ? 'À traiter' : 'À jour';
+        if (n > 0) {
+          const al = document.querySelector<HTMLElement>('.alert-card[data-requires-permission="perfume-requests"]');
+          if (al) { al.hidden = false; const c = $('alertVipReqs'); if (c) c.textContent = String(n); }
+        }
+      }
+
+      // Alert: commandes en attente
+      if (ordersR.ok) {
+        const pending = (ordersR.orders || []).filter((o) => o.status === 'pending').length;
+        if (pending > 0) {
+          const al = document.querySelector<HTMLElement>('.alert-card[data-requires-permission="orders"]');
+          if (al) { al.hidden = false; const c = $('alertOrders'); if (c) c.textContent = String(pending); }
+        }
+      }
+
+      // Chart 30 jours
+      const chartCardEl = document.querySelector<HTMLElement>('.chart-card');
+      if (chartCardEl && has('sales')) {
+        chartCardEl.hidden = false;
+        const wrap = $('dashChart30');
+        if (wrap && stats30.ok) wrap.innerHTML = renderChart30(stats30.byDay);
+        else if (wrap) wrap.innerHTML = '<div class="dash-chart-loading">Erreur de chargement.</div>';
+      }
+
+      // Activity feed
+      const activityEl = $('dashActivity');
+      if (activityEl) {
+        const items: { icon: string; html: string; ts: string }[] = [];
+        if (recentSalesR.ok) {
+          (recentSalesR.sales || []).forEach((s) => {
+            const who = esc(s.createdByName || s.createdBy || '—');
+            items.push({
+              icon: '🛍️',
+              html: `<strong>Vente ${esc(s.id.slice(0, 6))}</strong> par ${who} — ${fmtDT(s.total)}${s.customerName ? ` · ${esc(s.customerName)}` : ''}`,
+              ts: s.createdAt,
+            });
+          });
+        }
+        if (ordersR.ok) {
+          (ordersR.orders || []).slice(0, 5).forEach((o) => {
+            items.push({
+              icon: '💌',
+              html: `<strong>Commande</strong> de ${esc(o.customerName || o.phone || '—')} — ${fmtDT(o.total)}<div class="activity-meta">Statut : ${esc(o.status)}</div>`,
+              ts: o.createdAt,
+            });
+          });
+        }
+        if (reviewsR.ok && reviewsR.count > 0) {
+          items.push({
+            icon: '⭐',
+            html: `<strong>${reviewsR.count} avis</strong> en attente de modération`,
+            ts: new Date().toISOString(),
+          });
+        }
+        items.sort((a, b) => String(b.ts).localeCompare(String(a.ts)));
+        const top = items.slice(0, 12);
+        if (top.length === 0) {
+          activityEl.innerHTML = '<li class="activity-empty">Aucune activité récente.</li>';
+        } else {
+          activityEl.innerHTML = top.map((it) => `
+            <li>
+              <span class="activity-icon-cell">${it.icon}</span>
+              <div class="activity-text">${it.html}</div>
+              <span class="activity-time">${fmtRel(it.ts)}</span>
+            </li>
+          `).join('');
+        }
+      }
+
+      refreshBtn?.classList.remove('is-loading');
+    }
+
+    // Boot — wait for the layout's admin:ready event then load.
+    document.addEventListener('admin:ready', (e: any) => {
+      const perms = e.detail?.permissions || [];
+      setGreeting(perms);
+      loadDashboard(perms);
+    });
+    // If the layout already fired the event before this script attached
+    // (race on cached SPA-like nav), check window for the cached perms.
+    if ((window as any).__adminPerms) {
+      setGreeting();
+      loadDashboard((window as any).__adminPerms);
+    }
+
+    $('dashRefresh')?.addEventListener('click', () => {
+      loadDashboard((window as any).__adminPerms || []);
+    });
+  </script>
+</AdminLayout>

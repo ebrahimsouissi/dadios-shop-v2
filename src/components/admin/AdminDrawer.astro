@@ -1,0 +1,163 @@
+---
+/**
+ * Mobile drawer (slides from left). Mirrors the desktop sidebar's nav.
+ * Visible only < 1024px. Toggled by AdminHeader's burger.
+ */
+export interface Props {
+  current: string;
+}
+const { current } = Astro.props;
+
+const NAV = [
+  { id: 'accueil',   label: 'Accueil',              icon: '🏠', href: '/admin',           perm: null },
+  { id: 'ventes',    label: 'Commandes & Boutique', icon: '🛒', href: '/admin/ventes',    perm: null },
+  { id: 'catalogue', label: 'Catalogue',            icon: '📦', href: '/admin/catalogue', perm: 'products' },
+  { id: 'clients',   label: 'Clients',              icon: '👥', href: '/admin/clients',   perm: null },
+  { id: 'contenu',   label: 'Contenu',              icon: '✍️', href: '/admin/contenu',   perm: null },
+  { id: 'equipe',    label: 'Équipe & réglages',    icon: '⚙️', href: '/admin/equipe',    perm: 'all' },
+];
+---
+<div class="admin-drawer-backdrop" id="adminDrawerBackdrop" aria-hidden="true"></div>
+<aside class="admin-drawer" id="adminDrawer" role="dialog" aria-modal="true" aria-label="Menu admin" tabindex="-1">
+  <div class="admin-drawer-head">
+    <span class="admin-drawer-brand">
+      <span class="admin-drawer-wordmark">Dadios</span>
+      <span class="admin-drawer-tag">Admin</span>
+    </span>
+    <button type="button" class="admin-drawer-close" id="adminDrawerClose" aria-label="Fermer">×</button>
+  </div>
+  <nav class="admin-drawer-nav">
+    {NAV.map((item) => (
+      <a
+        href={item.href}
+        class={`admin-drawer-item ${current === item.id ? 'is-active' : ''}`}
+        data-nav-section={item.id}
+        data-requires-permission={item.perm || undefined}
+      >
+        <span class="admin-drawer-icon" aria-hidden="true">{item.icon}</span>
+        <span class="admin-drawer-label">{item.label}</span>
+      </a>
+    ))}
+  </nav>
+  <div class="admin-drawer-foot">
+    <a href="/" class="admin-drawer-back" target="_blank" rel="noopener">↗ Voir le site public</a>
+  </div>
+</aside>
+
+<style>
+  .admin-drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 62, 37, 0.55);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .25s ease-out;
+    z-index: 200;
+  }
+  .admin-drawer-backdrop.is-open { opacity: 1; pointer-events: auto; }
+
+  .admin-drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(85vw, 320px);
+    background: var(--ad-emerald);
+    color: var(--ad-cream);
+    z-index: 201;
+    transform: translateX(-100%);
+    transition: transform .3s ease-out;
+    display: flex;
+    flex-direction: column;
+    padding: 16px 14px max(20px, env(safe-area-inset-bottom));
+    padding-top: max(20px, env(safe-area-inset-top));
+    box-shadow: 20px 0 60px -20px rgba(10, 62, 37, 0.5);
+    overflow-y: auto;
+  }
+  .admin-drawer.is-open { transform: translateX(0); }
+
+  .admin-drawer-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .admin-drawer-brand {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .admin-drawer-wordmark {
+    font-family: var(--ad-font-display);
+    font-style: italic;
+    font-size: 28px;
+    color: var(--ad-gold);
+    line-height: 1;
+  }
+  .admin-drawer-tag {
+    font-size: 10px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: rgba(250, 246, 240, 0.6);
+  }
+  .admin-drawer-close {
+    width: 40px;
+    height: 40px;
+    border: none;
+    background: transparent;
+    color: var(--ad-cream);
+    font-size: 28px;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: 8px;
+  }
+  .admin-drawer-close:hover { background: rgba(250, 246, 240, 0.1); }
+
+  .admin-drawer-nav {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 8px;
+  }
+  .admin-drawer-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 14px;
+    min-height: 52px;
+    border-radius: 10px;
+    color: var(--ad-cream);
+    text-decoration: none;
+    font-size: 15px;
+    border-left: 3px solid transparent;
+  }
+  .admin-drawer-item:hover, .admin-drawer-item:active { background: rgba(250, 246, 240, 0.07); }
+  .admin-drawer-item.is-active {
+    background: rgba(212, 175, 55, 0.12);
+    border-left-color: var(--ad-gold);
+  }
+  .admin-drawer-item.is-active .admin-drawer-label { color: var(--ad-gold); }
+  .admin-drawer-item[hidden] { display: none; }
+  .admin-drawer-icon { font-size: 20px; width: 22px; text-align: center; }
+  .admin-drawer-label { font-weight: 500; }
+
+  .admin-drawer-foot {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(212, 175, 55, 0.18);
+  }
+  .admin-drawer-back {
+    display: block;
+    padding: 12px 14px;
+    color: rgba(250, 246, 240, 0.7);
+    text-decoration: none;
+    font-size: 13px;
+    letter-spacing: 0.02em;
+  }
+  .admin-drawer-back:hover { color: var(--ad-gold); }
+
+  @media (min-width: 1024px) {
+    .admin-drawer-backdrop, .admin-drawer { display: none !important; }
+  }
+</style>

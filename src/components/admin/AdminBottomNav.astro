@@ -1,0 +1,73 @@
+---
+/**
+ * Mobile bottom nav (< 1024px). 5 slots — last is 'Plus' which opens
+ * the drawer (which contains Contenu + Équipe).
+ */
+export interface Props {
+  current: string;
+}
+const { current } = Astro.props;
+
+const ITEMS = [
+  { id: 'accueil',   label: 'Accueil',  icon: '🏠', href: '/admin' },
+  { id: 'ventes',    label: 'Ventes',   icon: '🛒', href: '/admin/ventes' },
+  { id: 'catalogue', label: 'Produits', icon: '📦', href: '/admin/catalogue' },
+  { id: 'clients',   label: 'Clients',  icon: '👥', href: '/admin/clients' },
+];
+---
+<nav class="admin-bottomnav" aria-label="Navigation rapide">
+  {ITEMS.map((it) => (
+    <a
+      href={it.href}
+      class={`admin-bottomnav-item ${current === it.id ? 'is-active' : ''}`}
+      data-nav-section={it.id}
+    >
+      <span class="admin-bottomnav-icon" aria-hidden="true">{it.icon}</span>
+      <span class="admin-bottomnav-label">{it.label}</span>
+    </a>
+  ))}
+  <button type="button" class="admin-bottomnav-item" id="adminMoreBtn" aria-label="Ouvrir plus d'options">
+    <span class="admin-bottomnav-icon" aria-hidden="true">⋯</span>
+    <span class="admin-bottomnav-label">Plus</span>
+  </button>
+</nav>
+
+<style>
+  .admin-bottomnav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--ad-paper);
+    border-top: 1px solid var(--ad-border);
+    box-shadow: 0 -4px 18px -8px rgba(15, 81, 50, 0.15);
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    z-index: 40;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .admin-bottomnav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 8px 4px;
+    min-height: 60px;
+    background: transparent;
+    border: none;
+    color: var(--ad-ink-soft);
+    font-size: 10px;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    text-decoration: none;
+    font-family: var(--ad-font-body);
+  }
+  .admin-bottomnav-item.is-active { color: var(--ad-emerald); }
+  .admin-bottomnav-icon { font-size: 22px; line-height: 1; }
+  .admin-bottomnav-label { font-weight: 500; }
+
+  @media (min-width: 1024px) {
+    .admin-bottomnav { display: none; }
+  }
+</style>

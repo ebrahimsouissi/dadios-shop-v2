@@ -1,0 +1,1166 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+---
+<AdminLayout title="Ventes" current="ventes">
+  <header class="admin-section-head">
+    <div>
+      <div class="admin-eyebrow">Ventes</div>
+      <h1>Commandes &amp; boutique</h1>
+      <p class="help">Commandes en ligne, tickets de caisse, tableau de bord.</p>
+    </div>
+  </header>
+
+  <div class="orders-block" data-requires-permission="orders">
+    <div class="orders-head">
+      <div>
+        <div class="eyebrow">Commandes</div>
+        <h2>Gestion des commandes</h2>
+        <p class="orders-help">
+          Suivez l'avancement de chaque commande WhatsApp et notez les détails de livraison.
+        </p>
+      </div>
+      <button type="button" id="ordersRefresh" class="btn btn-outline btn-sm">↻ Rafraîchir</button>
+    </div>
+
+    <div class="orders-filters" id="ordersFilters" role="tablist">
+      <button type="button" class="filter-pill active" data-status="" role="tab">Toutes <span class="count">0</span></button>
+      <button type="button" class="filter-pill" data-status="pending" role="tab">En attente <span class="count">0</span></button>
+      <button type="button" class="filter-pill" data-status="confirmed" role="tab">Confirmées <span class="count">0</span></button>
+      <button type="button" class="filter-pill" data-status="delivered" role="tab">Livrées <span class="count">0</span></button>
+      <button type="button" class="filter-pill" data-status="cancelled" role="tab">Annulées <span class="count">0</span></button>
+    </div>
+
+    <div class="orders-tablewrap">
+      <table class="admin-table orders-admin-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Réf.</th>
+            <th>Client</th>
+            <th>Articles</th>
+            <th>Total</th>
+            <th>Statut</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="ordersRows">
+          <tr><td colspan="7" style="text-align:center;padding:32px">Chargement des commandes…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p id="ordersStatus" class="status-msg hidden"></p>
+  </div>
+
+  <div class="sales-block" data-requires-permission="sales">
+    <div class="sales-head">
+      <div>
+        <div class="eyebrow">Boutique</div>
+        <h2>Ventes &amp; tableau de bord</h2>
+        <p class="sales-help">
+          Suivi du chiffre d'affaires, gestion des tickets et des employés de caisse.
+        </p>
+      </div>
+    </div>
+
+    <div class="sales-subtabs" role="tablist">
+      <button type="button" class="sales-subtab is-active" data-subtab="dashboard" role="tab">Tableau de bord</button>
+      <button type="button" class="sales-subtab" data-subtab="tickets" role="tab">Toutes les ventes</button>
+      <button type="button" class="sales-subtab" data-subtab="employees" role="tab">Employés</button>
+    </div>
+
+    <!-- ===== DASHBOARD ===== -->
+    <div class="sales-panel" data-panel="dashboard">
+      <div class="sales-kpis" id="salesKpis">
+        <div class="sales-kpi sales-kpi--emerald">
+          <div class="sales-kpi-label">CA aujourd'hui</div>
+          <div class="sales-kpi-value" id="kpiTodayRev">—</div>
+          <div class="sales-kpi-meta" id="kpiTodayMeta">—</div>
+        </div>
+        <div class="sales-kpi sales-kpi--gold">
+          <div class="sales-kpi-label">CA mois en cours</div>
+          <div class="sales-kpi-value" id="kpiMonthRev">—</div>
+          <div class="sales-kpi-meta" id="kpiMonthMeta">vs 1 660 DT de frais fixes</div>
+        </div>
+        <div class="sales-kpi">
+          <div class="sales-kpi-label">Tickets aujourd'hui</div>
+          <div class="sales-kpi-value" id="kpiTodayTickets">—</div>
+          <div class="sales-kpi-meta">Panier moyen <span id="kpiTodayAvg">—</span></div>
+        </div>
+        <div class="sales-kpi">
+          <div class="sales-kpi-label">Moyenne journalière</div>
+          <div class="sales-kpi-value" id="kpi30Avg">—</div>
+          <div class="sales-kpi-meta">Sur les 30 derniers jours</div>
+        </div>
+      </div>
+
+      <p id="salesDashStatus" class="status-msg hidden"></p>
+
+      <div class="sales-chart-card">
+        <div class="sales-chart-head">
+          <h3>Chiffre d'affaires — 30 derniers jours</h3>
+          <button type="button" id="salesDashRefresh" class="btn btn-outline btn-sm">↻ Rafraîchir</button>
+        </div>
+        <div class="sales-chart-wrap" id="chart30Days">
+          <div class="sales-chart-empty">Chargement…</div>
+        </div>
+      </div>
+
+      <div class="sales-chart-grid">
+        <div class="sales-chart-card">
+          <div class="sales-chart-head">
+            <h3>Top produits — mois en cours</h3>
+          </div>
+          <div class="sales-chart-wrap" id="chartTopProducts">
+            <div class="sales-chart-empty">Chargement…</div>
+          </div>
+        </div>
+
+        <div class="sales-chart-card">
+          <div class="sales-chart-head">
+            <h3>Répartition par employé — mois</h3>
+          </div>
+          <div class="sales-chart-wrap" id="chartEmployees">
+            <div class="sales-chart-empty">Chargement…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== ALL SALES TABLE ===== -->
+    <div class="sales-panel" data-panel="tickets" hidden>
+      <div class="sales-tickets-filters">
+        <label class="sales-filter-field">
+          <span>Du</span>
+          <input type="date" id="salesFrom" />
+        </label>
+        <label class="sales-filter-field">
+          <span>Au</span>
+          <input type="date" id="salesTo" />
+        </label>
+        <label class="sales-filter-field">
+          <span>Employé</span>
+          <select id="salesEmployeeFilter"><option value="">Tous</option></select>
+        </label>
+        <label class="sales-filter-field">
+          <span>Statut</span>
+          <select id="salesStatusFilter">
+            <option value="">Tous</option>
+            <option value="active">Actives</option>
+            <option value="cancelled">Annulées</option>
+          </select>
+        </label>
+        <button type="button" id="salesApplyFilters" class="btn btn-primary btn-sm">Appliquer</button>
+      </div>
+
+      <div class="sales-tickets-summary" id="salesTicketsSummary">
+        <span><strong id="sumRev">0,00 DT</strong> sur la période</span>
+        <span><strong id="sumTickets">0</strong> tickets</span>
+        <span>Panier moyen <strong id="sumAvg">0,00 DT</strong></span>
+      </div>
+
+      <div class="sales-tablewrap">
+        <table class="admin-table sales-admin-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Employé</th>
+              <th>Articles</th>
+              <th>Total</th>
+              <th>Statut</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="salesRows">
+            <tr><td colspan="6" style="text-align:center;padding:32px">—</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p id="salesTicketsStatus" class="status-msg hidden"></p>
+    </div>
+
+    <!-- ===== EMPLOYEES ===== -->
+    <div class="sales-panel" data-panel="employees" hidden>
+      <div class="sales-employees-head">
+        <p>Les employés se connectent à <code>/staff/login</code> avec leur code à 4 chiffres.</p>
+        <button type="button" id="salesAddEmployeeBtn" class="btn btn-primary btn-sm">+ Ajouter</button>
+      </div>
+
+      <div class="sales-tablewrap">
+        <table class="admin-table sales-employees-table">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Nom</th>
+              <th>Statut</th>
+              <th>Ventes</th>
+              <th>Créé le</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="employeesRows">
+            <tr><td colspan="6" style="text-align:center;padding:24px">Chargement…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p id="employeesStatus" class="status-msg hidden"></p>
+    </div>
+  </div>
+
+  <!-- ===== Modals ===== -->
+<div class="modal hidden" id="saleModal">
+  <div class="modal-overlay" id="saleModalOverlay"></div>
+  <div class="modal-box">
+    <button type="button" class="modal-close" id="saleModalClose" aria-label="Fermer">×</button>
+    <div class="eyebrow">Vente</div>
+    <h2 id="saleModalTitle">Ticket</h2>
+    <div id="saleModalMeta" class="sale-modal-meta"></div>
+    <ul id="saleModalItems" class="sale-modal-items"></ul>
+    <div class="sale-modal-total">
+      <span>Total recalculé</span>
+      <span id="saleModalTotal">0,00 DT</span>
+    </div>
+    <p id="saleModalStatus" class="status-msg hidden"></p>
+    <div class="sale-modal-actions">
+      <button type="button" id="saleModalCancelSale" class="btn btn-outline btn-sm">Annuler la vente</button>
+      <div style="flex:1"></div>
+      <button type="button" id="saleModalDismiss" class="btn btn-outline btn-sm">Fermer</button>
+      <button type="button" id="saleModalSave" class="btn btn-primary btn-sm">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal hidden" id="employeeModal">
+  <div class="modal-overlay" id="employeeModalOverlay"></div>
+  <div class="modal-box" style="max-width:440px">
+    <button type="button" class="modal-close" id="employeeModalClose" aria-label="Fermer">×</button>
+    <div class="eyebrow">Employé de caisse</div>
+    <h2 id="employeeModalTitle">Ajouter un employé</h2>
+    <form id="employeeForm">
+      <label>
+        <span>Nom complet *</span>
+        <input type="text" id="empName" required maxlength="80" autocomplete="off" />
+      </label>
+      <label id="empCodeField">
+        <span>Code à 4 chiffres *</span>
+        <input type="tel" id="empCode" required maxlength="4" inputmode="numeric" pattern="\d{4}" autocomplete="off" />
+      </label>
+      <label id="empActiveField" hidden>
+        <span>Actif</span>
+        <input type="checkbox" id="empActive" />
+      </label>
+      <p id="employeeStatus" class="status-msg hidden"></p>
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px">
+        <button type="button" id="employeeCancel" class="btn btn-outline btn-sm">Annuler</button>
+        <button type="submit" id="employeeSave" class="btn btn-primary btn-sm">Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal hidden" id="orderModal">
+  <div class="modal-overlay" id="orderOverlay"></div>
+  <div class="modal-box order-modal-box">
+    <button type="button" class="modal-close" id="orderClose" aria-label="Fermer">×</button>
+    <div class="eyebrow">Commande</div>
+    <h2 id="orderTitle">Détails</h2>
+    <p id="orderMeta" class="order-meta-line"></p>
+
+    <div class="order-modal-grid">
+      <div>
+        <div class="eyebrow" style="margin-bottom:10px">Articles</div>
+        <ul class="order-modal-items" id="orderModalItems"></ul>
+        <div class="order-modal-total" id="orderModalTotal"></div>
+      </div>
+      <div>
+        <div class="eyebrow" style="margin-bottom:10px">Client</div>
+        <p class="order-customer-line" id="orderCustomerName"></p>
+        <p class="order-customer-line" id="orderCustomerPhone"></p>
+        <div class="order-customer-actions" id="orderCustomerActions"></div>
+
+        <div class="eyebrow" style="margin:18px 0 10px">Notes (interne)</div>
+        <textarea id="orderNotes" rows="4" placeholder="Notes de livraison, observations…"></textarea>
+        <div class="order-notes-actions">
+          <button type="button" class="btn btn-primary btn-sm" id="orderSaveNotes">Enregistrer les notes</button>
+          <span id="orderNotesStatus" class="order-notes-status"></span>
+        </div>
+      </div>
+    </div>
+
+    <p class="order-modal-stamps" id="orderStamps"></p>
+  </div>
+</div>
+
+  <script>
+    import { checkPassword, setPassword, getPassword, clearPassword, listProducts, upsertProduct, deleteProduct, uploadImage, adminGetCustomer, adminResetCustomerPassword } from '../../scripts/adminApi.js';
+    import { adminListOrders, adminUpdateOrder, shortOrderId } from '../../scripts/ordersApi.js';
+    import {
+      adminListSales, adminGetSale, adminModifySale, adminCancelSale,
+      adminSalesStats, adminListEmployees, adminCreateEmployee,
+      adminUpdateEmployee, adminDeleteEmployee,
+    } from '../../scripts/adminApi.js';
+
+    const adminMain = document.getElementById('adminMain');
+
+  // ============ ORDERS MANAGEMENT ============
+  const ordersFiltersEl = document.getElementById('ordersFilters') as HTMLElement;
+  const ordersRowsEl = document.getElementById('ordersRows') as HTMLElement;
+  const ordersStatusEl = document.getElementById('ordersStatus') as HTMLElement;
+  const ordersRefreshBtn = document.getElementById('ordersRefresh') as HTMLButtonElement;
+
+  const orderModal = document.getElementById('orderModal') as HTMLElement;
+  const orderOverlay = document.getElementById('orderOverlay') as HTMLElement;
+  const orderClose = document.getElementById('orderClose') as HTMLButtonElement;
+  const orderTitleEl = document.getElementById('orderTitle') as HTMLElement;
+  const orderMetaEl = document.getElementById('orderMeta') as HTMLElement;
+  const orderModalItems = document.getElementById('orderModalItems') as HTMLElement;
+  const orderModalTotal = document.getElementById('orderModalTotal') as HTMLElement;
+  const orderCustomerName = document.getElementById('orderCustomerName') as HTMLElement;
+  const orderCustomerPhone = document.getElementById('orderCustomerPhone') as HTMLElement;
+  const orderCustomerActions = document.getElementById('orderCustomerActions') as HTMLElement;
+  const orderNotes = document.getElementById('orderNotes') as HTMLTextAreaElement;
+  const orderSaveNotes = document.getElementById('orderSaveNotes') as HTMLButtonElement;
+  const orderNotesStatus = document.getElementById('orderNotesStatus') as HTMLElement;
+  const orderStamps = document.getElementById('orderStamps') as HTMLElement;
+
+  const ORDER_STATUS_LABEL: Record<string, string> = {
+    pending: 'En attente',
+    confirmed: 'Confirmée',
+    delivered: 'Livrée',
+    cancelled: 'Annulée',
+  };
+  const ORDER_TRANSITIONS: Record<string, string[]> = {
+    pending: ['confirmed', 'cancelled'],
+    confirmed: ['delivered', 'cancelled'],
+    delivered: [],
+    cancelled: [],
+  };
+
+  let allOrders: any[] = [];
+  let currentOrderFilter = '';
+  let modalOrderId = '';
+
+  function escH(s: any) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    })[c]!);
+  }
+  function fmtOrderDate(iso: string) {
+    if (!iso) return '';
+    try {
+      return new Date(iso).toLocaleString('fr-FR', {
+        day: '2-digit', month: 'short', year: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+      });
+    } catch { return iso; }
+  }
+
+  function showOrdersStatus(msg: string, kind: 'success' | 'error' | '' = '') {
+    ordersStatusEl.textContent = msg;
+    ordersStatusEl.className = 'status-msg ' + (kind || '');
+    ordersStatusEl.classList.remove('hidden');
+    setTimeout(() => ordersStatusEl.classList.add('hidden'), 4000);
+  }
+
+  function statusSelectHtml(orderId: string, currentStatus: string) {
+    const allowed = ORDER_TRANSITIONS[currentStatus] || [];
+    const terminal = allowed.length === 0;
+    // The current status is always present and selected; allowed transitions follow.
+    const visible = [currentStatus, ...allowed];
+    const opts = visible
+      .map((s) => `<option value="${escH(s)}" ${s === currentStatus ? 'selected' : ''}>${escH(ORDER_STATUS_LABEL[s] || s)}</option>`)
+      .join('');
+    return `<select data-order-id="${escH(orderId)}" data-current="${escH(currentStatus)}" ${terminal ? 'disabled' : ''}>${opts}</select>`;
+  }
+
+  function renderOrderRow(o: any) {
+    const itemCount = (o.items || []).reduce((n: number, i: any) => n + (Number(i.qty) || 1), 0);
+    const customerCell = `
+      <span class="cust-name">${escH(o.customerName || '—')}</span>
+      <span class="cust-phone">${escH(o.phone || '')}</span>
+    `;
+    return `<tr data-order-id="${escH(o.id)}">
+      <td>${escH(fmtOrderDate(o.createdAt))}</td>
+      <td><span class="ref-mono">#${escH(shortOrderId(o.id))}</span></td>
+      <td>${customerCell}</td>
+      <td>${itemCount} article${itemCount > 1 ? 's' : ''}</td>
+      <td class="total-cell">${Number(o.total) || 0} DT</td>
+      <td class="status-cell">${statusSelectHtml(o.id, o.status || 'pending')}</td>
+      <td><button type="button" class="link-btn order-details-btn" data-order-id="${escH(o.id)}">Détails</button></td>
+    </tr>`;
+  }
+
+  function updateFilterCounts() {
+    const counts: Record<string, number> = {
+      '': allOrders.length,
+      pending: 0, confirmed: 0, delivered: 0, cancelled: 0,
+    };
+    allOrders.forEach((o) => {
+      const s = String(o.status || 'pending');
+      counts[s] = (counts[s] || 0) + 1;
+    });
+    ordersFiltersEl.querySelectorAll('.filter-pill').forEach((p) => {
+      const status = (p as HTMLElement).dataset.status || '';
+      const c = p.querySelector('.count');
+      if (c) c.textContent = String(counts[status] ?? 0);
+    });
+  }
+
+  function renderOrdersTable() {
+    const filtered = currentOrderFilter
+      ? allOrders.filter((o) => o.status === currentOrderFilter)
+      : allOrders;
+    if (!filtered.length) {
+      ordersRowsEl.innerHTML = `<tr class="orders-empty-row"><td colspan="7">Aucune commande${currentOrderFilter ? ' dans cette catégorie' : ''}.</td></tr>`;
+      return;
+    }
+    ordersRowsEl.innerHTML = filtered.map(renderOrderRow).join('');
+  }
+
+  async function loadAdminOrders() {
+    ordersRowsEl.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px">Chargement des commandes…</td></tr>`;
+    const res = await adminListOrders();
+    if (!res.ok) {
+      ordersRowsEl.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:#B23A1F">Erreur : ${escH(res.error || 'chargement impossible')}</td></tr>`;
+      return;
+    }
+    allOrders = (res.orders || []) as any[];
+    updateFilterCounts();
+    renderOrdersTable();
+  }
+
+  // ===== Filter pill switching =====
+  ordersFiltersEl?.addEventListener('click', (e) => {
+    const pill = (e.target as HTMLElement).closest('.filter-pill') as HTMLElement | null;
+    if (!pill) return;
+    ordersFiltersEl.querySelectorAll('.filter-pill').forEach((p) => p.classList.remove('active'));
+    pill.classList.add('active');
+    currentOrderFilter = pill.dataset.status || '';
+    renderOrdersTable();
+  });
+
+  ordersRefreshBtn?.addEventListener('click', () => loadAdminOrders());
+
+  // ===== Inline status change =====
+  ordersRowsEl?.addEventListener('change', async (e) => {
+    const sel = (e.target as HTMLElement).closest('select[data-order-id]') as HTMLSelectElement | null;
+    if (!sel) return;
+    const orderId = sel.dataset.orderId!;
+    const current = sel.dataset.current || '';
+    const newStatus = sel.value;
+    if (newStatus === current) return;
+    sel.disabled = true;
+    const res = await adminUpdateOrder(orderId, { status: newStatus });
+    sel.disabled = false;
+    if (!res.ok || !res.order) {
+      sel.value = current;
+      showOrdersStatus(res.error || 'Mise à jour impossible', 'error');
+      return;
+    }
+    // Patch the local cache and re-render so counts and the row reflect the new state.
+    const idx = allOrders.findIndex((o) => o.id === orderId);
+    if (idx >= 0) allOrders[idx] = res.order;
+    updateFilterCounts();
+    renderOrdersTable();
+    showOrdersStatus(`Statut → ${ORDER_STATUS_LABEL[newStatus] || newStatus}`, 'success');
+  });
+
+  // ===== Details modal =====
+  ordersRowsEl?.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest('.order-details-btn') as HTMLElement | null;
+    if (!btn) return;
+    const orderId = btn.dataset.orderId!;
+    const order = allOrders.find((o) => o.id === orderId);
+    if (!order) return;
+    openOrderModal(order);
+  });
+
+  function openOrderModal(o: any) {
+    modalOrderId = o.id;
+    orderTitleEl.textContent = `Commande #${shortOrderId(o.id)}`;
+    orderMetaEl.textContent = `Statut : ${ORDER_STATUS_LABEL[o.status] || o.status} · ${fmtOrderDate(o.createdAt)}`;
+
+    const itemsHtml = (o.items || [])
+      .map((i: any) => {
+        const sub = (Number(i.price) || 0) * (Number(i.qty) || 1);
+        const sizeStr = i.size ? ` (${escH(i.size)})` : '';
+        return `<li><span class="li-name">${Number(i.qty) || 1}× ${escH(i.name)}${sizeStr}</span><span class="li-sub">${sub} DT</span></li>`;
+      })
+      .join('');
+    orderModalItems.innerHTML = itemsHtml;
+    orderModalTotal.innerHTML = `<span class="lbl">Total</span><span class="val">${Number(o.total) || 0} DT</span>`;
+
+    orderCustomerName.textContent = o.customerName || 'Client invité';
+    if (!o.customerName) orderCustomerName.classList.add('muted');
+    else orderCustomerName.classList.remove('muted');
+
+    if (o.phone) {
+      orderCustomerPhone.innerHTML = `<a href="tel:${escH(o.phone)}">${escH(o.phone)}</a>`;
+      orderCustomerActions.innerHTML = `
+        <a class="btn btn-gold btn-sm" href="https://wa.me/${encodeURIComponent(o.phone.replace(/[^\d+]/g, ''))}" target="_blank" rel="noopener">WhatsApp</a>
+        <a class="btn btn-outline btn-sm" href="tel:${escH(o.phone)}">Appeler</a>
+      `;
+    } else {
+      orderCustomerPhone.textContent = '—';
+      orderCustomerActions.innerHTML = '';
+    }
+
+    orderNotes.value = o.notes || '';
+    orderNotesStatus.textContent = '';
+    orderNotesStatus.classList.remove('visible');
+
+    orderStamps.textContent = `Créée le ${fmtOrderDate(o.createdAt)} · Dernière mise à jour ${fmtOrderDate(o.updatedAt)}`;
+
+    orderModal.classList.remove('hidden');
+  }
+  function closeOrderModal() {
+    orderModal.classList.add('hidden');
+    modalOrderId = '';
+  }
+  orderClose?.addEventListener('click', closeOrderModal);
+  orderOverlay?.addEventListener('click', closeOrderModal);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !orderModal.classList.contains('hidden')) closeOrderModal();
+  });
+
+  orderSaveNotes?.addEventListener('click', async () => {
+    if (!modalOrderId) return;
+    orderSaveNotes.disabled = true;
+    orderSaveNotes.textContent = 'Enregistrement…';
+    const res = await adminUpdateOrder(modalOrderId, { notes: orderNotes.value });
+    orderSaveNotes.disabled = false;
+    orderSaveNotes.textContent = 'Enregistrer les notes';
+    if (!res.ok || !res.order) {
+      orderNotesStatus.textContent = res.error || 'Échec';
+      orderNotesStatus.style.color = '#B23A1F';
+      orderNotesStatus.classList.add('visible');
+      return;
+    }
+    const idx = allOrders.findIndex((o) => o.id === modalOrderId);
+    if (idx >= 0) allOrders[idx] = res.order;
+    orderNotesStatus.textContent = '✓ Notes enregistrées';
+    orderNotesStatus.style.color = '';
+    orderNotesStatus.classList.add('visible');
+    setTimeout(() => orderNotesStatus.classList.remove('visible'), 2400);
+  });
+
+  // ===== After admin login, also hydrate the orders block =====
+  // attemptLogin() already calls loadProducts(); we hook the orders load
+  // into the same code path by patching loadProducts to also fire ours.
+  // Cheapest way: observe DOM, kick once when adminMain becomes visible.
+  const adminMainObserver = new MutationObserver(() => {
+    if (!adminMain?.classList.contains('hidden')) {
+      adminMainObserver.disconnect();
+      loadAdminOrders();
+    }
+  });
+  if (adminMain) adminMainObserver.observe(adminMain, { attributes: true, attributeFilter: ['class'] });
+  // If we're already past the gate when this runs (auto-login path), fire now.
+  if (adminMain && !adminMain.classList.contains('hidden')) loadAdminOrders();
+
+  // ============================================================
+  // PHASE 4 — SALES (POS) tab controller
+  // ============================================================
+  const salesBlockEl = document.querySelector<HTMLElement>('.sales-block');
+  const salesSubtabsEl = salesBlockEl?.querySelector<HTMLElement>('.sales-subtabs');
+  const salesPanels = Array.from(salesBlockEl?.querySelectorAll<HTMLElement>('.sales-panel') || []);
+
+  const fmtDT = (n) => {
+    const v = Number(n) || 0;
+    return v.toFixed(2).replace('.', ',') + ' DT';
+  };
+  const fmtHM = (iso) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    const t = new Date(d.getTime() + 60 * 60 * 1000);
+    return `${String(t.getUTCHours()).padStart(2, '0')}:${String(t.getUTCMinutes()).padStart(2, '0')}`;
+  };
+  const fmtDayKey = (d) => {
+    const t = new Date(d.getTime() + 60 * 60 * 1000);
+    return `${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, '0')}-${String(t.getUTCDate()).padStart(2, '0')}`;
+  };
+  const todayKey = () => fmtDayKey(new Date());
+  const escSales = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]!));
+
+  // ---------- Subtab switching ----------
+  salesSubtabsEl?.addEventListener('click', (e) => {
+    const t = (e.target as HTMLElement).closest<HTMLButtonElement>('.sales-subtab');
+    if (!t) return;
+    const target = t.dataset.subtab;
+    salesSubtabsEl.querySelectorAll('.sales-subtab').forEach((b) => b.classList.remove('is-active'));
+    t.classList.add('is-active');
+    salesPanels.forEach((p) => { p.hidden = p.dataset.panel !== target; });
+    if (target === 'tickets' && !salesTicketsLoadedOnce) { loadSalesTickets(); salesTicketsLoadedOnce = true; }
+    if (target === 'employees' && !salesEmployeesLoadedOnce) { loadEmployees(); salesEmployeesLoadedOnce = true; }
+  });
+
+  // ---------- Dashboard ----------
+  const kpiTodayRevEl = document.getElementById('kpiTodayRev');
+  const kpiTodayMetaEl = document.getElementById('kpiTodayMeta');
+  const kpiMonthRevEl = document.getElementById('kpiMonthRev');
+  const kpiMonthMetaEl = document.getElementById('kpiMonthMeta');
+  const kpiTodayTicketsEl = document.getElementById('kpiTodayTickets');
+  const kpiTodayAvgEl = document.getElementById('kpiTodayAvg');
+  const kpi30AvgEl = document.getElementById('kpi30Avg');
+  const chart30El = document.getElementById('chart30Days');
+  const chartTopEl = document.getElementById('chartTopProducts');
+  const chartEmpEl = document.getElementById('chartEmployees');
+  const salesDashRefreshBtn = document.getElementById('salesDashRefresh');
+  const salesDashStatusEl = document.getElementById('salesDashStatus');
+
+  async function loadDashboard() {
+    salesDashStatusEl?.classList.add('hidden');
+    if (chart30El) chart30El.innerHTML = '<div class="sales-chart-empty">Chargement…</div>';
+    if (chartTopEl) chartTopEl.innerHTML = '<div class="sales-chart-empty">Chargement…</div>';
+    if (chartEmpEl) chartEmpEl.innerHTML = '<div class="sales-chart-empty">Chargement…</div>';
+
+    // Build 30-day range ending today (Tunis).
+    const today = new Date();
+    const from30 = new Date(today.getTime() - 29 * 24 * 60 * 60 * 1000);
+    const [statsToday, statsMonth, stats30] = await Promise.all([
+      adminSalesStats({ period: 'today' }),
+      adminSalesStats({ period: 'month' }),
+      adminSalesStats({ period: 'custom', from: fmtDayKey(from30), to: fmtDayKey(today) }),
+    ]);
+
+    if (!statsToday.ok || !statsMonth.ok || !stats30.ok) {
+      const err = statsToday.error || statsMonth.error || stats30.error || 'Erreur';
+      if (salesDashStatusEl) {
+        salesDashStatusEl.classList.remove('hidden');
+        salesDashStatusEl.className = 'status-msg error';
+        salesDashStatusEl.textContent = 'Erreur de chargement : ' + err;
+      }
+      return;
+    }
+
+    kpiTodayRevEl!.textContent = fmtDT(statsToday.revenue.total);
+    kpiTodayMetaEl!.textContent = `${statsToday.revenue.ticketCount} ticket${statsToday.revenue.ticketCount > 1 ? 's' : ''}`;
+    kpiTodayTicketsEl!.textContent = String(statsToday.revenue.ticketCount);
+    kpiTodayAvgEl!.textContent = fmtDT(statsToday.revenue.avgTicket);
+
+    kpiMonthRevEl!.textContent = fmtDT(statsMonth.revenue.total);
+    const profit = statsMonth.comparison.profitEstimate;
+    if (profit >= 0) {
+      kpiMonthMetaEl!.className = 'sales-kpi-meta is-positive';
+      kpiMonthMetaEl!.textContent = `+ ${fmtDT(profit)} après 1 660 DT de frais fixes`;
+    } else {
+      kpiMonthMetaEl!.className = 'sales-kpi-meta is-negative';
+      kpiMonthMetaEl!.textContent = `${fmtDT(profit)} avant équilibre (1 660 DT)`;
+    }
+
+    const activeDays = stats30.byDay.filter((d) => d.revenue > 0).length || 1;
+    kpi30AvgEl!.textContent = fmtDT(stats30.revenue.total / 30);
+
+    // 30-day line chart (uses byDay).
+    if (chart30El) {
+      chart30El.innerHTML = renderLineChart(stats30.byDay) ||
+        '<div class="sales-chart-empty">Aucune vente sur la période.</div>';
+    }
+    // Top products (month).
+    if (chartTopEl) {
+      chartTopEl.innerHTML = renderTopProducts(statsMonth.byProduct.slice(0, 10)) ||
+        '<div class="sales-chart-empty">Aucune vente ce mois.</div>';
+    }
+    // Employees (month).
+    if (chartEmpEl) {
+      chartEmpEl.innerHTML = renderEmployeePie(statsMonth.byEmployee) ||
+        '<div class="sales-chart-empty">Aucune vente ce mois.</div>';
+    }
+  }
+
+  function renderLineChart(byDay) {
+    if (!byDay || byDay.length === 0) return '';
+    const W = 720, H = 220, PAD_L = 44, PAD_R = 16, PAD_T = 16, PAD_B = 28;
+    const innerW = W - PAD_L - PAD_R;
+    const innerH = H - PAD_T - PAD_B;
+    const maxRev = Math.max(1, ...byDay.map((d) => d.revenue));
+    const step = innerW / Math.max(1, byDay.length - 1);
+    const pts = byDay.map((d, i) => ({
+      x: PAD_L + i * step,
+      y: PAD_T + innerH - (d.revenue / maxRev) * innerH,
+      d,
+    }));
+    const pathD = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+    const areaD = `${pathD} L${pts[pts.length - 1].x.toFixed(1)},${(PAD_T + innerH).toFixed(1)} L${pts[0].x.toFixed(1)},${(PAD_T + innerH).toFixed(1)} Z`;
+    // 4 horizontal grid lines.
+    const gridSteps = 4;
+    const gridLines: string[] = [];
+    const gridLabels: string[] = [];
+    for (let g = 0; g <= gridSteps; g++) {
+      const y = PAD_T + (innerH * g / gridSteps);
+      const val = maxRev * (1 - g / gridSteps);
+      gridLines.push(`<line class="grid-line" x1="${PAD_L}" x2="${W - PAD_R}" y1="${y}" y2="${y}"/>`);
+      gridLabels.push(`<text x="${PAD_L - 6}" y="${y + 3}" text-anchor="end">${Math.round(val)}</text>`);
+    }
+    // X labels: first, middle, last.
+    const xLabels: string[] = [];
+    const labelIdx = [0, Math.floor(byDay.length / 2), byDay.length - 1];
+    labelIdx.forEach((i) => {
+      if (i < byDay.length) {
+        const p = pts[i];
+        const parts = byDay[i].date.split('-');
+        const label = `${parts[2]}/${parts[1]}`;
+        xLabels.push(`<text x="${p.x}" y="${H - PAD_B + 16}" text-anchor="middle">${label}</text>`);
+      }
+    });
+    // Dots only on the high points (top 3) to keep it clean.
+    const sortedByRev = pts.slice().sort((a, b) => b.d.revenue - a.d.revenue).slice(0, 3).filter((p) => p.d.revenue > 0);
+    const dots = sortedByRev.map((p) => `<circle class="dot" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5"/>`).join('');
+    return `
+      <svg class="sales-line-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Chiffre d'affaires sur 30 jours">
+        <defs>
+          <linearGradient id="salesLineGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#0E3A1F" stop-opacity="0.35"/>
+            <stop offset="1" stop-color="#0E3A1F" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        ${gridLines.join('')}
+        ${gridLabels.join('')}
+        <path class="area" d="${areaD}"/>
+        <path class="line" d="${pathD}"/>
+        ${dots}
+        ${xLabels.join('')}
+        <line class="axis" x1="${PAD_L}" x2="${W - PAD_R}" y1="${H - PAD_B}" y2="${H - PAD_B}"/>
+        <line class="axis" x1="${PAD_L}" x2="${PAD_L}" y1="${PAD_T}" y2="${H - PAD_B}"/>
+      </svg>
+    `;
+  }
+
+  function renderTopProducts(items) {
+    if (!items || items.length === 0) return '';
+    const maxQty = Math.max(1, ...items.map((it) => it.qty));
+    return items.map((it) => `
+      <div class="sales-bar-row">
+        <div class="name">${escSales(it.name)} <span style="color:var(--ink-mute);font-weight:400">· ${escSales(it.size)}</span></div>
+        <div class="bar"><span style="width:${Math.round(it.qty / maxQty * 100)}%"></span></div>
+        <div class="meta">${it.qty} · ${fmtDT(it.revenue)}</div>
+      </div>
+    `).join('');
+  }
+
+  function renderEmployeePie(employees) {
+    if (!employees || employees.length === 0) return '';
+    const total = employees.reduce((s, e) => s + e.revenue, 0);
+    if (total <= 0) return '';
+    // Brand palette + cycling complementary tones.
+    const palette = ['#0E3A1F', '#D4AF37', '#A87C45', '#0E5C2F', '#C9A86B', '#3D6E4A'];
+    const cx = 90, cy = 90, r = 80;
+    let cum = 0;
+    const slices = employees.map((e, i) => {
+      const frac = e.revenue / total;
+      const start = cum;
+      cum += frac;
+      const a0 = start * Math.PI * 2 - Math.PI / 2;
+      const a1 = cum * Math.PI * 2 - Math.PI / 2;
+      const large = frac > 0.5 ? 1 : 0;
+      const x0 = cx + r * Math.cos(a0), y0 = cy + r * Math.sin(a0);
+      const x1 = cx + r * Math.cos(a1), y1 = cy + r * Math.sin(a1);
+      const color = palette[i % palette.length];
+      // Edge case: single 100% slice → full circle path.
+      const path = frac >= 0.999
+        ? `M${cx - r},${cy} A${r},${r} 0 1,1 ${cx + r},${cy} A${r},${r} 0 1,1 ${cx - r},${cy} Z`
+        : `M${cx},${cy} L${x0.toFixed(2)},${y0.toFixed(2)} A${r},${r} 0 ${large},1 ${x1.toFixed(2)},${y1.toFixed(2)} Z`;
+      return { e, color, path, frac };
+    });
+    const paths = slices.map((s) => `<path d="${s.path}" fill="${s.color}" />`).join('');
+    const legend = slices.map((s) => `
+      <li>
+        <span class="swatch" style="background:${s.color}"></span>
+        <span>${escSales(s.e.name)}</span>
+        <span>${(s.frac * 100).toFixed(0)}% · ${fmtDT(s.e.revenue)}</span>
+      </li>
+    `).join('');
+    return `
+      <div class="sales-pie-row">
+        <svg class="sales-pie-svg" viewBox="0 0 180 180" role="img" aria-label="Répartition CA par employé">
+          ${paths}
+          <circle cx="${cx}" cy="${cy}" r="32" fill="var(--cream-soft)" />
+          <text x="${cx}" y="${cy - 4}" text-anchor="middle" font-family="var(--font-display)" font-size="11" fill="var(--ink-mute)">Total</text>
+          <text x="${cx}" y="${cy + 12}" text-anchor="middle" font-family="var(--font-display)" font-size="14" fill="var(--emerald)">${fmtDT(total)}</text>
+        </svg>
+        <div class="sales-pie-legend"><ul>${legend}</ul></div>
+      </div>
+    `;
+  }
+
+  salesDashRefreshBtn?.addEventListener('click', () => loadDashboard());
+
+  // ---------- All sales table ----------
+  let salesTicketsLoadedOnce = false;
+  const salesFromEl = document.getElementById('salesFrom') as HTMLInputElement;
+  const salesToEl = document.getElementById('salesTo') as HTMLInputElement;
+  const salesEmployeeFilterEl = document.getElementById('salesEmployeeFilter') as HTMLSelectElement;
+  const salesStatusFilterEl = document.getElementById('salesStatusFilter') as HTMLSelectElement;
+  const salesApplyFiltersBtn = document.getElementById('salesApplyFilters');
+  const salesRowsEl = document.getElementById('salesRows') as HTMLElement;
+  const salesTicketsStatusEl = document.getElementById('salesTicketsStatus') as HTMLElement;
+  const sumRevEl = document.getElementById('sumRev');
+  const sumTicketsEl = document.getElementById('sumTickets');
+  const sumAvgEl = document.getElementById('sumAvg');
+
+  let cachedSales: any[] = [];
+
+  function defaultRange() {
+    const today = new Date();
+    const start = new Date(today.getTime() - 29 * 24 * 60 * 60 * 1000);
+    return { from: fmtDayKey(start), to: fmtDayKey(today) };
+  }
+  function initTicketFilters() {
+    const r = defaultRange();
+    if (salesFromEl && !salesFromEl.value) salesFromEl.value = r.from;
+    if (salesToEl && !salesToEl.value) salesToEl.value = r.to;
+  }
+  async function loadSalesTickets() {
+    initTicketFilters();
+    salesRowsEl.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px">Chargement…</td></tr>`;
+    salesTicketsStatusEl?.classList.add('hidden');
+    const res = await adminListSales({
+      from: salesFromEl.value || undefined,
+      to: salesToEl.value || undefined,
+      employeeCode: salesEmployeeFilterEl.value || undefined,
+      status: salesStatusFilterEl.value || undefined,
+      limit: 200,
+    });
+    if (!res.ok) {
+      salesRowsEl.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:#B23A1F">Erreur : ${escSales(res.error || 'chargement impossible')}</td></tr>`;
+      return;
+    }
+    cachedSales = res.sales || [];
+    sumRevEl!.textContent = fmtDT(res.summary?.revenue ?? 0);
+    sumTicketsEl!.textContent = String(res.summary?.ticketCount ?? 0);
+    sumAvgEl!.textContent = fmtDT(res.summary?.avgTicket ?? 0);
+    if (cachedSales.length === 0) {
+      salesRowsEl.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--ink-mute)">Aucune vente sur la période.</td></tr>`;
+      return;
+    }
+    salesRowsEl.innerHTML = cachedSales.map(saleRowHtml).join('');
+  }
+
+  function summarizeItems(items) {
+    if (!items || items.length === 0) return '—';
+    const parts = items.slice(0, 2).map((it) => `${it.qty}× ${it.name} (${it.size})`);
+    if (items.length > 2) parts.push(`+${items.length - 2}`);
+    return parts.join(', ');
+  }
+  function saleRowHtml(s) {
+    const cancelled = s.status === 'cancelled';
+    const dateStr = s.createdAt ? `${s.createdAt.substring(0, 10)} · ${fmtHM(s.createdAt)}` : '';
+    return `
+      <tr data-sale="${escSales(s.id)}" ${cancelled ? 'style="opacity:0.6"' : ''}>
+        <td style="white-space:nowrap;font-size:12px">${escSales(dateStr)}</td>
+        <td>${escSales(s.createdByName || s.createdBy || '—')}</td>
+        <td style="font-size:13px;color:var(--ink-soft)">${escSales(summarizeItems(s.items))}</td>
+        <td style="white-space:nowrap;font-weight:600;color:var(--emerald)">${fmtDT(s.total)}</td>
+        <td><span class="status-pill ${cancelled ? 'cancelled' : 'active'}">${cancelled ? 'Annulée' : 'Active'}</span></td>
+        <td><button type="button" class="link-btn" data-sale="${escSales(s.id)}" data-act="open">Voir</button></td>
+      </tr>
+    `;
+  }
+
+  salesApplyFiltersBtn?.addEventListener('click', () => loadSalesTickets());
+
+  salesRowsEl?.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-sale]');
+    if (!btn) return;
+    const sale = cachedSales.find((s) => s.id === btn.dataset.sale);
+    if (sale) openSaleModal(sale);
+  });
+
+  // ---------- Sale modal (admin edit/cancel) ----------
+  const saleModalEl = document.getElementById('saleModal');
+  const saleModalOverlayEl = document.getElementById('saleModalOverlay');
+  const saleModalCloseEl = document.getElementById('saleModalClose');
+  const saleModalDismissBtn = document.getElementById('saleModalDismiss');
+  const saleModalSaveBtn = document.getElementById('saleModalSave') as HTMLButtonElement;
+  const saleModalCancelSaleBtn = document.getElementById('saleModalCancelSale') as HTMLButtonElement;
+  const saleModalTitleEl = document.getElementById('saleModalTitle');
+  const saleModalMetaEl = document.getElementById('saleModalMeta');
+  const saleModalItemsEl = document.getElementById('saleModalItems');
+  const saleModalTotalEl = document.getElementById('saleModalTotal');
+  const saleModalStatusEl = document.getElementById('saleModalStatus') as HTMLElement;
+
+  let editingSale: any = null;
+  let editingTicket: Map<string, any> = new Map();
+
+  function openSaleModal(sale) {
+    editingSale = sale;
+    editingTicket = new Map();
+    (sale.items || []).forEach((it) => {
+      editingTicket.set(`${it.slug}__${it.size}`, { ...it });
+    });
+    saleModalTitleEl!.textContent = `Ticket ${sale.id.slice(0, 8)}`;
+    const cancelled = sale.status === 'cancelled';
+    const metaParts: string[] = [];
+    metaParts.push(`<strong>${escSales(sale.createdByName || sale.createdBy)}</strong>`);
+    metaParts.push(escSales(`${sale.createdAt.substring(0, 10)} ${fmtHM(sale.createdAt)}`));
+    if (sale.customerName) metaParts.push(`Client : ${escSales(sale.customerName)} (${escSales(sale.customerPhone)})`);
+    if (sale.modifiedAt) metaParts.push(`Modifié ${fmtHM(sale.modifiedAt)}${sale.adminModified ? ' (admin)' : ''}`);
+    if (cancelled) metaParts.push(`<span style="color:#8a2a14">Annulée — ${escSales(sale.cancelReason || 'sans raison')}</span>`);
+    saleModalMetaEl!.innerHTML = metaParts.join(' · ');
+    saleModalCancelSaleBtn.disabled = cancelled;
+    saleModalSaveBtn.disabled = cancelled;
+    saleModalStatusEl.classList.add('hidden');
+    renderSaleModalItems();
+    saleModalEl?.classList.remove('hidden');
+  }
+  function closeSaleModal() {
+    saleModalEl?.classList.add('hidden');
+    editingSale = null;
+    editingTicket.clear();
+  }
+  function renderSaleModalItems() {
+    if (editingTicket.size === 0) {
+      saleModalItemsEl!.innerHTML = '<li style="text-align:center;color:var(--ink-mute);font-style:italic">Aucun article (sera refusé par le worker).</li>';
+    } else {
+      const rows: string[] = [];
+      editingTicket.forEach((it, key) => {
+        rows.push(`
+          <li>
+            <div>
+              <div style="font-size:14px">${escSales(it.name)}</div>
+              <div style="font-size:12px;color:var(--ink-mute);margin-top:2px">${escSales(it.size)} · ${fmtDT(it.price)}</div>
+            </div>
+            <div class="pos-ticket-item-controls">
+              <button type="button" class="pos-qty-btn" data-act="dec" data-key="${escSales(key)}">−</button>
+              <span class="pos-qty-val">${it.qty}</span>
+              <button type="button" class="pos-qty-btn" data-act="inc" data-key="${escSales(key)}">+</button>
+            </div>
+          </li>
+        `);
+      });
+      saleModalItemsEl!.innerHTML = rows.join('');
+    }
+    let total = 0;
+    editingTicket.forEach((it) => { total += it.qty * it.price; });
+    saleModalTotalEl!.textContent = fmtDT(total);
+  }
+  saleModalItemsEl?.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('.pos-qty-btn');
+    if (!btn) return;
+    const key = btn.dataset.key!;
+    const it = editingTicket.get(key);
+    if (!it) return;
+    if (btn.dataset.act === 'inc') it.qty += 1;
+    else if (btn.dataset.act === 'dec') {
+      it.qty -= 1;
+      if (it.qty <= 0) editingTicket.delete(key);
+    }
+    renderSaleModalItems();
+  });
+  saleModalCloseEl?.addEventListener('click', closeSaleModal);
+  saleModalOverlayEl?.addEventListener('click', closeSaleModal);
+  saleModalDismissBtn?.addEventListener('click', closeSaleModal);
+
+  saleModalSaveBtn?.addEventListener('click', async () => {
+    if (!editingSale || editingTicket.size === 0) return;
+    saleModalSaveBtn.disabled = true;
+    const items: any[] = [];
+    let total = 0;
+    editingTicket.forEach((it) => {
+      items.push({ slug: it.slug, name: it.name, size: it.size, qty: it.qty, price: it.price });
+      total += it.qty * it.price;
+    });
+    total = Math.round(total * 100) / 100;
+    const res = await adminModifySale(editingSale.id, { items, total });
+    if (!res.ok) {
+      saleModalStatusEl.className = 'status-msg error';
+      saleModalStatusEl.classList.remove('hidden');
+      saleModalStatusEl.textContent = res.error || 'Échec';
+      saleModalSaveBtn.disabled = false;
+      return;
+    }
+    closeSaleModal();
+    await loadSalesTickets();
+  });
+
+  saleModalCancelSaleBtn?.addEventListener('click', async () => {
+    if (!editingSale) return;
+    const reason = prompt('Raison de l\'annulation (optionnel) :', '') || '';
+    if (!confirm('Confirmer l\'annulation de cette vente ?')) return;
+    saleModalCancelSaleBtn.disabled = true;
+    const res = await adminCancelSale(editingSale.id, reason);
+    if (!res.ok) {
+      saleModalStatusEl.className = 'status-msg error';
+      saleModalStatusEl.classList.remove('hidden');
+      saleModalStatusEl.textContent = res.error || 'Échec';
+      saleModalCancelSaleBtn.disabled = false;
+      return;
+    }
+    closeSaleModal();
+    await loadSalesTickets();
+  });
+
+  // ---------- Employees ----------
+  let salesEmployeesLoadedOnce = false;
+  const employeesRowsEl = document.getElementById('employeesRows') as HTMLElement;
+  const employeesStatusEl = document.getElementById('employeesStatus') as HTMLElement;
+  const addEmployeeBtn = document.getElementById('salesAddEmployeeBtn');
+
+  let cachedEmployees: any[] = [];
+
+  async function loadEmployees() {
+    employeesRowsEl.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px">Chargement…</td></tr>`;
+    employeesStatusEl?.classList.add('hidden');
+    const res = await adminListEmployees();
+    if (!res.ok) {
+      employeesRowsEl.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:#B23A1F">Erreur : ${escSales(res.error || 'chargement impossible')}</td></tr>`;
+      return;
+    }
+    cachedEmployees = res.employees || [];
+    // Populate the employee filter dropdown on the tickets tab so the
+    // filter list stays in sync without a second fetch.
+    if (salesEmployeeFilterEl) {
+      const cur = salesEmployeeFilterEl.value;
+      salesEmployeeFilterEl.innerHTML = '<option value="">Tous</option>' +
+        cachedEmployees.map((e) => `<option value="${escSales(e.code)}">${escSales(e.name)} (${escSales(e.code)})</option>`).join('');
+      salesEmployeeFilterEl.value = cur;
+    }
+    if (cachedEmployees.length === 0) {
+      employeesRowsEl.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--ink-mute)">Aucun employé. Cliquez sur '+ Ajouter'.</td></tr>`;
+      return;
+    }
+    employeesRowsEl.innerHTML = cachedEmployees.map(employeeRowHtml).join('');
+  }
+
+  function employeeRowHtml(e) {
+    return `
+      <tr data-emp="${escSales(e.code)}">
+        <td style="font-family:var(--font-display);font-size:16px">${escSales(e.code)}</td>
+        <td>${escSales(e.name)}</td>
+        <td><span class="${e.active ? 'status-active' : 'status-inactive'}">${e.active ? '● Actif' : '○ Inactif'}</span></td>
+        <td>${e.salesCount}</td>
+        <td style="font-size:12px;color:var(--ink-mute)">${e.createdAt ? e.createdAt.substring(0, 10) : '—'}</td>
+        <td>
+          <button type="button" class="link-btn" data-emp="${escSales(e.code)}" data-act="edit">Modifier</button>
+          <button type="button" class="link-btn danger" data-emp="${escSales(e.code)}" data-act="delete">Supprimer</button>
+        </td>
+      </tr>
+    `;
+  }
+
+  // Employee modal
+  const employeeModalEl = document.getElementById('employeeModal');
+  const employeeModalOverlayEl = document.getElementById('employeeModalOverlay');
+  const employeeModalCloseEl = document.getElementById('employeeModalClose');
+  const employeeFormEl = document.getElementById('employeeForm') as HTMLFormElement;
+  const empNameEl = document.getElementById('empName') as HTMLInputElement;
+  const empCodeEl = document.getElementById('empCode') as HTMLInputElement;
+  const empActiveEl = document.getElementById('empActive') as HTMLInputElement;
+  const empCodeFieldEl = document.getElementById('empCodeField');
+  const empActiveFieldEl = document.getElementById('empActiveField');
+  const employeeStatusEl = document.getElementById('employeeStatus') as HTMLElement;
+  const employeeCancelBtn = document.getElementById('employeeCancel');
+  const employeeModalTitleEl = document.getElementById('employeeModalTitle');
+  let editingEmployeeCode: string | null = null;
+
+  function openEmployeeModal(emp?: any) {
+    employeeStatusEl.classList.add('hidden');
+    employeeFormEl.reset();
+    if (emp) {
+      editingEmployeeCode = emp.code;
+      employeeModalTitleEl!.textContent = 'Modifier l\'employé';
+      empNameEl.value = emp.name;
+      empCodeEl.value = emp.code;
+      empCodeFieldEl!.hidden = true;          // code immuable
+      empActiveFieldEl!.hidden = false;
+      empActiveEl.checked = emp.active;
+    } else {
+      editingEmployeeCode = null;
+      employeeModalTitleEl!.textContent = 'Ajouter un employé';
+      empCodeFieldEl!.hidden = false;
+      empActiveFieldEl!.hidden = true;
+    }
+    employeeModalEl?.classList.remove('hidden');
+    setTimeout(() => empNameEl.focus(), 50);
+  }
+  function closeEmployeeModal() {
+    employeeModalEl?.classList.add('hidden');
+    editingEmployeeCode = null;
+  }
+  employeeModalCloseEl?.addEventListener('click', closeEmployeeModal);
+  employeeModalOverlayEl?.addEventListener('click', closeEmployeeModal);
+  employeeCancelBtn?.addEventListener('click', closeEmployeeModal);
+  addEmployeeBtn?.addEventListener('click', () => openEmployeeModal());
+
+  employeeFormEl?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    employeeStatusEl.classList.add('hidden');
+    const name = empNameEl.value.trim();
+    if (!name) {
+      employeeStatusEl.className = 'status-msg error';
+      employeeStatusEl.classList.remove('hidden');
+      employeeStatusEl.textContent = 'Nom requis';
+      return;
+    }
+    let res;
+    if (editingEmployeeCode) {
+      res = await adminUpdateEmployee(editingEmployeeCode, { name, active: empActiveEl.checked });
+    } else {
+      const code = empCodeEl.value.trim();
+      if (!/^\d{4}$/.test(code)) {
+        employeeStatusEl.className = 'status-msg error';
+        employeeStatusEl.classList.remove('hidden');
+        employeeStatusEl.textContent = 'Le code doit être exactement 4 chiffres';
+        return;
+      }
+      res = await adminCreateEmployee(code, name);
+    }
+    if (!res.ok) {
+      employeeStatusEl.className = 'status-msg error';
+      employeeStatusEl.classList.remove('hidden');
+      employeeStatusEl.textContent = res.error || 'Échec';
+      return;
+    }
+    closeEmployeeModal();
+    await loadEmployees();
+  });
+
+  employeesRowsEl?.addEventListener('click', async (e) => {
+    const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-emp]');
+    if (!btn) return;
+    const code = btn.dataset.emp!;
+    const emp = cachedEmployees.find((x) => x.code === code);
+    if (!emp) return;
+    if (btn.dataset.act === 'edit') {
+      openEmployeeModal(emp);
+    } else if (btn.dataset.act === 'delete') {
+      if (!confirm(`Supprimer l'employé ${emp.name} (${emp.code}) ?`)) return;
+      const res = await adminDeleteEmployee(code);
+      if (!res.ok) {
+        alert(res.error || 'Échec');
+        return;
+      }
+      await loadEmployees();
+    }
+  });
+
+  // ---------- Sales tab auto-load when admin panel opens ----------
+  const salesObserver = new MutationObserver(() => {
+    if (adminMain && !adminMain.classList.contains('hidden') && salesBlockEl && !salesBlockEl.hasAttribute('hidden')) {
+      // Only load once per page life — refresh button handles updates.
+      if (!(salesBlockEl as any)._loaded) {
+        (salesBlockEl as any)._loaded = true;
+        loadDashboard();
+        loadEmployees(); // pre-fill the employee filter dropdown
+      }
+    }
+  });
+  if (adminMain) salesObserver.observe(adminMain, { attributes: true, attributeFilter: ['class'] });
+  if (adminMain && !adminMain.classList.contains('hidden') && salesBlockEl && !salesBlockEl.hasAttribute('hidden')) {
+    (salesBlockEl as any)._loaded = true;
+    loadDashboard();
+    loadEmployees();
+  }
+
+    function bootVentes() {
+      try { if (typeof loadAdminOrders === 'function') loadAdminOrders(); } catch {}
+    }
+    document.addEventListener('admin:ready', bootVentes);
+    if ((window as any).__adminPerms) bootVentes();
+  </script>
+</AdminLayout>
