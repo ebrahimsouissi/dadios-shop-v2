@@ -274,12 +274,25 @@ import Base from '../../layouts/Base.astro';
   const forgotClose = document.getElementById('forgotClose') as HTMLButtonElement;
   const forgotOverlay = document.getElementById('forgotOverlay') as HTMLElement;
 
+  // Post-auth destination. Honours an optional ?redirect= query param
+  // (used for deep links / nav-from-link flows), then falls back to the
+  // admin panel when the customer is tier=admin, otherwise the regular
+  // dashboard. The header "Mon compte" link always points to
+  // /compte/dashboard so admins can still see their customer profile.
+  function destinationFor(customer: any): string {
+    const params = new URLSearchParams(window.location.search);
+    const redirect = params.get('redirect');
+    if (redirect && redirect.startsWith('/')) return redirect;
+    if (customer && customer.tier === 'admin') return '/admin';
+    return '/compte/dashboard';
+  }
+
   // ===== If already logged in, skip the form entirely =====
   (async () => {
     if (!isLoggedIn()) return;
     const res = await me();
     if (res.ok) {
-      window.location.replace('/compte/dashboard');
+      window.location.replace(destinationFor(res.customer));
     }
     // If me() fails, the helper already cleared the stale token, so we
     // stay on this page with a fresh state.
@@ -324,7 +337,7 @@ import Base from '../../layouts/Base.astro';
     try {
       const res = await login({ phone, password });
       if (res.ok) {
-        window.location.assign('/compte/dashboard');
+        window.location.assign(destinationFor(res.customer));
       } else {
         showErr(loginErr, res.error || 'Identifiants incorrects.');
       }
