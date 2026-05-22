@@ -95,14 +95,26 @@ async function syncWishlistAfterAuth() {
   } catch {}
 }
 
-export async function signup({ phone, password, name, address }) {
-  const data = await post('signup', { phone, password, name, address });
+export async function signup({ phone, password, name, address, createLoyaltyCard = true }) {
+  const data = await post('signup', { phone, password, name, address, createLoyaltyCard });
   if (data.ok && data.sessionToken) {
     setSessionToken(data.sessionToken);
     if (data.customer?.phone) setStoredPhone(data.customer.phone);
     await syncWishlistAfterAuth();
   }
   return data;
+}
+
+/**
+ * Activate / claim a loyalty card from the dashboard for an existing
+ * customer that doesn't have one yet. The worker reuses an existing
+ * card if it finds one for this phone (e.g. created in-shop), otherwise
+ * mints a fresh code. Stores the loyaltyCode on the customer record.
+ */
+export async function activateLoyaltyCard() {
+  const sessionToken = getSessionToken();
+  if (!sessionToken) return { ok: false, error: 'Session invalide' };
+  return post('activate_loyalty_card', { sessionToken });
 }
 
 export async function login({ phone, password }) {

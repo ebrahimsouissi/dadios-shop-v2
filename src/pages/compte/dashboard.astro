@@ -161,14 +161,18 @@ import Base from '../../layouts/Base.astro';
         </div>
       </div>
 
-      <div id="loyaltyNone" class="loyalty-state" hidden>
-        <p>
-          Vous n'avez pas encore de carte fidélité.
+      <div id="loyaltyNone" class="loyalty-state loyalty-invite" hidden>
+        <div class="loyalty-invite-icon" aria-hidden="true">⭐</div>
+        <h3 class="loyalty-invite-title">Activez votre carte de fidélité</h3>
+        <p class="loyalty-invite-text">
+          8 tampons = 1 cadeau<br>
+          Membres VIP : ×2 tampons par achat<br>
+          Cumulez vos achats en boutique et en ligne
         </p>
-        <p class="muted">
-          Demandez-en une lors de votre prochaine visite en boutique — votre
-          numéro de téléphone sera lié automatiquement.
-        </p>
+        <button type="button" id="activateLoyaltyBtn" class="btn btn-primary loyalty-invite-cta">
+          Activer ma carte
+        </button>
+        <p id="activateLoyaltyMsg" class="loyalty-invite-msg" hidden></p>
       </div>
     </article>
   </section>
@@ -640,6 +644,52 @@ import Base from '../../layouts/Base.astro';
   }
   .loyalty-state p { margin-bottom: 12px; line-height: 1.6; }
   .loyalty-state p.muted { color: var(--ink-mute); font-size: 14px; }
+
+  /* Invite block — shown when the customer doesn't have a card yet */
+  .loyalty-invite {
+    text-align: center;
+    padding: 28px 24px;
+    background: var(--cream-soft);
+    border: 2px dashed var(--gold-soft);
+    border-radius: 14px;
+  }
+  .loyalty-invite-icon {
+    font-size: 36px;
+    line-height: 1;
+    color: var(--emerald);
+    margin-bottom: 10px;
+  }
+  .loyalty-invite-title {
+    font-family: var(--font-display);
+    font-size: 22px;
+    color: var(--ink);
+    margin-bottom: 12px;
+  }
+  .loyalty-invite-text {
+    color: var(--ink-soft);
+    font-size: 14px;
+    line-height: 1.7;
+    margin-bottom: 18px !important;
+  }
+  .loyalty-invite-cta {
+    min-width: 200px;
+  }
+  .loyalty-invite-msg {
+    margin: 12px 0 0;
+    font-size: 13px;
+    padding: 8px 12px;
+    border-radius: 8px;
+  }
+  .loyalty-invite-msg.is-success {
+    background: rgba(14, 58, 31, 0.08);
+    color: var(--emerald);
+    border: 1px solid var(--emerald);
+  }
+  .loyalty-invite-msg.is-error {
+    background: rgba(178, 58, 31, 0.08);
+    color: #8a2a14;
+    border: 1px solid #B23A1F;
+  }
 
   /* ===== animations (respect reduced motion) ===== */
   @keyframes fid-card-enter {
@@ -1121,7 +1171,7 @@ import Base from '../../layouts/Base.astro';
 </style>
 
 <script>
-  import { me, updateProfile, logout, isLoggedIn } from '../../scripts/customerApi.js';
+  import { me, updateProfile, logout, isLoggedIn, activateLoyaltyCard } from '../../scripts/customerApi.js';
   import { listMyOrders } from '../../scripts/ordersApi.js';
   import { getWishlist, refreshFromServer as refreshWishlist, onWishlistChange } from '../../scripts/wishlist.js';
 
@@ -1149,6 +1199,49 @@ import Base from '../../layouts/Base.astro';
   const stampsLabel = document.getElementById('stampsLabel') as HTMLElement;
   const rewardsLabel = document.getElementById('rewardsLabel') as HTMLElement;
   const logoutBtn = document.getElementById('logoutBtn') as HTMLButtonElement;
+  const activateLoyaltyBtn = document.getElementById('activateLoyaltyBtn') as HTMLButtonElement | null;
+  const activateLoyaltyMsg = document.getElementById('activateLoyaltyMsg') as HTMLElement | null;
+
+  // Activate-loyalty-card button shown when the customer has no card yet.
+  activateLoyaltyBtn?.addEventListener('click', async () => {
+    if (!activateLoyaltyBtn) return;
+    const orig = activateLoyaltyBtn.textContent;
+    activateLoyaltyBtn.disabled = true;
+    activateLoyaltyBtn.textContent = 'Activation…';
+    if (activateLoyaltyMsg) {
+      activateLoyaltyMsg.hidden = true;
+      activateLoyaltyMsg.className = 'loyalty-invite-msg';
+    }
+    try {
+      const res = await activateLoyaltyCard();
+      if (res && res.ok) {
+        if (activateLoyaltyMsg) {
+          activateLoyaltyMsg.className = 'loyalty-invite-msg is-success';
+          activateLoyaltyMsg.textContent = `Carte activée ! Code : ${res.card?.code || '—'}`;
+          activateLoyaltyMsg.hidden = false;
+        }
+        // Reload so the dashboard re-fetches /me and switches from the
+        // invite block to the real loyalty card render path.
+        setTimeout(() => location.reload(), 1200);
+      } else {
+        if (activateLoyaltyMsg) {
+          activateLoyaltyMsg.className = 'loyalty-invite-msg is-error';
+          activateLoyaltyMsg.textContent = res?.error || 'Activation impossible';
+          activateLoyaltyMsg.hidden = false;
+        }
+        activateLoyaltyBtn.disabled = false;
+        activateLoyaltyBtn.textContent = orig;
+      }
+    } catch {
+      if (activateLoyaltyMsg) {
+        activateLoyaltyMsg.className = 'loyalty-invite-msg is-error';
+        activateLoyaltyMsg.textContent = 'Erreur réseau';
+        activateLoyaltyMsg.hidden = false;
+      }
+      activateLoyaltyBtn.disabled = false;
+      activateLoyaltyBtn.textContent = orig;
+    }
+  });
 
   function bounceToLogin() {
     window.location.replace('/compte');

@@ -58,6 +58,15 @@ import Base from '../../layouts/Base.astro';
         <span>Adresse (facultatif)</span>
         <textarea name="address" id="signupAddress" rows="2" autocomplete="street-address"></textarea>
       </label>
+
+      <label class="signup-loyalty">
+        <input type="checkbox" id="signupLoyalty" checked />
+        <span>
+          Créer ma carte de fidélité Dadios
+          <small>8 tampons = 1 cadeau · Membres VIP : ×2 tampons par achat</small>
+        </span>
+      </label>
+
       <p id="signupErr" class="form-err" hidden></p>
       <button type="submit" id="signupBtn" class="btn btn-primary acc-submit">Créer mon compte</button>
     </form>
@@ -177,6 +186,43 @@ import Base from '../../layouts/Base.astro';
   }
 
   .acc-submit { width: 100%; margin-top: 4px; }
+
+  /* Loyalty opt-in checkbox on the signup form */
+  .signup-loyalty {
+    display: grid !important;
+    grid-template-columns: auto 1fr;
+    gap: 12px;
+    align-items: start;
+    padding: 14px 16px;
+    background: var(--cream-soft);
+    border: 1px dashed var(--gold-soft);
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  .signup-loyalty input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin: 2px 0 0;
+    accent-color: var(--emerald);
+    cursor: pointer;
+  }
+  .signup-loyalty > span {
+    font-size: 14px !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+    color: var(--ink) !important;
+    margin-bottom: 0 !important;
+    font-weight: 500;
+  }
+  .signup-loyalty > span small {
+    display: block;
+    font-weight: 400;
+    color: var(--ink-mute);
+    font-size: 12px;
+    margin-top: 4px;
+    line-height: 1.5;
+  }
+
   .form-err {
     background: rgba(178, 58, 31, 0.08);
     border: 1px solid #B23A1F;
@@ -355,6 +401,7 @@ import Base from '../../layouts/Base.astro';
     const password = (document.getElementById('signupPwd') as HTMLInputElement).value;
     const name = (document.getElementById('signupName') as HTMLInputElement).value.trim();
     const address = (document.getElementById('signupAddress') as HTMLTextAreaElement).value.trim();
+    const wantLoyalty = (document.getElementById('signupLoyalty') as HTMLInputElement | null)?.checked ?? true;
     if (!phone) { showErr(signupErr, 'Numéro de téléphone requis.'); return; }
     if (!password || password.length < 6) {
       showErr(signupErr, 'Mot de passe : 6 caractères minimum.');
@@ -363,7 +410,7 @@ import Base from '../../layouts/Base.astro';
     signupBtn.disabled = true;
     signupBtn.textContent = 'Création...';
     try {
-      const res = await signup({ phone, password, name, address });
+      const res = await signup({ phone, password, name, address, createLoyaltyCard: wantLoyalty });
       if (res.ok) {
         // Surface the loyalty-link bonus via the URL so the dashboard can
         // greet the user appropriately without coupling pages tightly.

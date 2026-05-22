@@ -989,7 +989,35 @@ async function handleCustomer(body, env) {
 
     const salt = generateSalt();
     const passwordHash = await hashPassword(password, salt);
+
+    // Loyalty rules (in priority order):
+    //   1. If a card already exists for this phone (created in-shop),
+    //      link it — regardless of the opt-in flag.
+    //   2. Else if the signup form's opt-in is on (default), mint a
+    //      fresh card.
+    //   3. Else leave loyaltyCode null; the dashboard offers an
+    //      activate button later.
     const linkedCard = await findLoyaltyCardByPhone(env, phone);
+    let loyaltyCode = linkedCard ? linkedCard.code : null;
+    let loyaltyCreated = false;
+    const wantsLoyalty = body.createLoyaltyCard !== false;  // default true
+    if (!linkedCard && wantsLoyalty && env.LOYALTY_KV) {
+      try {
+        const code = await createUniqueCode(env.LOYALTY_KV);
+        const card = normalizeCard({
+          code,
+          name: name || phone,
+          phone,
+          stamps: 0,
+          rewards: 0,
+          createdAt: new Date().toISOString(),
+          source: 'signup_opt_in',
+        });
+        await env.LOYALTY_KV.put(`card:${code}`, JSON.stringify(card));
+        loyaltyCode = code;
+        loyaltyCreated = true;
+      } catch {}
+    }
 
     const customer = {
       phone,
@@ -997,7 +1025,7 @@ async function handleCustomer(body, env) {
       address,
       passwordHash,
       salt,
-      loyaltyCode: linkedCard ? linkedCard.code : null,
+      loyaltyCode,
       createdAt: new Date().toISOString(),
     };
     await kv.put(`customer:${phone}`, JSON.stringify(customer));
@@ -1008,6 +1036,7 @@ async function handleCustomer(body, env) {
       sessionToken,
       customer: await buildCustomerPayload(env, customer),
       loyaltyLinked: !!linkedCard,
+      loyaltyCreated,
     });
   }
 
@@ -1101,6 +1130,58 @@ async function handleCustomer(body, env) {
     const token = body.sessionToken;
     if (token) await kv.delete(`session:${token}`);
     return json({ ok: true });
+  }
+
+  // Customer-driven loyalty activation (dashboard button or post-signup
+  // catch-up). Reuses an existing card if the phone already has one in
+  // LOYALTY_KV; otherwise mints a fresh code.
+  if (action === "activate_loyalty_card") {
+    const sess = await getSession(env, body.sessionToken);
+    if (!sess) return json({ ok: false, error: "Session invalide" }, 401);
+
+    const raw = await kv.get(`customer:${sess.phone}`);
+    if (!raw) return json({ ok: false, error: "Compte introuvable" }, 404);
+    const customer = JSON.parse(raw);
+
+    // Idempotent: if the customer already has a card, just hand it back.
+    if (customer.loyaltyCode) {
+      const existing = await getLoyaltyCardByCode(env, customer.loyaltyCode);
+      return json({ ok: true, alreadyActive: true, card: existing || null });
+    }
+
+    if (!env.LOYALTY_KV) {
+      return json({ ok: false, error: "KV not bound (LOYALTY_KV)" }, 500);
+    }
+
+    // Race: maybe a card was created in-shop between signup and now.
+    const existingByPhone = await findLoyaltyCardByPhone(env, sess.phone);
+    if (existingByPhone) {
+      customer.loyaltyCode = existingByPhone.code;
+      customer.updatedAt = new Date().toISOString();
+      await kv.put(`customer:${sess.phone}`, JSON.stringify(customer));
+      return json({ ok: true, card: existingByPhone, linked: true });
+    }
+
+    // Mint fresh.
+    try {
+      const code = await createUniqueCode(env.LOYALTY_KV);
+      const card = normalizeCard({
+        code,
+        name: customer.name || sess.phone,
+        phone: sess.phone,
+        stamps: 0,
+        rewards: 0,
+        createdAt: new Date().toISOString(),
+        source: 'dashboard_activation',
+      });
+      await env.LOYALTY_KV.put(`card:${code}`, JSON.stringify(card));
+      customer.loyaltyCode = code;
+      customer.updatedAt = new Date().toISOString();
+      await kv.put(`customer:${sess.phone}`, JSON.stringify(customer));
+      return json({ ok: true, card, created: true });
+    } catch (err) {
+      return json({ ok: false, error: "Échec création carte : " + (err && err.message) }, 500);
+    }
   }
 
   return json({ ok: false, error: "Unknown customer action: " + action }, 400);
