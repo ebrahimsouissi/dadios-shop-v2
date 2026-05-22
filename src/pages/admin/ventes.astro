@@ -40,6 +40,17 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
             <th>Articles</th>
             <th>Total</th>
             <th>Statut</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="ordersRows">
+          <tr><td colspan="7" style="text-align:center;padding:32px">Chargement des commandes…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p id="ordersStatus" class="status-msg hidden"></p>
+  </div>
 
   <div class="sales-block" data-requires-permission="sales">
     <div class="sales-head">
@@ -197,7 +208,6 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       <p id="employeesStatus" class="status-msg hidden"></p>
     </div>
   </div>
-</section>
 
   <!-- ===== Modals ===== -->
 <div class="modal hidden" id="saleModal">
@@ -422,7 +432,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   }
 
   // ===== Filter pill switching =====
-  ordersFiltersEl.addEventListener('click', (e) => {
+  ordersFiltersEl?.addEventListener('click', (e) => {
     const pill = (e.target as HTMLElement).closest('.filter-pill') as HTMLElement | null;
     if (!pill) return;
     ordersFiltersEl.querySelectorAll('.filter-pill').forEach((p) => p.classList.remove('active'));
@@ -434,7 +444,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   ordersRefreshBtn?.addEventListener('click', () => loadAdminOrders());
 
   // ===== Inline status change =====
-  ordersRowsEl.addEventListener('change', async (e) => {
+  ordersRowsEl?.addEventListener('change', async (e) => {
     const sel = (e.target as HTMLElement).closest('select[data-order-id]') as HTMLSelectElement | null;
     if (!sel) return;
     const orderId = sel.dataset.orderId!;
@@ -458,7 +468,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   });
 
   // ===== Details modal =====
-  ordersRowsEl.addEventListener('click', (e) => {
+  ordersRowsEl?.addEventListener('click', (e) => {
     const btn = (e.target as HTMLElement).closest('.order-details-btn') as HTMLElement | null;
     if (!btn) return;
     const orderId = btn.dataset.orderId!;

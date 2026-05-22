@@ -1,9 +1,6 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import data from '../../data/products.json';
-
-// Seed catalogue + size catalogue — used for KV-empty fallback + the
-// "Prix par format" panel in the modal. (Migrated from legacy admin.astro.)
 const seedProducts = data.products;
 const sizes = data.sizes;
 ---
@@ -36,8 +33,17 @@ const sizes = data.sizes;
           <th>Inspiré par</th>
           <th>Famille</th>
           <th>Genre</th>
+          <th>Best-seller</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="rows">
+        <tr><td colspan="7" style="text-align:center;padding:48px">Chargement des parfums...</td></tr>
+      </tbody>
+    </table>
 
-  <p id="statusMsg" class="status-msg hidden"></p>
+    <div id="statusMsg" class="status-msg hidden"></div>
+  </div>
 
   <!-- ===== Edit / Create modal ===== -->
 <!-- ============ MODAL ============ -->
@@ -194,8 +200,6 @@ const sizes = data.sizes;
   </div>
 </div>
 
-
-  <script id="__seed" type="application/json" set:html={JSON.stringify(seedProducts)}></script>
 
   <script>
     import { checkPassword, setPassword, getPassword, clearPassword, listProducts, upsertProduct, deleteProduct, uploadImage, adminGetCustomer, adminResetCustomerPassword } from '../../scripts/adminApi.js';
@@ -366,15 +370,15 @@ const sizes = data.sizes;
       </tr>`).join('');
 
     rowsTbody.querySelectorAll('.edit-btn').forEach(b => {
-      b.addEventListener('click', () => openEdit(b.getAttribute('data-slug')));
+      b?.addEventListener('click', () => openEdit(b.getAttribute('data-slug')));
     });
     rowsTbody.querySelectorAll('.del-btn').forEach(b => {
-      b.addEventListener('click', () => handleDelete(b.getAttribute('data-slug')));
+      b?.addEventListener('click', () => handleDelete(b.getAttribute('data-slug')));
     });
   }
 
   document.querySelectorAll('.tab-btn').forEach(t => {
-    t.addEventListener('click', () => {
+    t?.addEventListener('click', () => {
       document.querySelectorAll('.tab-btn').forEach(x => x.classList.remove('active'));
       t.classList.add('active');
       renderRows(t.getAttribute('data-filter') || 'all');
@@ -590,16 +594,13 @@ const sizes = data.sizes;
       .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 64);
   });
 
-    // Wait for the layout's auth gate to release, then boot the products
-    // controller. If the user lacks the 'products' permission the block
-    // markup is already [hidden] by AdminLayout's perm filter so loadProducts
-    // does nothing harmful.
     document.addEventListener('admin:ready', () => {
       if (typeof loadProducts === 'function') loadProducts();
     });
-    // Late attach (admin:ready may have fired before this script was parsed):
     if ((window as any).__adminPerms) {
       if (typeof loadProducts === 'function') loadProducts();
     }
   </script>
+
+  <script id="__seed" type="application/json" set:html={JSON.stringify(seedProducts)}></script>
 </AdminLayout>

@@ -46,6 +46,17 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
           <div class="customer-val" id="custAddress"></div>
         </div>
         <div>
+          <div class="eyebrow">Carte fidélité</div>
+          <div class="customer-val" id="custLoyalty"></div>
+        </div>
+      </div>
+      <div class="customer-actions">
+        <button type="button" class="btn btn-outline btn-sm" id="custResetBtn">Réinitialiser mot de passe</button>
+      </div>
+    </div>
+
+    <p id="customerStatus" class="status-msg hidden"></p>
+  </div>
 
   <div class="clients-block" data-requires-permission="tiers">
     <div class="clients-head">
@@ -76,6 +87,17 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
             <th>Tier</th>
             <th>Fidélité</th>
             <th>Inscription</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="clientsRows">
+          <tr><td colspan="6" style="text-align:center;padding:32px">Chargement…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p id="clientsStatus" class="status-msg hidden"></p>
+  </div>
 
   <div class="perfreq-block" data-requires-permission="perfume-requests">
     <div class="perfreq-head">
@@ -105,6 +127,17 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
             <th>Parfum demandé</th>
             <th>Marque</th>
             <th>Statut</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="perfreqRows">
+          <tr><td colspan="6" style="text-align:center;padding:32px">Chargement…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p id="perfreqStatus" class="status-msg hidden"></p>
+  </div>
 
   <!-- ===== Modals ===== -->
 <div class="modal hidden" id="tierModal">
@@ -209,7 +242,6 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   <script>
     import { getPassword, adminGetCustomer, adminResetCustomerPassword, adminListCustomers, adminGrantTier, adminRevokeTier } from '../../scripts/adminApi.js';
     import { adminListPerfumeRequests, adminUpdatePerfumeRequest, PERFUME_REQUEST_STATUS_LABELS, PERFUME_REQUEST_TRANSITIONS } from '../../scripts/perfumeRequestsApi.js';
-    // Used by the clients table + concierge modal to format createdAt timestamps.
     import { frenchRelativeDate } from '../../scripts/articlesApi.js';
 
     const adminMain = document.getElementById('adminMain');
@@ -266,7 +298,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     customerResult.classList.remove('hidden');
   }
 
-  customerSearchForm.addEventListener('submit', async (e) => {
+  customerSearchForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     hideCustomerStatus();
     customerResult.classList.add('hidden');
@@ -293,12 +325,12 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   function closeCustPwModal() {
     custPwModal.classList.add('hidden');
   }
-  custResetBtn.addEventListener('click', openCustPwModal);
-  custPwClose.addEventListener('click', closeCustPwModal);
-  custPwCancel.addEventListener('click', closeCustPwModal);
-  custPwOverlay.addEventListener('click', closeCustPwModal);
+  custResetBtn?.addEventListener('click', openCustPwModal);
+  custPwClose?.addEventListener('click', closeCustPwModal);
+  custPwCancel?.addEventListener('click', closeCustPwModal);
+  custPwOverlay?.addEventListener('click', closeCustPwModal);
 
-  custPwForm.addEventListener('submit', async (e) => {
+  custPwForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!loadedCustomerPhone) return;
     custPwErr.classList.add('hidden');
@@ -421,7 +453,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     renderClientsTable();
   }
 
-  clientsFiltersEl.addEventListener('click', (e) => {
+  clientsFiltersEl?.addEventListener('click', (e) => {
     const pill = (e.target as HTMLElement).closest('.filter-pill') as HTMLElement | null;
     if (!pill) return;
     clientsFiltersEl.querySelectorAll('.filter-pill').forEach((p) => p.classList.remove('active'));
@@ -439,7 +471,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     setTimeout(() => clientsStatusEl.classList.add('hidden'), 4000);
   }
 
-  clientsRowsEl.addEventListener('click', async (e) => {
+  clientsRowsEl?.addEventListener('click', async (e) => {
     const btn = (e.target as HTMLElement).closest('button[data-action]') as HTMLElement | null;
     if (!btn) return;
     const phone = btn.dataset.phone || '';
@@ -479,17 +511,17 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     tierModal.classList.add('hidden');
     editingClientPhone = '';
   }
-  tierSelect.addEventListener('change', () => {
+  tierSelect?.addEventListener('change', () => {
     tierResellerFields.hidden = tierSelect.value !== 'reseller';
   });
-  tierClose.addEventListener('click', closeTierModal);
-  tierCancel.addEventListener('click', closeTierModal);
-  tierOverlay.addEventListener('click', closeTierModal);
+  tierClose?.addEventListener('click', closeTierModal);
+  tierCancel?.addEventListener('click', closeTierModal);
+  tierOverlay?.addEventListener('click', closeTierModal);
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && !tierModal.classList.contains('hidden')) closeTierModal();
   });
 
-  tierForm.addEventListener('submit', async (e) => {
+  tierForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!editingClientPhone) return;
     tierErr.classList.add('hidden');
@@ -624,7 +656,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     renderPerfReqTable();
   }
 
-  perfreqFiltersEl.addEventListener('click', (e) => {
+  perfreqFiltersEl?.addEventListener('click', (e) => {
     const pill = (e.target as HTMLElement).closest('.filter-pill') as HTMLElement | null;
     if (!pill) return;
     perfreqFiltersEl.querySelectorAll('.filter-pill').forEach((p) => p.classList.remove('active'));
@@ -633,7 +665,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     renderPerfReqTable();
   });
 
-  perfreqRowsEl.addEventListener('change', async (e) => {
+  perfreqRowsEl?.addEventListener('change', async (e) => {
     const sel = (e.target as HTMLElement).closest('select[data-request-id]') as HTMLSelectElement | null;
     if (!sel) return;
     const requestId = sel.dataset.requestId!;
@@ -655,7 +687,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     showPerfReqStatus(`Statut → ${PERFUME_REQUEST_STATUS_LABELS[newStatus] || newStatus}`, 'success');
   });
 
-  perfreqRowsEl.addEventListener('click', (e) => {
+  perfreqRowsEl?.addEventListener('click', (e) => {
     const btn = (e.target as HTMLElement).closest('.pf-details-btn') as HTMLElement | null;
     if (!btn) return;
     const id = btn.dataset.requestId!;
@@ -692,13 +724,13 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     perfreqModal.classList.add('hidden');
     modalPerfReqId = '';
   }
-  perfreqClose.addEventListener('click', closePerfReqModal);
-  perfreqOverlay.addEventListener('click', closePerfReqModal);
+  perfreqClose?.addEventListener('click', closePerfReqModal);
+  perfreqOverlay?.addEventListener('click', closePerfReqModal);
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && !perfreqModal.classList.contains('hidden')) closePerfReqModal();
   });
 
-  perfreqSaveNotes.addEventListener('click', async () => {
+  perfreqSaveNotes?.addEventListener('click', async () => {
     if (!modalPerfReqId) return;
     perfreqSaveNotes.disabled = true;
     perfreqSaveNotes.textContent = 'Enregistrement…';
