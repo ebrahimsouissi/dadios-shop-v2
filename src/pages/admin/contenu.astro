@@ -38,7 +38,19 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
             <th>Tags</th>
             <th>Statut</th>
             <th>Date</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="articlesRows">
+          <tr><td colspan="6" style="text-align:center;padding:32px">Chargement des articles…</td></tr>
+        </tbody>
+      </table>
+    </div>
 
+    <p id="articlesStatus" class="status-msg hidden"></p>
+  </div>
+
+  <!-- ============ REVIEWS (avis clients) ============ -->
   <div class="reviews-block" data-requires-permission="reviews">
     <div class="reviews-head">
       <div>
@@ -67,6 +79,17 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
             <th>Note</th>
             <th>Avis</th>
             <th>Statut</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="reviewsRows">
+          <tr><td colspan="7" style="text-align:center;padding:32px">Chargement…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p id="reviewsStatus" class="status-msg hidden"></p>
+  </div>
 
   <script>
     import { adminListArticles, adminDeleteArticle, adminPublishArticle, adminUnpublishArticle, frenchRelativeDate } from '../../scripts/articlesApi.js';
@@ -75,9 +98,10 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     const adminMain = document.getElementById('adminMain');
 
   // ============ JOURNAL (articles) ============
-  const articlesFiltersEl = document.getElementById('articlesFilters') as HTMLElement;
-  const articlesRowsEl = document.getElementById('articlesRows') as HTMLElement;
-  const articlesStatusEl = document.getElementById('articlesStatus') as HTMLElement;
+  // `as HTMLElement | null` so subsequent .addEventListener calls can use ?.
+  const articlesFiltersEl = document.getElementById('articlesFilters') as HTMLElement | null;
+  const articlesRowsEl = document.getElementById('articlesRows') as HTMLElement | null;
+  const articlesStatusEl = document.getElementById('articlesStatus') as HTMLElement | null;
 
   let allArticles: any[] = [];
   let currentArticleFilter = '';
@@ -165,7 +189,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     renderArticlesTable();
   }
 
-  articlesFiltersEl.addEventListener('click', (e) => {
+  articlesFiltersEl?.addEventListener('click', (e) => {
     const pill = (e.target as HTMLElement).closest('.filter-pill') as HTMLElement | null;
     if (!pill) return;
     articlesFiltersEl.querySelectorAll('.filter-pill').forEach((p) => p.classList.remove('active'));
@@ -174,7 +198,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     renderArticlesTable();
   });
 
-  articlesRowsEl.addEventListener('click', async (e) => {
+  articlesRowsEl?.addEventListener('click', async (e) => {
     const btn = (e.target as HTMLElement).closest('button[data-action]') as HTMLElement | null;
     if (!btn) return;
     const action = btn.dataset.action;
@@ -222,10 +246,11 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   if (adminMain && !adminMain.classList.contains('hidden')) loadAdminArticles();
 
   // ============ REVIEWS (avis clients) ============
-  const reviewsFiltersEl = document.getElementById('reviewsFilters') as HTMLElement;
-  const reviewsRowsEl = document.getElementById('reviewsRows') as HTMLElement;
-  const reviewsStatusEl = document.getElementById('reviewsStatus') as HTMLElement;
-  const revPendingBadge = document.getElementById('revPendingBadge') as HTMLElement;
+  // `| null` so all chained .addEventListener / .innerHTML / etc. use ?.
+  const reviewsFiltersEl = document.getElementById('reviewsFilters') as HTMLElement | null;
+  const reviewsRowsEl = document.getElementById('reviewsRows') as HTMLElement | null;
+  const reviewsStatusEl = document.getElementById('reviewsStatus') as HTMLElement | null;
+  const revPendingBadge = document.getElementById('revPendingBadge') as HTMLElement | null;
 
   const REV_STATUS_LABEL: Record<string, string> = {
     approved: 'Approuvé',
@@ -316,7 +341,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     });
   }
 
-  reviewsFiltersEl.addEventListener('click', (e) => {
+  reviewsFiltersEl?.addEventListener('click', (e) => {
     const pill = (e.target as HTMLElement).closest('.filter-pill') as HTMLElement | null;
     if (!pill) return;
     reviewsFiltersEl.querySelectorAll('.filter-pill').forEach((p) => p.classList.remove('active'));
@@ -332,7 +357,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     setTimeout(() => reviewsStatusEl.classList.add('hidden'), 4000);
   }
 
-  reviewsRowsEl.addEventListener('click', async (e) => {
+  reviewsRowsEl?.addEventListener('click', async (e) => {
     const target = e.target as HTMLElement;
     const approveBtn = target.closest('.rev-approve') as HTMLElement | null;
     const rejectBtn = target.closest('.rev-reject') as HTMLElement | null;
