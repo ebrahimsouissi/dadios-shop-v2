@@ -209,6 +209,8 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   <script>
     import { getPassword, adminGetCustomer, adminResetCustomerPassword, adminListCustomers, adminGrantTier, adminRevokeTier } from '../../scripts/adminApi.js';
     import { adminListPerfumeRequests, adminUpdatePerfumeRequest, PERFUME_REQUEST_STATUS_LABELS, PERFUME_REQUEST_TRANSITIONS } from '../../scripts/perfumeRequestsApi.js';
+    // Used by the clients table + concierge modal to format createdAt timestamps.
+    import { frenchRelativeDate } from '../../scripts/articlesApi.js';
 
     const adminMain = document.getElementById('adminMain');
 

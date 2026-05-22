@@ -236,7 +236,15 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     import {
       adminListEmployees, adminCreateEmployee,
       adminUpdateEmployee, adminDeleteEmployee,
+      // The migrated sales controller (used here for the Employés panel)
+      // references the full sales admin API even when only the employees
+      // sub-panel is in the DOM. Import them all so the salesObserver and
+      // its callbacks don't throw ReferenceError on equipe.astro.
+      adminListSales, adminGetSale, adminModifySale, adminCancelSale,
+      adminSalesStats,
     } from '../../scripts/adminApi.js';
+    // Used by the admins table + audit log rows.
+    import { frenchRelativeDate } from '../../scripts/articlesApi.js';
 
     const adminMain = document.getElementById('adminMain');
 
