@@ -114,37 +114,45 @@ import Base from '../layouts/Base.astro';
 </Base>
 
 <style>
-  .crumb-wrap { max-width: 1280px; margin: 0 auto; padding: 16px 32px 0; }
+  .crumb-wrap { max-width: 1200px; margin: 0 auto; padding: 16px 24px 0; }
   .crumbs { font-size: 12px; color: var(--ink-mute); letter-spacing: 0.06em; }
   .crumbs a:hover { color: var(--emerald); }
   .crumbs span { margin: 0 6px; opacity: 0.5; }
 
   .panier-hero {
-    max-width: 1280px;
+    max-width: 1200px;
     margin: 0 auto;
-    padding: 24px 32px 32px;
+    padding: 20px 24px 24px;
   }
   .panier-hero h1 {
-    font-size: clamp(36px, 5vw, 54px);
-    margin-top: 12px;
+    font-family: var(--font-display);
+    font-size: clamp(28px, 4vw, 44px);
+    margin-top: 6px;
   }
   .panier-hero .eyebrow { display: block; }
 
   .panier-wrap {
-    max-width: 1280px;
+    max-width: 1200px;
     margin: 0 auto;
-    padding: 0 32px 96px;
+    padding: 0 24px 96px;
   }
 
   /* ===== empty ===== */
+  /* Centred card with a comfortable minimum height so the page doesn't
+     look hollow when the cart is empty. */
   .cart-empty {
     background: var(--cream-soft);
     border: 1px solid var(--border);
     border-radius: 14px;
-    padding: 64px 32px;
+    padding: 56px 32px;
     text-align: center;
     max-width: 560px;
-    margin: 32px auto 0;
+    margin: 0 auto;
+    min-height: 380px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
   }
   .empty-bottle {
     background: var(--cream-warm);
@@ -154,18 +162,30 @@ import Base from '../layouts/Base.astro';
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto 24px;
+    margin: 0 auto 20px;
   }
   .empty-bottle svg { width: 56px; height: 70px; }
-  .cart-empty h2 { font-size: clamp(24px, 3vw, 30px); margin-bottom: 10px; }
-  .cart-empty p { color: var(--ink-soft); margin-bottom: 24px; }
+  .cart-empty h2 {
+    font-family: var(--font-display);
+    font-size: clamp(22px, 3vw, 28px);
+    margin-bottom: 10px;
+  }
+  .cart-empty p { color: var(--ink-soft); margin-bottom: 22px; line-height: 1.55; }
 
-  /* ===== body grid ===== */
+  /* ===== body grid =====
+     Mobile / tablet: single column, summary stacks under the items.
+     Desktop (>= 1024px): two columns, summary sticky on the right. */
   .cart-body {
     display: grid;
-    grid-template-columns: minmax(0, 1.8fr) minmax(280px, 1fr);
-    gap: 32px;
+    grid-template-columns: 1fr;
+    gap: 24px;
     align-items: start;
+  }
+  @media (min-width: 1024px) {
+    .cart-body {
+      grid-template-columns: minmax(0, 3fr) minmax(320px, 2fr);
+      gap: 32px;
+    }
   }
 
   /* ===== items list ===== */
@@ -183,17 +203,17 @@ import Base from '../layouts/Base.astro';
   .cart-row {
     position: relative;
     display: grid;
-    grid-template-columns: 96px 1fr auto auto auto;
+    grid-template-columns: 100px 1fr auto auto auto;
     gap: 18px;
     align-items: center;
     padding: 16px 20px;
-    background: #FAF6F0;
+    background: #FFFFFF;
     border: 1px solid var(--border);
-    border-radius: 16px;
-    box-shadow: 0 2px 8px rgba(15, 81, 50, 0.08);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(15, 81, 50, 0.06);
     transition: transform 200ms ease-out, opacity 200ms ease-out, box-shadow 200ms ease-out;
   }
-  .cart-row:hover { box-shadow: 0 6px 18px rgba(15, 81, 50, 0.12); }
+  .cart-row:hover { box-shadow: 0 4px 12px rgba(15, 81, 50, 0.1); }
   .cart-row.removing {
     animation: cart-row-out 300ms ease-out forwards;
     pointer-events: none;
@@ -206,8 +226,8 @@ import Base from '../layouts/Base.astro';
   }
 
   .row-img {
-    width: 96px;
-    height: 96px;
+    width: 100px;
+    height: 100px;
     background: var(--cream-warm);
     border: 1px solid var(--border);
     border-radius: 8px;
@@ -306,14 +326,21 @@ import Base from '../layouts/Base.astro';
     .qty-btn:hover, .qty-btn:active { transform: none !important; }
   }
 
-  /* ===== summary ===== */
+  /* ===== summary =====
+     Desktop: sticky in the right column, follows the scroll.
+     Mobile/tablet: flows naturally below the items list. */
   .cart-summary {
-    position: sticky;
-    top: 96px;
-    background: var(--cream-soft);
+    background: #FFFFFF;
     border: 1px solid var(--border);
     border-radius: 12px;
-    padding: 24px 26px 22px;
+    padding: 28px;
+    box-shadow: 0 1px 3px rgba(15, 81, 50, 0.06);
+  }
+  @media (min-width: 1024px) {
+    .cart-summary {
+      position: sticky;
+      top: 100px;
+    }
   }
   .summary-rows { padding-bottom: 16px; }
   .summary-row {
@@ -330,10 +357,11 @@ import Base from '../layouts/Base.astro';
     margin-top: 14px;
     padding-top: 18px;
     font-family: var(--font-display);
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--emerald);
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--ink);
   }
+  .summary-row.total > span:last-child { color: var(--gold); }
   .delivery-note {
     font-size: 12px;
     color: var(--ink-mute);
@@ -346,10 +374,11 @@ import Base from '../layouts/Base.astro';
     display: flex;
     flex-direction: column;
     gap: 10px;
-    padding-top: 8px;
+    padding-top: 14px;
   }
   .cta-wa {
     width: 100%;
+    min-height: 56px;
     background: #25D366 !important;
     color: #fff !important;
     border-color: #25D366 !important;
@@ -357,11 +386,12 @@ import Base from '../layouts/Base.astro';
     align-items: center;
     justify-content: center;
     gap: 10px;
+    font-size: 15px;
     box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.6);
     animation: cta-wa-pulse 3s ease-in-out infinite;
   }
   .cta-wa:hover { background: #1ebe5b !important; border-color: #1ebe5b !important; }
-  .cta-wa .wa-icon { width: 18px; height: 18px; flex-shrink: 0; }
+  .cta-wa .wa-icon { width: 20px; height: 20px; flex-shrink: 0; }
   @keyframes cta-wa-pulse {
     0%, 100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.55); }
     50%      { box-shadow: 0 0 0 14px rgba(37, 211, 102, 0); }
@@ -369,19 +399,25 @@ import Base from '../layouts/Base.astro';
   @media (prefers-reduced-motion: reduce) {
     .cta-wa { animation: none !important; }
   }
+  /* Clear-cart button — ghost style with gold border per spec. */
+  #clearBtn {
+    width: 100%;
+    border-color: var(--gold-soft);
+    color: var(--ink-soft);
+  }
+  #clearBtn:hover {
+    background: var(--cream-soft);
+    border-color: var(--gold);
+    color: var(--ink);
+  }
   .summary-fine {
     margin-top: 18px;
     padding-top: 16px;
     border-top: 1px solid var(--border);
-    font-size: 11px;
+    font-size: 12px;
     line-height: 1.6;
     color: var(--ink-mute);
-  }
-
-  /* ===== responsive ===== */
-  @media (max-width: 980px) {
-    .cart-body { grid-template-columns: 1fr; }
-    .cart-summary { position: static; }
+    font-style: italic;
   }
   /* ===== guest phone modal ===== */
   .phone-modal {
@@ -459,9 +495,10 @@ import Base from '../layouts/Base.astro';
   }
   .phone-actions .btn { flex: 1; min-width: 0; }
 
-  @media (max-width: 720px) {
+  @media (max-width: 767px) {
     .panier-hero, .panier-wrap { padding-left: 16px; padding-right: 16px; }
     .crumb-wrap { padding: 12px 16px 0; }
+    .cart-summary { padding: 22px 20px; }
     .cart-row {
       grid-template-columns: 72px 1fr auto;
       grid-template-areas:
