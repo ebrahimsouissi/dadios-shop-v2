@@ -255,6 +255,7 @@ const { title, current } = Astro.props;
 
   <script>
     import { adminMe, getPassword, setPassword, clearPassword, checkPassword, fetchPublicProducts, adminListCustomers } from '../scripts/adminApi.js';
+    import { logout as customerLogout } from '../scripts/customerApi.js';
 
     const loginGate = document.getElementById('loginGate');
     const notAdminGate = document.getElementById('notAdminGate');
@@ -409,10 +410,15 @@ const { title, current } = Astro.props;
         toggleUserMenu(false);
       }
     });
-    document.getElementById('adminLogoutBtn')?.addEventListener('click', () => {
-      clearPassword();
-      try { localStorage.removeItem('dadios_admin_emergency'); } catch {}
-      location.reload();
+    document.getElementById('adminLogoutBtn')?.addEventListener('click', async () => {
+      // Phase 13 logout: must invalidate the CUSTOMER session (server-side)
+      // and clear ALL local auth artefacts — otherwise adminMe() would
+      // re-authenticate the user on the next page load.
+      if (!confirm('Vous voulez vraiment vous déconnecter ?')) return;
+      clearPassword();                                          // legacy password-gate
+      try { localStorage.removeItem('dadios_admin_emergency'); } catch {}  // emergency token
+      try { await customerLogout(); } catch {}                  // POST /api/customer logout + clear session
+      window.location.href = '/';
     });
 
     // ============ Bell notifications ============

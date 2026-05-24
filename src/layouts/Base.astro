@@ -144,7 +144,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site).toString();
       <div>
         <h4>Compte</h4>
         <ul>
-          <li><a href="/compte">Se connecter</a></li>
+          <li><a href="/compte" id="footerAuthLink">Se connecter</a></li>
           <li><a href="/compte/dashboard">Carte de fidélité</a></li>
         </ul>
       </div>
@@ -154,7 +154,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site).toString();
 
   <script>
     import { bindCartBadge } from '../scripts/cart.js';
-    import { isLoggedIn } from '../scripts/customerApi.js';
+    import { isLoggedIn, me } from '../scripts/customerApi.js';
     import { bindWishlistHearts } from '../scripts/wishlist.js';
 
     bindCartBadge();
@@ -176,6 +176,31 @@ const canonical = new URL(Astro.url.pathname, Astro.site).toString();
         }
         el.setAttribute('href', '/compte/dashboard');
       });
+    }
+
+    // ============ Footer auth link (richer than the nav one) ============
+    // Guests see "Se connecter" (server-rendered). Logged-in customers see
+    // "👋 Bonjour {first name}" → /compte/dashboard. Admins get a gold
+    // "(Admin)" suffix and the link points to /admin instead.
+    // Fails silently to the server-rendered link if anything goes wrong.
+    const footerAuthEl = document.getElementById('footerAuthLink') as HTMLAnchorElement | null;
+    if (footerAuthEl && isLoggedIn()) {
+      (async () => {
+        try {
+          const r = await me();
+          if (!r || !r.ok || !r.customer) return;
+          const fullName = String(r.customer.name || r.customer.phone || '').trim();
+          const firstName = fullName.split(/\s+/)[0] || 'vous';
+          const isAdmin = r.customer.tier === 'admin';
+          if (isAdmin) {
+            footerAuthEl.href = '/admin';
+            footerAuthEl.innerHTML = `👋 ${firstName} <span style="color:var(--gold);font-size:0.85em">(Admin)</span>`;
+          } else {
+            footerAuthEl.href = '/compte/dashboard';
+            footerAuthEl.textContent = `👋 Bonjour ${firstName}`;
+          }
+        } catch {}
+      })();
     }
 
     // ============ Drawer (mobile menu) ============
