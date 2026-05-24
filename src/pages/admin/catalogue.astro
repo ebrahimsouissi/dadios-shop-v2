@@ -23,6 +23,10 @@ const sizes = data.sizes;
       <button class="tab-btn" data-filter="femme">Femme</button>
       <button class="tab-btn" data-filter="mixte">Mixte</button>
       <button class="tab-btn" data-filter="featured">Best-sellers</button>
+      <span class="tab-sep" aria-hidden="true">·</span>
+      <button class="tab-btn" data-filter="perfume">Parfums</button>
+      <button class="tab-btn" data-filter="simple">Produits simples</button>
+      <button class="tab-btn" data-filter="staff_only">Caisse uniquement</button>
     </div>
 
     <table class="admin-table">
@@ -30,6 +34,8 @@ const sizes = data.sizes;
         <tr>
           <th></th>
           <th>Nom</th>
+          <th>Type</th>
+          <th>Visibilité</th>
           <th>Inspiré par</th>
           <th>Famille</th>
           <th>Genre</th>
@@ -38,7 +44,7 @@ const sizes = data.sizes;
         </tr>
       </thead>
       <tbody id="rows">
-        <tr><td colspan="7" style="text-align:center;padding:48px">Chargement des parfums...</td></tr>
+        <tr><td colspan="9" style="text-align:center;padding:48px">Chargement des parfums...</td></tr>
       </tbody>
     </table>
 
@@ -56,6 +62,28 @@ const sizes = data.sizes;
 
     <form id="prodForm">
       <input type="hidden" name="originalSlug" id="originalSlug" />
+
+      <!-- TYPE + VISIBILITY (drives which fields below are visible) -->
+      <div class="card-block">
+        <div class="form-row">
+          <label>
+            <span>Type de produit *</span>
+            <select id="fProductType" name="productType">
+              <option value="perfume">Parfum (2 contenants 20ml / 50ml)</option>
+              <option value="simple">Produit simple (1 prix unique)</option>
+            </select>
+            <small>Détermine quels champs apparaissent ci-dessous.</small>
+          </label>
+          <label>
+            <span>Visibilité *</span>
+            <select id="fVisibility" name="visibility">
+              <option value="public">Vitrine publique + caisse boutique</option>
+              <option value="staff_only">Caisse boutique uniquement</option>
+            </select>
+            <small>« Caisse uniquement » = caché du site public.</small>
+          </label>
+        </div>
+      </div>
 
       <!-- IMAGE UPLOAD -->
       <div class="card-block">
@@ -87,33 +115,33 @@ const sizes = data.sizes;
         </label>
       </div>
 
-      <label>
+      <label data-perfume-only>
         <span>Inspiré par *</span>
-        <input type="text" name="inspiredBy" id="fInspired" required placeholder="ex. Dior Sauvage Élixir" />
+        <input type="text" name="inspiredBy" id="fInspired" placeholder="ex. Dior Sauvage Élixir" />
       </label>
 
       <div class="form-row">
-        <label>
+        <label data-perfume-only>
           <span>Genre *</span>
-          <select name="gender" id="fGender" required>
+          <select name="gender" id="fGender">
             <option value="homme">Homme</option>
             <option value="femme">Femme</option>
             <option value="mixte">Mixte</option>
           </select>
         </label>
         <label>
-          <span>Famille olfactive *</span>
-          <input type="text" name="family" id="fFamily" required placeholder="ex. Boisé · Épicé" />
+          <span>Famille (ou catégorie) *</span>
+          <input type="text" name="family" id="fFamily" required placeholder="ex. Boisé · Épicé / Déodorant / Pack" />
         </label>
       </div>
 
-      <label>
+      <label data-perfume-only>
         <span>Description courte *</span>
-        <textarea name="shortDescription" id="fDesc" rows="3" required placeholder="Une fragrance puissante..." maxlength="240"></textarea>
+        <textarea name="shortDescription" id="fDesc" rows="3" placeholder="Une fragrance puissante..." maxlength="240"></textarea>
         <small>Apparaît dans les résultats Google. Maximum 240 caractères.</small>
       </label>
 
-      <div class="card-block">
+      <div class="card-block" data-perfume-only>
         <strong>Pyramide olfactive</strong>
         <small style="display:block;margin-bottom:12px">Séparez les notes par des virgules.</small>
         <label>
@@ -130,7 +158,7 @@ const sizes = data.sizes;
         </label>
       </div>
 
-      <div class="form-row">
+      <div class="form-row" data-perfume-only>
         <label>
           <span>Tenue</span>
           <input type="text" name="longevity" id="fLong" placeholder="ex. 8 h" />
@@ -145,7 +173,7 @@ const sizes = data.sizes;
         </label>
       </div>
 
-      <div class="form-row">
+      <div class="form-row" data-perfume-only>
         <div>
           <span class="lbl">Saisons</span>
           <div class="check-row" id="seasonsBox">
@@ -164,7 +192,7 @@ const sizes = data.sizes;
         </div>
       </div>
 
-      <div class="card-block">
+      <div class="card-block" data-perfume-only>
         <strong>Prix par format</strong>
         <small style="display:block;margin-bottom:12px">Prix globaux. Pour modifier, éditer les Sizes dans products.json.</small>
         <div class="price-grid">
@@ -175,6 +203,15 @@ const sizes = data.sizes;
             </div>
           ))}
         </div>
+      </div>
+
+      <div class="card-block" data-simple-only hidden>
+        <strong>Prix unitaire</strong>
+        <small style="display:block;margin-bottom:12px">Prix de vente HT en dinars tunisiens.</small>
+        <label>
+          <span>Prix unitaire (DT) *</span>
+          <input type="number" name="price" id="fPrice" min="0.01" step="0.01" placeholder="ex. 7.50" />
+        </label>
       </div>
 
       <label class="checkbox">
@@ -339,18 +376,33 @@ const sizes = data.sizes;
   function renderRows(filter = 'all') {
     if (!rowsTbody) return;
     const filtered = products.filter(p => {
+      // Treat legacy products (no productType / visibility) as perfume + public.
+      const type = p.productType || 'perfume';
+      const vis = p.visibility || 'public';
       if (filter === 'all') return true;
       if (filter === 'featured') return p.featured;
+      if (filter === 'perfume') return type === 'perfume';
+      if (filter === 'simple') return type === 'simple';
+      if (filter === 'staff_only') return vis === 'staff_only';
       return p.gender === filter;
     });
-    countLine && (countLine.textContent = `${filtered.length} parfum${filtered.length > 1 ? 's' : ''} affiché${filtered.length > 1 ? 's' : ''}.`);
+    countLine && (countLine.textContent = `${filtered.length} produit${filtered.length > 1 ? 's' : ''} affiché${filtered.length > 1 ? 's' : ''}.`);
 
     if (filtered.length === 0) {
-      rowsTbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;opacity:0.7">Aucun parfum.</td></tr>';
+      rowsTbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:32px;opacity:0.7">Aucun produit.</td></tr>';
       return;
     }
 
-    rowsTbody.innerHTML = filtered.map(p => `
+    rowsTbody.innerHTML = filtered.map(p => {
+      const type = p.productType || 'perfume';
+      const vis = p.visibility || 'public';
+      const typeBadge = type === 'simple'
+        ? '<span class="badge badge-simple">Simple</span>'
+        : '<span class="badge badge-perfume">Parfum</span>';
+      const visBadge = vis === 'staff_only'
+        ? '<span class="badge badge-staff">Caisse seule</span>'
+        : '<span class="badge badge-public">Public</span>';
+      return `
       <tr data-slug="${escapeHtml(p.slug)}">
         <td>
           <div class="tiny-img">
@@ -358,16 +410,19 @@ const sizes = data.sizes;
               `<svg viewBox="0 0 40 50"><rect x="12" y="10" width="16" height="36" rx="1.5" fill="#0E3A1F"/><rect x="16" y="22" width="8" height="14" fill="#0E3A1F" stroke="#D4AF37" stroke-width="0.3"/><rect x="16" y="4" width="8" height="6" rx="0.8" fill="#A87C45"/></svg>`}
           </div>
         </td>
-        <td><strong>${escapeHtml(p.name)}</strong></td>
+        <td><strong>${escapeHtml(p.name)}</strong>${type === 'simple' && p.price ? `<br><small style="color:var(--ink-mute)">${p.price} DT</small>` : ''}</td>
+        <td>${typeBadge}</td>
+        <td>${visBadge}</td>
         <td class="muted">${escapeHtml(p.inspiredBy || '')}</td>
         <td><span class="tag">${escapeHtml(p.family || '')}</span></td>
-        <td class="cap">${escapeHtml(p.gender)}</td>
+        <td class="cap">${escapeHtml(p.gender || '—')}</td>
         <td>${p.featured ? '★ Oui' : '—'}</td>
         <td>
           <button class="link-btn edit-btn" data-slug="${escapeAttr(p.slug)}">Modifier</button>
           <button class="link-btn danger del-btn" data-slug="${escapeAttr(p.slug)}">Supprimer</button>
         </td>
-      </tr>`).join('');
+      </tr>`;
+    }).join('');
 
     rowsTbody.querySelectorAll('.edit-btn').forEach(b => {
       b?.addEventListener('click', () => openEdit(b.getAttribute('data-slug')));
@@ -386,6 +441,41 @@ const sizes = data.sizes;
   });
 
   // ============ MODAL ============
+
+  // Show/hide perfume-only vs simple-only blocks based on the type
+  // selector. Called from openNew/openEdit and on every change of
+  // #fProductType.
+  function applyTypeVisibility(type: string) {
+    const isSimple = type === 'simple';
+    document.querySelectorAll<HTMLElement>('[data-perfume-only]').forEach((el) => {
+      el.hidden = isSimple;
+      // Disable required-ness too so the simple-only mode can submit even
+      // when the perfume fields are blank.
+      el.querySelectorAll<HTMLInputElement|HTMLTextAreaElement|HTMLSelectElement>('input,textarea,select').forEach((c) => {
+        if (isSimple) {
+          if (c.required) c.dataset.wasRequired = '1';
+          c.required = false;
+        } else if (c.dataset.wasRequired === '1') {
+          c.required = true;
+        }
+      });
+    });
+    document.querySelectorAll<HTMLElement>('[data-simple-only]').forEach((el) => {
+      el.hidden = !isSimple;
+      el.querySelectorAll<HTMLInputElement>('input').forEach((c) => {
+        c.required = isSimple;
+      });
+    });
+    // Modal title hints
+    const titleEl = document.getElementById('modalTitle');
+    if (titleEl && !editingSlug) {
+      titleEl.textContent = isSimple ? 'Nouveau produit simple' : 'Nouveau parfum';
+    }
+  }
+  document.getElementById('fProductType')?.addEventListener('change', (e) => {
+    applyTypeVisibility((e.target as HTMLSelectElement).value);
+  });
+
   function openNew() {
     editingSlug = null;
     pendingImageBlob = null;
@@ -394,8 +484,11 @@ const sizes = data.sizes;
     document.getElementById('modalEyebrow')!.textContent = 'Ajouter un parfum';
     prodForm.reset();
     (document.getElementById('originalSlug') as HTMLInputElement).value = '';
+    (document.getElementById('fProductType') as HTMLSelectElement).value = 'perfume';
+    (document.getElementById('fVisibility') as HTMLSelectElement).value = 'public';
     imgUrl.value = '';
     resetImagePreview();
+    applyTypeVisibility('perfume');
     modal?.classList.remove('hidden');
   }
   function openEdit(slug) {
@@ -407,6 +500,13 @@ const sizes = data.sizes;
     document.getElementById('modalTitle')!.textContent = 'Modifier ' + p.name;
     document.getElementById('modalEyebrow')!.textContent = 'Modification';
     (document.getElementById('originalSlug') as HTMLInputElement).value = slug;
+    // Type + visibility — set FIRST so applyTypeVisibility hides the
+    // right fields before we populate them.
+    const productType = p.productType === 'simple' ? 'simple' : 'perfume';
+    const visibility  = p.visibility  === 'staff_only' ? 'staff_only' : 'public';
+    (document.getElementById('fProductType') as HTMLSelectElement).value = productType;
+    (document.getElementById('fVisibility')  as HTMLSelectElement).value = visibility;
+    applyTypeVisibility(productType);
     (document.getElementById('fName') as HTMLInputElement).value = p.name || '';
     (document.getElementById('fSlug') as HTMLInputElement).value = p.slug || '';
     (document.getElementById('fInspired') as HTMLInputElement).value = p.inspiredBy || '';
@@ -422,6 +522,8 @@ const sizes = data.sizes;
     (document.getElementById('fVipOnly') as HTMLInputElement).checked = !!p.vipOnly;
     (document.getElementById('fWholesale') as HTMLInputElement).value =
       p.wholesalePrice != null ? String(p.wholesalePrice) : '';
+    (document.getElementById('fPrice') as HTMLInputElement).value =
+      p.price != null ? String(p.price) : '';
     document.querySelectorAll('input[name="seasons"]').forEach(c => {
       (c as HTMLInputElement).checked = (p.seasons || []).includes((c as HTMLInputElement).value);
     });
@@ -507,20 +609,13 @@ const sizes = data.sizes;
       }
 
       // 2. Build product object
-      const product = {
+      const productType = (document.getElementById('fProductType') as HTMLSelectElement).value;
+      const visibility  = (document.getElementById('fVisibility')  as HTMLSelectElement).value;
+      const isSimple = productType === 'simple';
+      const product: any = {
         slug: (document.getElementById('fSlug') as HTMLInputElement).value.trim(),
         name: (document.getElementById('fName') as HTMLInputElement).value.trim(),
-        inspiredBy: (document.getElementById('fInspired') as HTMLInputElement).value.trim(),
-        gender: (document.getElementById('fGender') as HTMLSelectElement).value,
         family: (document.getElementById('fFamily') as HTMLInputElement).value.trim(),
-        shortDescription: (document.getElementById('fDesc') as HTMLTextAreaElement).value.trim(),
-        topNotes: parseList((document.getElementById('fTopN') as HTMLInputElement).value),
-        heartNotes: parseList((document.getElementById('fHeartN') as HTMLInputElement).value),
-        baseNotes: parseList((document.getElementById('fBaseN') as HTMLInputElement).value),
-        longevity: (document.getElementById('fLong') as HTMLInputElement).value.trim(),
-        sillage: (document.getElementById('fSill') as HTMLSelectElement).value,
-        seasons: getChecked('seasons'),
-        moments: getChecked('moments'),
         featured: (document.getElementById('fFeat') as HTMLInputElement).checked,
         vipOnly: (document.getElementById('fVipOnly') as HTMLInputElement).checked,
         wholesalePrice: (() => {
@@ -530,7 +625,30 @@ const sizes = data.sizes;
           return isFinite(n) && n > 0 ? n : null;
         })(),
         image: finalImageUrl,
+        productType,
+        visibility,
       };
+      if (isSimple) {
+        // Single-price product — only ship the price field (worker strips
+        // perfume-only fields anyway, but cleaner to not send them).
+        const price = Number((document.getElementById('fPrice') as HTMLInputElement).value);
+        if (!isFinite(price) || price <= 0) {
+          throw new Error('Prix unitaire requis (> 0)');
+        }
+        product.price = price;
+      } else {
+        // Perfume — full pyramid + Phase 7a / SEO fields
+        product.inspiredBy = (document.getElementById('fInspired') as HTMLInputElement).value.trim();
+        product.gender = (document.getElementById('fGender') as HTMLSelectElement).value;
+        product.shortDescription = (document.getElementById('fDesc') as HTMLTextAreaElement).value.trim();
+        product.topNotes = parseList((document.getElementById('fTopN') as HTMLInputElement).value);
+        product.heartNotes = parseList((document.getElementById('fHeartN') as HTMLInputElement).value);
+        product.baseNotes = parseList((document.getElementById('fBaseN') as HTMLInputElement).value);
+        product.longevity = (document.getElementById('fLong') as HTMLInputElement).value.trim();
+        product.sillage = (document.getElementById('fSill') as HTMLSelectElement).value;
+        product.seasons = getChecked('seasons');
+        product.moments = getChecked('moments');
+      }
 
       // 3. Save via worker
       const res = await upsertProduct(product);

@@ -591,6 +591,41 @@ async function adminUpsertProduct(body, env) {
   const wp = Number(product.wholesalePrice);
   product.wholesalePrice = (isFinite(wp) && wp > 0) ? wp : null;
 
+  // New 'product type' + 'visibility' fields.
+  //   productType = 'perfume' (default, current behaviour) | 'simple'
+  //   visibility  = 'public'  (default, current behaviour) | 'staff_only'
+  // A "simple" product has a single `price` field (no global-sizes lookup,
+  // no notes/longevity/etc.). The admin form sends a valid `price` for
+  // simple products; we validate and strip the perfume-only noise so the
+  // saved record stays small.
+  product.productType = product.productType === 'simple' ? 'simple' : 'perfume';
+  product.visibility  = product.visibility  === 'staff_only' ? 'staff_only' : 'public';
+
+  if (product.productType === 'simple') {
+    const price = Number(product.price);
+    if (!isFinite(price) || price <= 0) {
+      return json({ ok: false, error: "Produit simple : prix unitaire requis (> 0)" }, 400);
+    }
+    product.price = Math.round(price * 100) / 100;
+    // Perfume-only fields make no sense on a simple product — clear them
+    // so legacy filters / catalogue cards don't render stale data.
+    delete product.topNotes;
+    delete product.heartNotes;
+    delete product.baseNotes;
+    delete product.longevity;
+    delete product.sillage;
+    delete product.seasons;
+    delete product.moments;
+    delete product.inspiredBy;
+    delete product.shortDescription;
+    delete product.longDescription;
+    delete product.gender;
+  } else {
+    // Perfume: drop any stray `price` field so the global sizes catalogue
+    // stays the single source of truth.
+    delete product.price;
+  }
+
   product.updatedAt = new Date().toISOString();
 
   const products = await listProducts(env);
@@ -1221,16 +1256,30 @@ function applyTierFilterToProducts(products, tier) {
   return out;
 }
 
+/**
+ * Filter out staff_only products unless the caller is the staff/admin app.
+ * Visibility-less products (legacy / pre-feature) are treated as 'public'
+ * so existing data keeps showing up on the shop.
+ */
+function applyVisibilityFilter(products, context) {
+  if (context === 'staff' || context === 'admin') return products;
+  return products.filter((p) => p.visibility !== 'staff_only');
+}
+
 async function handleProductsList(body, env) {
   const action = body?.action;
   if (action !== 'list') {
     return json({ ok: false, error: "Unknown products action: " + action }, 400);
   }
+  // context = 'public' (default) | 'staff' | 'admin'. Public callers never
+  // see staff_only products; the global tier filter still applies to all.
+  const context = String(body?.context || 'public');
   const tier = await resolveViewerTier(env, body.sessionToken);
   const products = await listProducts(env);
+  const visible = applyVisibilityFilter(products, context);
   return json({
     ok: true,
-    products: applyTierFilterToProducts(products, tier),
+    products: applyTierFilterToProducts(visible, tier),
     viewerTier: tier,
   });
 }
@@ -3515,8 +3564,10 @@ export default {
     // Hides vipOnly products and strips wholesalePrice. Phase 7a clients
     // that want tier-aware results should use the POST endpoint below.
     if (url.pathname === "/api/products" && request.method === "GET") {
+      // Public route — strips staff_only products + applies guest tier.
       const products = await listProducts(env);
-      return json({ ok: true, products: applyTierFilterToProducts(products, 'guest') });
+      const visible = applyVisibilityFilter(products, 'public');
+      return json({ ok: true, products: applyTierFilterToProducts(visible, 'guest') });
     }
 
     // ===== Public: product catalog (POST, optional sessionToken) =====

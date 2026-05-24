@@ -248,12 +248,35 @@ export async function uploadImage(blob, slugHint = '') {
 }
 
 /**
- * Public products fetch (no auth) — used by the shop pages.
- * Falls back to the JSON file shipped with the site if API fails.
+ * Products fetch — used by shop pages, the staff POS, and the admin
+ * search modal. `context` controls visibility filtering server-side:
+ *   - 'public' (default) → guest view, strips staff_only products
+ *   - 'staff'            → staff POS, returns ALL products
+ *   - 'admin'            → admin search, returns ALL products
+ *
+ * For 'public' we keep the cheap GET (cache: no-cache) since the worker
+ * also defaults to public. Other contexts must POST so we can pass the
+ * context param + the caller's sessionToken (for tier-aware pricing).
+ *
+ * Falls back to /products.json if the API is unreachable — but never
+ * for non-public contexts (the static file has no staff_only data).
  */
-export async function fetchPublicProducts(fallbackUrl = '/products.json') {
+export async function fetchPublicProducts(fallbackUrl = '/products.json', context = 'public') {
   try {
-    const res = await fetch(apiUrl('/api/products'), { cache: 'no-cache' });
+    let res;
+    if (context === 'public') {
+      res = await fetch(apiUrl('/api/products'), { cache: 'no-cache' });
+    } else {
+      res = await fetch(apiUrl('/api/products'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'list',
+          context,
+          sessionToken: getSessionToken(),
+        }),
+      });
+    }
     if (res.ok) {
       const data = await res.json();
       if (data.ok && Array.isArray(data.products) && data.products.length > 0) {
@@ -261,13 +284,15 @@ export async function fetchPublicProducts(fallbackUrl = '/products.json') {
       }
     }
   } catch {}
-  // Fallback
-  try {
-    const res = await fetch(fallbackUrl);
-    if (res.ok) {
-      const data = await res.json();
-      return data.products || [];
-    }
-  } catch {}
+  // Static fallback — only meaningful for the public catalogue.
+  if (context === 'public') {
+    try {
+      const res = await fetch(fallbackUrl);
+      if (res.ok) {
+        const data = await res.json();
+        return data.products || [];
+      }
+    } catch {}
+  }
   return [];
 }
