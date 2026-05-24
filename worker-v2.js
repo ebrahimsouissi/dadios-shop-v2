@@ -3617,7 +3617,15 @@ export default {
       let body;
       try { body = await request.json(); }
       catch { return json({ ok: false, error: "Invalid JSON" }, 400); }
-      return handleOrders(body, env, request);
+      // Wrap dispatch so an uncaught throw surfaces as a structured
+      // 500 JSON instead of the bare 'Worker threw exception' Cloudflare
+      // HTML page. err.stack lands in the Cloudflare Workers tail logs.
+      try {
+        return await handleOrders(body, env, request);
+      } catch (err) {
+        console.error('[orders] crash:', err && err.message, err && err.stack);
+        return json({ ok: false, error: 'handleOrders crash: ' + (err && err.message) }, 500);
+      }
     }
 
     // ===== Wishlist =====
@@ -3641,7 +3649,14 @@ export default {
       let body;
       try { body = await request.json(); }
       catch { return json({ ok: false, error: "Invalid JSON" }, 400); }
-      return handlePerfumeRequests(body, env, request);
+      // Same safety net as /api/orders — surface the real exception
+      // through the response so debugging doesn't require tail logs.
+      try {
+        return await handlePerfumeRequests(body, env, request);
+      } catch (err) {
+        console.error('[perfume-requests] crash:', err && err.message, err && err.stack);
+        return json({ ok: false, error: 'handlePerfumeRequests crash: ' + (err && err.message) }, 500);
+      }
     }
 
     // ===== Reviews (avis clients) =====
