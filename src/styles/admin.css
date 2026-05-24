@@ -1570,3 +1570,44 @@ body.admin-body.no-scroll { overflow: hidden; }
     gap: 10px;
     margin-top: 16px;
   }
+
+/* =====================================================
+   Catalogue — Type / Visibility badges + filter pills
+   ===================================================== */
+.admin-tabs .tab-sep {
+  display: inline-block;
+  margin: 0 4px;
+  color: var(--ad-ink-mute);
+  opacity: 0.5;
+  align-self: center;
+}
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+.badge-perfume {
+  background: rgba(15, 81, 50, 0.10);
+  color: var(--ad-emerald);
+  border-color: rgba(15, 81, 50, 0.20);
+}
+.badge-simple {
+  background: rgba(147, 51, 234, 0.10);
+  color: #6b21a8;
+  border-color: rgba(147, 51, 234, 0.25);
+}
+.badge-public {
+  background: rgba(59, 130, 246, 0.10);
+  color: #1e40af;
+  border-color: rgba(59, 130, 246, 0.25);
+}
+.badge-staff {
+  background: rgba(245, 158, 11, 0.12);
+  color: #92551b;
+  border-color: rgba(245, 158, 11, 0.30);
+}

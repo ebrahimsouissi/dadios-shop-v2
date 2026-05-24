@@ -32,10 +32,13 @@ export async function syncCatalogFromApi() {
     const token = getSessionToken();
     let res;
     if (token) {
+      // context='public' guarantees staff_only products are stripped even
+      // for a logged-in customer (e.g. déodorant, packs). The GET fallback
+      // already strips them server-side for guests.
       res = await fetch(apiUrl('/api/products'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'list', sessionToken: token }),
+        body: JSON.stringify({ action: 'list', sessionToken: token, context: 'public' }),
       });
     } else {
       res = await fetch(apiUrl('/api/products'), { cache: 'no-cache' });

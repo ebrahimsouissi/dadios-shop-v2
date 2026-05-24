@@ -469,13 +469,18 @@ import StaffLayout from '../../layouts/StaffLayout.astro';
       }
       employeeEl.textContent = me.employee.name;
       try {
-        const list = await fetchPublicProducts('/products.json');
-        // Keep only essentials.
+        // context='staff' so the POS sees staff_only products too
+        // (déodorants, packs, flacons vides…).
+        const list = await fetchPublicProducts('/products.json', 'staff');
+        // Keep only essentials. Carry productType + price so the render
+        // path can decide between size-selector and single 'Ajouter'.
         allProducts = (list || []).map((p) => ({
           slug: p.slug,
           name: p.name,
           gender: p.gender,
           image: p.image || '',
+          productType: p.productType || 'perfume',
+          price: typeof p.price === 'number' ? p.price : null,
         })).sort((a, b) => a.name.localeCompare(b.name, 'fr'));
         renderProducts();
       } catch {
@@ -484,24 +489,29 @@ import StaffLayout from '../../layouts/StaffLayout.astro';
     })();
 
     // ============ Products grid ============
+    // Perfume products render the 20ml / 50ml selector. Simple products
+    // (déodorant, packs…) get a single "Ajouter" button at their unit
+    // price — no size selector since they have no variants.
     function renderProducts() {
       const filtered = currentFilter === 'all'
         ? allProducts
         : allProducts.filter((p) => p.gender === currentFilter);
       if (filtered.length === 0) {
-        productsEl.innerHTML = '<div class="pos-loading">Aucun parfum dans cette catégorie.</div>';
+        productsEl.innerHTML = '<div class="pos-loading">Aucun produit dans cette catégorie.</div>';
         return;
       }
-      productsEl.innerHTML = filtered.map((p) => `
-        <div class="pos-product" data-slug="${escHtml(p.slug)}">
-          <div class="pos-product-img">
-            ${p.image
-              ? `<img src="${escHtml(p.image)}" alt="" loading="lazy" />`
-              : `<svg viewBox="0 0 40 50" aria-hidden="true"><rect x="12" y="10" width="16" height="36" rx="1.5" fill="#0E3A1F"/><rect x="16" y="22" width="8" height="14" fill="#0E3A1F" stroke="#D4AF37" stroke-width="0.3"/><rect x="16" y="4" width="8" height="6" rx="0.8" fill="#A87C45"/></svg>`}
-          </div>
-          <div class="pos-product-name">${escHtml(p.name)}</div>
-          <div class="pos-product-sizes">
-            ${SIZES.map((s) => `
+      productsEl.innerHTML = filtered.map((p) => {
+        const isSimple = p.productType === 'simple';
+        const buttons = isSimple
+          ? `<button type="button" class="pos-size-btn pos-simple-btn"
+                     data-slug="${escHtml(p.slug)}"
+                     data-name="${escHtml(p.name)}"
+                     data-size=""
+                     data-price="${Number(p.price) || 0}">
+              <span class="size">Ajouter</span>
+              <span class="price">${formatDT(Number(p.price) || 0)}</span>
+            </button>`
+          : SIZES.map((s) => `
               <button type="button" class="pos-size-btn"
                       data-slug="${escHtml(p.slug)}"
                       data-name="${escHtml(p.name)}"
@@ -510,10 +520,19 @@ import StaffLayout from '../../layouts/StaffLayout.astro';
                 <span class="size">${escHtml(s.label)}</span>
                 <span class="price">${formatDT(s.price)}</span>
               </button>
-            `).join('')}
+            `).join('');
+        return `
+        <div class="pos-product" data-slug="${escHtml(p.slug)}">
+          <div class="pos-product-img">
+            ${p.image
+              ? `<img src="${escHtml(p.image)}" alt="" loading="lazy" />`
+              : `<svg viewBox="0 0 40 50" aria-hidden="true"><rect x="12" y="10" width="16" height="36" rx="1.5" fill="#0E3A1F"/><rect x="16" y="22" width="8" height="14" fill="#0E3A1F" stroke="#D4AF37" stroke-width="0.3"/><rect x="16" y="4" width="8" height="6" rx="0.8" fill="#A87C45"/></svg>`}
           </div>
+          <div class="pos-product-name">${escHtml(p.name)}</div>
+          <div class="pos-product-sizes${isSimple ? ' is-simple' : ''}">${buttons}</div>
         </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
     filtersEl.addEventListener('click', (e) => {
@@ -593,8 +612,8 @@ import StaffLayout from '../../layouts/StaffLayout.astro';
         html.push(`
           <li class="pos-ticket-item">
             <div>
-              <div class="pos-ticket-item-name">${escHtml(it.name)}</div>
-              <div class="pos-ticket-item-meta">${escHtml(it.size)} · ${formatDT(it.price)} l'unité</div>
+              <div class="pos-ticket-item-name">${escHtml(it.name)}${it.size ? ' ' + escHtml(it.size) : ''}</div>
+              <div class="pos-ticket-item-meta">${formatDT(it.price)} l'unité</div>
             </div>
             <div class="pos-ticket-item-controls">
               <button type="button" class="pos-qty-btn" data-act="dec" data-key="${escHtml(key)}" aria-label="Diminuer">−</button>
