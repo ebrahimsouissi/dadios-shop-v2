@@ -277,8 +277,13 @@ const { title, current } = Astro.props;
     }
 
     function revealShell(res?: any) {
-      if (loginGate) (loginGate as HTMLElement).hidden = true;
-      if (notAdminGate) (notAdminGate as HTMLElement).hidden = true;
+      // Remove gates from the DOM entirely (don't just hide them) so the
+      // hidden <form id="loginForm"> stops being a target for any stray
+      // submit button on admin sub-pages — its 'Se connecter' button
+      // would otherwise refresh the page when any other in-page form was
+      // accidentally submitted.
+      loginGate?.remove();
+      notAdminGate?.remove();
       adminMain?.classList.remove('is-hidden');
       filterByPermissions((window as any).__adminPerms || ['all']);
       fillUserBadge(res || (window as any).__adminMe);
@@ -518,6 +523,12 @@ const { title, current } = Astro.props;
       if (fabMenuEl && !(fabMenuEl as HTMLElement).hidden && !t.closest('#adminFabBtn') && !t.closest('#adminFabMenu')) {
         toggleFab(false);
       }
+    });
+    // Clicking a FAB menu item (anchor) closes the menu — otherwise the
+    // overlay-style menu lingers above the modal we just opened on the
+    // same page (e.g. catalogue#new).
+    fabMenuEl?.addEventListener('click', (e) => {
+      if ((e.target as HTMLElement).closest('a')) toggleFab(false);
     });
 
     // ============ Ctrl+K search ============

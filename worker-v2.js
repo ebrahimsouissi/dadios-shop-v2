@@ -2070,7 +2070,10 @@ async function handlePerfumeRequests(body, env, request) {
 
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
-    const request = {
+    // Renamed from `request` → `perfumeRequest` to avoid shadowing the
+    // handler's HTTP `request` parameter (which is needed for the admin
+    // branches of this same function via requireAdminAuth).
+    const perfumeRequest = {
       id,
       phone: sess.phone,
       customerName: customer.name || null,
@@ -2083,10 +2086,10 @@ async function handlePerfumeRequests(body, env, request) {
       updatedAt: now,
     };
     await Promise.all([
-      kv.put(`request:${id}`, JSON.stringify(request)),
+      kv.put(`request:${id}`, JSON.stringify(perfumeRequest)),
       kv.put(`phone:${sess.phone}:request:${id}`, "1"),
     ]);
-    return json({ ok: true, requestId: id, request });
+    return json({ ok: true, requestId: id, request: perfumeRequest });
   }
 
   // ===== list (own) =====
@@ -2144,8 +2147,10 @@ async function handlePerfumeRequests(body, env, request) {
     if (!requestId) return json({ ok: false, error: "Champ requis: requestId" }, 400);
     const raw = await kv.get(`request:${requestId}`);
     if (!raw) return json({ ok: false, error: "Demande introuvable" }, 404);
-    let request;
-    try { request = JSON.parse(raw); }
+    // Renamed from `request` → `perfumeRequest` to avoid shadowing the
+    // handler's HTTP `request` parameter — same reason as the create branch.
+    let perfumeRequest;
+    try { perfumeRequest = JSON.parse(raw); }
     catch { return json({ ok: false, error: "Demande corrompue" }, 500); }
 
     if (body.status !== undefined && body.status !== null) {
@@ -2153,23 +2158,23 @@ async function handlePerfumeRequests(body, env, request) {
       if (!PERFUME_REQUEST_STATUSES.includes(newStatus)) {
         return json({ ok: false, error: "Statut invalide" }, 400);
       }
-      if (newStatus !== request.status) {
-        const allowed = PERFUME_REQUEST_TRANSITIONS[request.status] || [];
+      if (newStatus !== perfumeRequest.status) {
+        const allowed = PERFUME_REQUEST_TRANSITIONS[perfumeRequest.status] || [];
         if (!allowed.includes(newStatus)) {
           return json(
-            { ok: false, error: `Transition interdite: ${request.status} → ${newStatus}` },
+            { ok: false, error: `Transition interdite: ${perfumeRequest.status} → ${newStatus}` },
             400
           );
         }
-        request.status = newStatus;
+        perfumeRequest.status = newStatus;
       }
     }
     if (body.adminNotes !== undefined && body.adminNotes !== null) {
-      request.adminNotes = String(body.adminNotes || "").slice(0, 2000);
+      perfumeRequest.adminNotes = String(body.adminNotes || "").slice(0, 2000);
     }
-    request.updatedAt = new Date().toISOString();
-    await kv.put(`request:${requestId}`, JSON.stringify(request));
-    return json({ ok: true, request });
+    perfumeRequest.updatedAt = new Date().toISOString();
+    await kv.put(`request:${requestId}`, JSON.stringify(perfumeRequest));
+    return json({ ok: true, request: perfumeRequest });
   }
 
   return json({ ok: false, error: "Unknown perfume-requests action: " + action }, 400);
@@ -3612,7 +3617,15 @@ export default {
       let body;
       try { body = await request.json(); }
       catch { return json({ ok: false, error: "Invalid JSON" }, 400); }
-      return handleOrders(body, env, request);
+      // Wrap dispatch so an uncaught throw surfaces as a structured
+      // 500 JSON instead of the bare 'Worker threw exception' Cloudflare
+      // HTML page. err.stack lands in the Cloudflare Workers tail logs.
+      try {
+        return await handleOrders(body, env, request);
+      } catch (err) {
+        console.error('[orders] crash:', err && err.message, err && err.stack);
+        return json({ ok: false, error: 'handleOrders crash: ' + (err && err.message) }, 500);
+      }
     }
 
     // ===== Wishlist =====
@@ -3636,7 +3649,14 @@ export default {
       let body;
       try { body = await request.json(); }
       catch { return json({ ok: false, error: "Invalid JSON" }, 400); }
-      return handlePerfumeRequests(body, env, request);
+      // Same safety net as /api/orders — surface the real exception
+      // through the response so debugging doesn't require tail logs.
+      try {
+        return await handlePerfumeRequests(body, env, request);
+      } catch (err) {
+        console.error('[perfume-requests] crash:', err && err.message, err && err.stack);
+        return json({ ok: false, error: 'handlePerfumeRequests crash: ' + (err && err.message) }, 500);
+      }
     }
 
     // ===== Reviews (avis clients) =====

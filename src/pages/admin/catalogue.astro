@@ -12,21 +12,21 @@ const sizes = data.sizes;
       <p class="help" id="countLine">Chargement…</p>
     </div>
     <div class="actions">
-      <button class="ad-btn ad-btn-primary" id="newBtn" data-requires-permission="products" hidden>+ Nouveau parfum</button>
+      <button type="button" class="ad-btn ad-btn-primary" id="newBtn" data-requires-permission="products" hidden>+ Nouveau parfum</button>
     </div>
   </header>
 
   <div class="products-block" data-requires-permission="products">
     <div class="admin-tabs">
-      <button class="tab-btn active" data-filter="all">Tous</button>
-      <button class="tab-btn" data-filter="homme">Homme</button>
-      <button class="tab-btn" data-filter="femme">Femme</button>
-      <button class="tab-btn" data-filter="mixte">Mixte</button>
-      <button class="tab-btn" data-filter="featured">Best-sellers</button>
+      <button type="button" class="tab-btn active" data-filter="all">Tous</button>
+      <button type="button" class="tab-btn" data-filter="homme">Homme</button>
+      <button type="button" class="tab-btn" data-filter="femme">Femme</button>
+      <button type="button" class="tab-btn" data-filter="mixte">Mixte</button>
+      <button type="button" class="tab-btn" data-filter="featured">Best-sellers</button>
       <span class="tab-sep" aria-hidden="true">·</span>
-      <button class="tab-btn" data-filter="perfume">Parfums</button>
-      <button class="tab-btn" data-filter="simple">Produits simples</button>
-      <button class="tab-btn" data-filter="staff_only">Caisse uniquement</button>
+      <button type="button" class="tab-btn" data-filter="perfume">Parfums</button>
+      <button type="button" class="tab-btn" data-filter="simple">Produits simples</button>
+      <button type="button" class="tab-btn" data-filter="staff_only">Caisse uniquement</button>
     </div>
 
     <table class="admin-table">
@@ -56,7 +56,7 @@ const sizes = data.sizes;
 <div class="modal hidden" id="modal">
   <div class="modal-overlay" id="overlay"></div>
   <div class="modal-box">
-    <button class="modal-close" id="closeBtn" aria-label="Fermer">×</button>
+    <button type="button" class="modal-close" id="closeBtn" aria-label="Fermer">×</button>
     <div class="eyebrow" id="modalEyebrow">Ajouter un parfum</div>
     <h2 id="modalTitle">Nouveau parfum</h2>
 
@@ -418,8 +418,8 @@ const sizes = data.sizes;
         <td class="cap">${escapeHtml(p.gender || '—')}</td>
         <td>${p.featured ? '★ Oui' : '—'}</td>
         <td>
-          <button class="link-btn edit-btn" data-slug="${escapeAttr(p.slug)}">Modifier</button>
-          <button class="link-btn danger del-btn" data-slug="${escapeAttr(p.slug)}">Supprimer</button>
+          <button type="button" class="link-btn edit-btn" data-slug="${escapeAttr(p.slug)}">Modifier</button>
+          <button type="button" class="link-btn danger del-btn" data-slug="${escapeAttr(p.slug)}">Supprimer</button>
         </td>
       </tr>`;
     }).join('');
@@ -551,6 +551,21 @@ const sizes = data.sizes;
   closeBtn?.addEventListener('click', closeModal);
   cancelBtn?.addEventListener('click', closeModal);
   overlay?.addEventListener('click', closeModal);
+
+  // Hash-driven open: the FAB menu's "Nouveau parfum" item is an
+  // <a href="/admin/catalogue#new">. From any other page that's a full
+  // navigation (we read the hash on admin:ready below). From inside
+  // /admin/catalogue itself, the URL just gains the hash and fires
+  // hashchange — without this handler the click would silently no-op.
+  function maybeOpenFromHash() {
+    if (window.location.hash === '#new') {
+      openNew();
+      // Clean the hash so a reload doesn't auto-reopen the modal.
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+  }
+  window.addEventListener('hashchange', maybeOpenFromHash);
+  document.addEventListener('admin:ready', () => maybeOpenFromHash());
 
   // ============ IMAGE UPLOAD UI ============
   imgPickBtn?.addEventListener('click', () => imgFile.click());
