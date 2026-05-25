@@ -42,11 +42,11 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     <table class="ad-table st-table">
       <thead>
         <tr>
-          <th>Nom</th>
-          <th class="num">Restants</th>
-          <th class="num">Vendus</th>
+          <th>Station</th>
+          <th>Activité</th>
           <th class="num">Donnés</th>
           <th class="num">Prix</th>
+          <th>Dernière activité</th>
           <th class="num">À récupérer</th>
           <th></th>
         </tr>
@@ -152,12 +152,62 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     .st-table th { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ad-ink-mute); font-weight: 500; }
     .st-table tr:last-child td { border-bottom: none; }
     .st-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-    .st-table .name { font-weight: 600; color: var(--ad-ink); }
-    .st-table .name small { display: block; font-size: 11px; color: var(--ad-ink-mute); font-weight: 400; margin-top: 2px; }
 
-    .st-due-zero    { color: #16a34a; font-weight: 600; }
-    .st-due-low     { color: #c2410c; font-weight: 600; }
-    .st-due-high    { color: #b91c1c; font-weight: 700; }
+    /* Station cell: name on top, phone on a second line */
+    .st-name-main { font-size: 14px; font-weight: 500; color: var(--ad-ink); line-height: 1.3; }
+    .st-name-phone {
+      font-size: 12px;
+      color: var(--ad-ink-mute);
+      margin-top: 2px;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.02em;
+    }
+
+    /* Activity cell: "sold / deposited" + progress bar */
+    .st-act { display: flex; flex-direction: column; gap: 5px; min-width: 110px; max-width: 160px; }
+    .st-act-nums { font-size: 12px; color: var(--ad-ink-mute); font-variant-numeric: tabular-nums; }
+    .st-act-bar {
+      height: 6px;
+      background: rgba(15, 81, 50, 0.08);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .st-act-fill {
+      height: 100%;
+      background: var(--ad-emerald);
+      border-radius: 999px;
+      transition: width .3s ease;
+    }
+    .st-act-empty { color: var(--ad-ink-mute); font-size: 12px; font-style: italic; }
+
+    /* Freshness indicator */
+    .st-fresh {
+      font-size: 13px;
+      color: var(--ad-ink-soft);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+    .st-fresh-empty { color: var(--ad-ink-mute); }
+    .st-fresh-warn { font-size: 13px; line-height: 1; }
+    .st-fresh-warn.amber { filter: hue-rotate(0deg); color: #b45309; }
+    .st-fresh-warn.red { color: #b91c1c; }
+
+    /* Due amount pill badge */
+    .st-due-pill {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 500;
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.4;
+    }
+    .st-due-zero   { background: rgba(15, 110, 86, 0.12); color: #0f5c48; }
+    .st-due-low    { background: rgba(212, 175, 55, 0.22); color: #7a5f0d; }
+    .st-due-high   { background: rgba(185, 28, 28, 0.10); color: #991b1b; }
+    .st-due-credit { background: rgba(30, 64, 175, 0.10); color: #1e40af; }
 
     .st-row-actions { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
     .st-row-actions button {
@@ -305,11 +355,52 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: '2-digit' });
       } catch { return iso.slice(0, 10); }
     }
-    function dueClass(amount) {
+    function dueBadgeClass(amount) {
       const v = Number(amount) || 0;
-      if (v <= 0) return 'st-due-zero';
-      if (v > 300) return 'st-due-high';
-      return 'st-due-low';
+      if (v < 0) return 'st-due-credit';
+      if (v === 0) return 'st-due-zero';
+      if (v <= 300) return 'st-due-low';
+      return 'st-due-high';
+    }
+    function dueBadgeText(amount) {
+      const v = Number(amount) || 0;
+      if (v < 0) return `Crédit ${fmtDT(Math.abs(v))}`;
+      return fmtDT(v);
+    }
+    function fmtPhone(p) {
+      const s = String(p || '').replace(/\D/g, '');
+      // Tunisian 8-digit number → "99 000 007"
+      if (s.length === 8) return `${s.slice(0, 2)} ${s.slice(2, 5)} ${s.slice(5, 8)}`;
+      // Fallback: group from the right in threes
+      return s.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    }
+    function activityCell(s) {
+      const sold = Number(s.totalSold) || 0;
+      const deposited = Number(s.totalDeposited) || 0;
+      if (deposited === 0) return '<span class="st-act-empty">aucune activité</span>';
+      // Cap at 100% in case sold > deposited (shouldn't happen but defensive).
+      const pct = Math.max(0, Math.min(100, Math.round((sold / deposited) * 100)));
+      return `
+        <div class="st-act">
+          <div class="st-act-nums">${sold} / ${deposited}</div>
+          <div class="st-act-bar"><div class="st-act-fill" style="width:${pct}%"></div></div>
+        </div>
+      `;
+    }
+    function freshnessCell(iso) {
+      if (!iso) return '<span class="st-fresh"><span class="st-fresh-empty">—</span></span>';
+      const then = new Date(iso).getTime();
+      if (!isFinite(then)) return '<span class="st-fresh"><span class="st-fresh-empty">—</span></span>';
+      const ms = Date.now() - then;
+      const days = Math.floor(ms / 86400000);
+      let label;
+      if (ms < 86400000) label = "aujourd'hui";
+      else if (days === 1) label = 'hier';
+      else label = `il y a ${days} j`;
+      let warn = '';
+      if (days >= 30) warn = '<span class="st-fresh-warn red" title="Aucune activité récente">⚠️</span>';
+      else if (days >= 10) warn = '<span class="st-fresh-warn amber" title="Aucune activité récente">⚠️</span>';
+      return `<span class="st-fresh"><span>${escH(label)}</span>${warn}</span>`;
     }
     function showStatus(msg, kind = 'success') {
       const el = $('stStatus');
@@ -363,14 +454,19 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         return;
       }
       if (tbody) {
+        // Server already sorted by amountDue DESC then lastActivityAt DESC.
+        // Render in the order received — no client-side sort.
         tbody.innerHTML = stations.map((s) => `
           <tr data-phone="${escH(s.phone)}">
-            <td class="name">${escH(s.name)}<small>${escH(s.phone)}</small></td>
-            <td class="num">${Number(s.currentStock) || 0}</td>
-            <td class="num">${Number(s.totalSold) || 0}</td>
+            <td>
+              <div class="st-name-main">${escH(s.name)}</div>
+              <div class="st-name-phone">${escH(fmtPhone(s.phone))}</div>
+            </td>
+            <td>${activityCell(s)}</td>
             <td class="num">${Number(s.totalDeposited) || 0}</td>
             <td class="num">${fmtDT(s.unitPrice)}</td>
-            <td class="num ${dueClass(s.amountDue)}">${fmtDT(s.amountDue)}</td>
+            <td>${freshnessCell(s.lastActivityAt)}</td>
+            <td class="num"><span class="st-due-pill ${dueBadgeClass(s.amountDue)}">${escH(dueBadgeText(s.amountDue))}</span></td>
             <td>
               <div class="st-row-actions">
                 <button type="button" data-act="detail" data-phone="${escH(s.phone)}">Détail</button>
