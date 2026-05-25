@@ -3459,6 +3459,7 @@ function makeEmptyStation(phone, name = '', address = '') {
     totalPaid: 0,
     amountDue: 0,
     status: 'active',
+    lastActivityAt: null,
     createdAt: now,
     updatedAt: now,
   };
@@ -3531,7 +3532,18 @@ async function handleStations(body, env, request) {
         if (!raw) continue;
         try { stations.push(JSON.parse(raw)); } catch {}
       }
-      stations.sort((a, b) => (Number(b.amountDue) || 0) - (Number(a.amountDue) || 0));
+      // Sort: biggest debtor first (amountDue DESC); ties broken by
+      // most-recent activity first (lastActivityAt DESC, null at bottom).
+      stations.sort((a, b) => {
+        const dueDiff = (Number(b.amountDue) || 0) - (Number(a.amountDue) || 0);
+        if (dueDiff !== 0) return dueDiff;
+        const la = a.lastActivityAt || '';
+        const lb = b.lastActivityAt || '';
+        if (la === lb) return 0;
+        if (!la) return 1;
+        if (!lb) return -1;
+        return lb.localeCompare(la);
+      });
 
       // Summary KPIs computed once server-side so every client agrees.
       const summary = stations.reduce((acc, s) => {
@@ -3645,6 +3657,11 @@ async function handleStations(body, env, request) {
         }
       }
 
+      // Deposit is something WE do (livraison), not station activity.
+      // Only sale_report / payment count as the station moving stock.
+      if (type === 'sale_report' || type === 'payment') {
+        station.lastActivityAt = movement.createdAt;
+      }
       station.updatedAt = new Date().toISOString();
 
       await Promise.all([
@@ -3746,6 +3763,7 @@ async function handleStations(body, env, request) {
         const movementsAdded = [];
         const nowIso = new Date().toISOString();
         const seedNote = 'Initialisation depuis Excel — mai 2026';
+        let lastActivityIso = null;
 
         if (seed.deposited > 0) {
           const m = { id: crypto.randomUUID(), phone, type: 'deposit', qty: seed.deposited, date: nowIso, createdAt: nowIso, notes: seedNote, createdBy: 'seed' };
@@ -3762,6 +3780,7 @@ async function handleStations(body, env, request) {
           station.currentStock = (Number(station.currentStock) || 0) - seed.sold;
           station.totalSold = (Number(station.totalSold) || 0) + seed.sold;
           station.amountDue = Math.round(((Number(station.amountDue) || 0) + amount) * 100) / 100;
+          lastActivityIso = nowIso;
         }
         if (seed.paid > 0) {
           const m = { id: crypto.randomUUID(), phone, type: 'payment', amount: seed.paid, date: nowIso, createdAt: nowIso, notes: seedNote, createdBy: 'seed' };
@@ -3769,8 +3788,13 @@ async function handleStations(body, env, request) {
           movementsAdded.push('payment');
           station.totalPaid = Math.round(((Number(station.totalPaid) || 0) + seed.paid) * 100) / 100;
           station.amountDue = Math.round(((Number(station.amountDue) || 0) - seed.paid) * 100) / 100;
+          lastActivityIso = nowIso;
         }
 
+        // Only overwrite if THIS seed produced activity; keep any prior
+        // value otherwise (re-seeding a station that already had real
+        // movements mustn't blank out its lastActivityAt).
+        if (lastActivityIso) station.lastActivityAt = lastActivityIso;
         station.updatedAt = nowIso;
         writes.push(kv.put(`station:${phone}`, JSON.stringify(station)));
         await Promise.all(writes);
@@ -3824,6 +3848,7 @@ async function handleStations(body, env, request) {
           totalSold: Number(station.totalSold) || 0,
           totalPaid: Number(station.totalPaid) || 0,
           amountDue: Number(station.amountDue) || 0,
+          lastActivityAt: station.lastActivityAt || null,
         };
 
         // Pull every movement under this phone.
@@ -3849,6 +3874,9 @@ async function handleStations(body, env, request) {
         let totalSold = 0;
         let totalPaid = 0;
         let amountDue = 0;
+        // Track most-recent sale_report/payment timestamp; movements are
+        // walked in ASC order so the last one we see wins.
+        let lastActivityAt = null;
 
         const fallbackPrice = Number(station.unitPrice) || 0;
         for (const m of movements) {
@@ -3867,10 +3895,12 @@ async function handleStations(body, env, request) {
               ? m.amount
               : qty * fallbackPrice;
             amountDue += amt;
+            lastActivityAt = m.createdAt || m.date || lastActivityAt;
           } else if (m.type === 'payment') {
             const amt = Number(m.amount) || 0;
             totalPaid += amt;
             amountDue -= amt;
+            lastActivityAt = m.createdAt || m.date || lastActivityAt;
           }
         }
 
@@ -3882,6 +3912,7 @@ async function handleStations(body, env, request) {
           totalSold,
           totalPaid: round2(totalPaid),
           amountDue: round2(amountDue),
+          lastActivityAt,
         };
 
         // Apply ONLY the counters — settings stay intact.
@@ -3890,6 +3921,7 @@ async function handleStations(body, env, request) {
         station.totalSold = after.totalSold;
         station.totalPaid = after.totalPaid;
         station.amountDue = after.amountDue;
+        station.lastActivityAt = after.lastActivityAt;
         station.updatedAt = new Date().toISOString();
         station.recomputedAt = station.updatedAt;
 
