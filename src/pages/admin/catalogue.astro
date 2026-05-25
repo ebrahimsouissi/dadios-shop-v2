@@ -12,7 +12,12 @@ const sizes = data.sizes;
       <p class="help" id="countLine">Chargement…</p>
     </div>
     <div class="actions">
-      <button type="button" class="ad-btn ad-btn-primary" id="newBtn" data-requires-permission="products" hidden>+ Nouveau parfum</button>
+      <!-- No initial `hidden` attribute: the perm-filter in AdminLayout
+           still adds it for admins lacking the 'products' permission,
+           but if the filter hasn't run yet (slow auth round-trip, race,
+           etc.) the button stays visible by default instead of stuck
+           hidden. Only authenticated admins reach this page anyway. -->
+      <button type="button" class="ad-btn ad-btn-primary" id="newBtn" data-requires-permission="products">+ Nouveau parfum</button>
     </div>
   </header>
 
