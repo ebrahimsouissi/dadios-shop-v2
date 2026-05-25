@@ -230,6 +230,43 @@ export async function adminDeleteEmployee(code) {
   return salesAdminPost('admin_delete_employee', { code });
 }
 
+// ===== Stations (dépôt-vente) — POST /api/stations =====
+//
+// Same auth pattern as the other modules: shared adminAuthBody so
+// password + sessionToken are always sent. Worker enforces 'sales'
+// permission on every action.
+async function stationsPost(action, extra = {}) {
+  try {
+    const res = await fetch(apiUrl('/api/stations'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(adminAuthBody({ action, ...extra })),
+    });
+    return await res.json();
+  } catch {
+    return { ok: false, error: 'Erreur réseau' };
+  }
+}
+
+export async function adminInitStations() {
+  return stationsPost('init_stations');
+}
+export async function adminListStations() {
+  return stationsPost('list_stations');
+}
+export async function adminGetStation(phone) {
+  return stationsPost('get_station', { phone });
+}
+export async function adminAddStationMovement({ phone, type, qty, amount, notes } = {}) {
+  return stationsPost('add_movement', { phone, type, qty, amount, notes });
+}
+export async function adminUpdateStationSettings({ phone, unitPrice, status } = {}) {
+  return stationsPost('update_station_settings', { phone, unitPrice, status });
+}
+export async function adminSeedStationsFromExcel() {
+  return stationsPost('seed_from_excel');
+}
+
 /**
  * Uploads a Blob (cropped image) to the worker, returns public URL.
  * Sends the password in a header since the body is binary.

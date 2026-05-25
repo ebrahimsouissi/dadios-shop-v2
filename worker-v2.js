@@ -13,6 +13,7 @@
  *   POST /api/perfume-requests — VIP concierge: create, list, admin_list, admin_update
  *   POST /api/reviews          — produit reviews: list, stats, submit (client), admin_*
  *   POST /api/sales            — Phase 4: in-shop POS — staff login + tickets + admin stats
+ *   POST /api/stations         — Stations partenaires (dépôt-vente) — admin-only
  *
  * Required bindings (set in Cloudflare dashboard → Worker → Settings):
  *   LOYALTY_KV   (KV namespace) — already configured
@@ -35,6 +36,16 @@
  *                                  KV namespace "dadios-sales".
  *                                  Variable name in Worker → Settings → KV
  *                                  bindings: SALES_KV.
+ *   STATIONS_KV  (KV namespace) — *** NEW for Stations module (dépôt-vente) ***
+ *                                  Steps:
+ *                                    1. Cloudflare dashboard → Workers KV → Create namespace
+ *                                       Name: "dadios-stations"
+ *                                    2. Worker → Settings → Variables → KV Namespace Bindings
+ *                                       Variable name: STATIONS_KV
+ *                                       Bind to: dadios-stations
+ *                                    3. Save & deploy the Worker
+ *                                  /api/stations returns a structured 500
+ *                                  ("KV not bound (STATIONS_KV)") until done.
  *   IMAGES       (R2 bucket)    — R2 bucket "dadios-images"
  *
  * Required env variables:
@@ -3407,6 +3418,379 @@ async function handleSales(body, env, request) {
 }
 
 // ============================================================
+// STATIONS — dépôt-vente avec 7 stations-service partenaires
+//   KV namespace binding: STATIONS_KV (must be created manually).
+//   Keys:
+//     station:${phone}              — station record (compteurs + settings)
+//     movement:${phone}:${id}       — single movement (deposit / sale / payment)
+//
+//   The 7 station phones are also reseller-tier customers in
+//   CUSTOMERS_KV; init_stations copies name + deliveryAddress from there.
+// ============================================================
+const STATION_PHONES = [
+  '99000001', '99000002', '99000003', '99000004',
+  '99000005', '99000006', '99000007',
+];
+const STATION_DEFAULT_UNIT_PRICE = 9;        // DT per flacon
+const STATION_MOVEMENT_TYPES = ['deposit', 'sale_report', 'payment'];
+
+// Excel seed for mai 2026 — keyed by phone.
+// Shape: { deposited, sold, paid }. restant = deposited - sold (computed).
+const STATION_SEED_DATA = {
+  '99000001': { deposited: 56, sold: 55, paid: 495 },  // Smiri (full payment)
+  '99000002': { deposited: 20, sold: 10, paid: 0 },    // Beb Alouj
+  '99000003': { deposited: 58, sold: 9,  paid: 0 },    // Khayr Din Becha
+  '99000004': { deposited: 40, sold: 40, paid: 0 },    // Marsa
+  '99000005': { deposited: 0,  sold: 0,  paid: 0 },    // Mnihla (rien encore)
+  '99000006': { deposited: 40, sold: 40, paid: 0 },    // GP5
+  '99000007': { deposited: 54, sold: 54, paid: 0 },    // Arola Ennaser
+};
+
+function makeEmptyStation(phone, name = '', address = '') {
+  const now = new Date().toISOString();
+  return {
+    phone,
+    name: name || `Station ${phone}`,
+    address: address || '',
+    unitPrice: STATION_DEFAULT_UNIT_PRICE,
+    currentStock: 0,
+    totalDeposited: 0,
+    totalSold: 0,
+    totalPaid: 0,
+    amountDue: 0,
+    status: 'active',
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+async function handleStations(body, env, request) {
+  if (!env.STATIONS_KV) {
+    return json({ ok: false, error: 'KV not bound (STATIONS_KV) — create namespace + binding in Cloudflare dashboard' }, 500);
+  }
+  const kv = env.STATIONS_KV;
+  const action = body && body.action;
+  if (!action) return json({ ok: false, error: 'Missing action' }, 400);
+
+  // All actions are admin-only. 'sales' permission covers the module.
+  const _PERM = 'sales';
+
+  // ---------- init_stations ----------
+  // Idempotent: only creates stations that don't already exist. Reads
+  // name + deliveryAddress from CUSTOMERS_KV when available.
+  if (action === 'init_stations') {
+    try {
+      const auth = await requireAdminAuth(body, env, request, _PERM);
+      if (!auth.ok) return json({ ok: false, error: auth.error }, auth.status);
+
+      const created = [];
+      const existing = [];
+      for (const phone of STATION_PHONES) {
+        const raw = await kv.get(`station:${phone}`);
+        if (raw) { existing.push(phone); continue; }
+        let name = `Station ${phone}`;
+        let address = '';
+        if (env.CUSTOMERS_KV) {
+          const custRaw = await env.CUSTOMERS_KV.get(`customer:${phone}`);
+          if (custRaw) {
+            try {
+              const c = JSON.parse(custRaw);
+              if (c.name) name = c.name;
+              if (c.deliveryAddress) address = c.deliveryAddress;
+              else if (c.address) address = c.address;
+            } catch {}
+          }
+        }
+        const station = makeEmptyStation(phone, name, address);
+        await kv.put(`station:${phone}`, JSON.stringify(station));
+        created.push(phone);
+      }
+
+      await logAdminAction(env, auth.customer, 'stations.init', {
+        created, existing,
+      }, request);
+
+      return json({ ok: true, created, existing });
+    } catch (err) {
+      console.error('[stations init] crash:', err && err.message, err && err.stack);
+      return json({ ok: false, error: 'init_stations crash: ' + (err && err.message), stack: err && err.stack }, 500);
+    }
+  }
+
+  // ---------- list_stations ----------
+  // Returns every station, sorted by amountDue desc (biggest debtor first).
+  if (action === 'list_stations') {
+    try {
+      const auth = await requireAdminAuth(body, env, request, _PERM);
+      if (!auth.ok) return json({ ok: false, error: auth.error }, auth.status);
+
+      const list = await kv.list({ prefix: 'station:' });
+      const stations = [];
+      for (const key of list.keys) {
+        const raw = await kv.get(key.name);
+        if (!raw) continue;
+        try { stations.push(JSON.parse(raw)); } catch {}
+      }
+      stations.sort((a, b) => (Number(b.amountDue) || 0) - (Number(a.amountDue) || 0));
+
+      // Summary KPIs computed once server-side so every client agrees.
+      const summary = stations.reduce((acc, s) => {
+        acc.activeCount += s.status === 'active' ? 1 : 0;
+        acc.totalStockUnits += Number(s.currentStock) || 0;
+        acc.totalDue += Number(s.amountDue) || 0;
+        acc.totalPaid += Number(s.totalPaid) || 0;
+        acc.totalSold += Number(s.totalSold) || 0;
+        return acc;
+      }, { activeCount: 0, totalStockUnits: 0, totalDue: 0, totalPaid: 0, totalSold: 0 });
+
+      return json({ ok: true, stations, summary });
+    } catch (err) {
+      console.error('[stations list] crash:', err && err.message, err && err.stack);
+      return json({ ok: false, error: 'list_stations crash: ' + (err && err.message), stack: err && err.stack }, 500);
+    }
+  }
+
+  // ---------- get_station ----------
+  // Station detail + last 50 movements newest-first.
+  if (action === 'get_station') {
+    try {
+      const auth = await requireAdminAuth(body, env, request, _PERM);
+      if (!auth.ok) return json({ ok: false, error: auth.error }, auth.status);
+
+      const phone = String(body.phone || '').trim();
+      if (!phone) return json({ ok: false, error: 'Champ requis: phone' }, 400);
+      const raw = await kv.get(`station:${phone}`);
+      if (!raw) return json({ ok: false, error: 'Station introuvable' }, 404);
+      const station = JSON.parse(raw);
+
+      const list = await kv.list({ prefix: `movement:${phone}:` });
+      const movements = [];
+      for (const key of list.keys) {
+        const r = await kv.get(key.name);
+        if (!r) continue;
+        try { movements.push(JSON.parse(r)); } catch {}
+      }
+      movements.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+      return json({ ok: true, station, movements: movements.slice(0, 50) });
+    } catch (err) {
+      console.error('[stations get] crash:', err && err.message, err && err.stack);
+      return json({ ok: false, error: 'get_station crash: ' + (err && err.message), stack: err && err.stack }, 500);
+    }
+  }
+
+  // ---------- add_movement ----------
+  // Creates a movement and mutates the station's compteurs accordingly.
+  if (action === 'add_movement') {
+    try {
+      const auth = await requireAdminAuth(body, env, request, _PERM);
+      if (!auth.ok) return json({ ok: false, error: auth.error }, auth.status);
+
+      const phone = String(body.phone || '').trim();
+      const type = String(body.type || '').trim();
+      if (!phone) return json({ ok: false, error: 'Champ requis: phone' }, 400);
+      if (!STATION_MOVEMENT_TYPES.includes(type)) {
+        return json({ ok: false, error: `type invalide (attendu: ${STATION_MOVEMENT_TYPES.join('|')})` }, 400);
+      }
+
+      const raw = await kv.get(`station:${phone}`);
+      if (!raw) return json({ ok: false, error: 'Station introuvable' }, 404);
+      const station = JSON.parse(raw);
+
+      const movement = {
+        id: crypto.randomUUID(),
+        phone,
+        type,
+        date: new Date().toISOString(),
+        notes: String(body.notes || '').slice(0, 500),
+        createdBy: auth.customer.phone || 'admin',
+      };
+
+      const warnings = [];
+
+      if (type === 'deposit') {
+        const qty = parseInt(body.qty, 10);
+        if (!Number.isInteger(qty) || qty <= 0 || qty > 10000) {
+          return json({ ok: false, error: 'qty invalide pour deposit' }, 400);
+        }
+        movement.qty = qty;
+        station.currentStock = (Number(station.currentStock) || 0) + qty;
+        station.totalDeposited = (Number(station.totalDeposited) || 0) + qty;
+      } else if (type === 'sale_report') {
+        const qty = parseInt(body.qty, 10);
+        if (!Number.isInteger(qty) || qty <= 0 || qty > 10000) {
+          return json({ ok: false, error: 'qty invalide pour sale_report' }, 400);
+        }
+        movement.qty = qty;
+        movement.amount = Math.round(qty * (Number(station.unitPrice) || 0) * 100) / 100;
+        station.currentStock = (Number(station.currentStock) || 0) - qty;
+        station.totalSold = (Number(station.totalSold) || 0) + qty;
+        station.amountDue = (Number(station.amountDue) || 0) + movement.amount;
+        if (station.currentStock < 0) {
+          warnings.push(`Stock négatif (${station.currentStock}) — vérifier les dépôts précédents`);
+        }
+      } else if (type === 'payment') {
+        const amount = Number(body.amount);
+        if (!isFinite(amount) || amount <= 0) {
+          return json({ ok: false, error: 'amount invalide pour payment' }, 400);
+        }
+        movement.amount = Math.round(amount * 100) / 100;
+        station.totalPaid = Math.round(((Number(station.totalPaid) || 0) + movement.amount) * 100) / 100;
+        station.amountDue = Math.round(((Number(station.amountDue) || 0) - movement.amount) * 100) / 100;
+        if (station.amountDue < 0) {
+          warnings.push(`Solde dû négatif (${station.amountDue} DT) — possible trop-perçu`);
+        }
+      }
+
+      station.updatedAt = new Date().toISOString();
+
+      await Promise.all([
+        kv.put(`station:${phone}`, JSON.stringify(station)),
+        kv.put(`movement:${phone}:${movement.id}`, JSON.stringify(movement)),
+      ]);
+
+      try {
+        await logAdminAction(env, auth.customer, 'stations.movement', {
+          stationPhone: phone, type, qty: movement.qty, amount: movement.amount,
+        }, request);
+      } catch {}
+
+      return json({ ok: true, station, movement, warnings });
+    } catch (err) {
+      console.error('[stations add_movement] crash:', err && err.message, err && err.stack);
+      return json({ ok: false, error: 'add_movement crash: ' + (err && err.message), stack: err && err.stack }, 500);
+    }
+  }
+
+  // ---------- update_station_settings ----------
+  // Mutates unitPrice and/or status. Doesn't recompute amountDue on
+  // unitPrice change — historical sale_reports keep their stored amount.
+  if (action === 'update_station_settings') {
+    try {
+      const auth = await requireAdminAuth(body, env, request, _PERM);
+      if (!auth.ok) return json({ ok: false, error: auth.error }, auth.status);
+
+      const phone = String(body.phone || '').trim();
+      if (!phone) return json({ ok: false, error: 'Champ requis: phone' }, 400);
+      const raw = await kv.get(`station:${phone}`);
+      if (!raw) return json({ ok: false, error: 'Station introuvable' }, 404);
+      const station = JSON.parse(raw);
+
+      if (body.unitPrice !== undefined) {
+        const p = Number(body.unitPrice);
+        if (!isFinite(p) || p <= 0) return json({ ok: false, error: 'unitPrice invalide' }, 400);
+        station.unitPrice = Math.round(p * 100) / 100;
+      }
+      if (body.status !== undefined) {
+        const s = String(body.status);
+        if (s !== 'active' && s !== 'inactive') return json({ ok: false, error: 'status invalide' }, 400);
+        station.status = s;
+      }
+      station.updatedAt = new Date().toISOString();
+      await kv.put(`station:${phone}`, JSON.stringify(station));
+
+      try {
+        await logAdminAction(env, auth.customer, 'stations.settings', {
+          stationPhone: phone, unitPrice: station.unitPrice, status: station.status,
+        }, request);
+      } catch {}
+
+      return json({ ok: true, station });
+    } catch (err) {
+      console.error('[stations settings] crash:', err && err.message, err && err.stack);
+      return json({ ok: false, error: 'update_station_settings crash: ' + (err && err.message), stack: err && err.stack }, 500);
+    }
+  }
+
+  // ---------- seed_from_excel ----------
+  // Bulk back-fill from STATION_SEED_DATA (mai 2026). Creates the
+  // station if missing, then emits up to 3 movements per station
+  // (deposit + sale_report + payment) so the historical movement log
+  // is honest about what happened.
+  if (action === 'seed_from_excel') {
+    try {
+      const auth = await requireAdminAuth(body, env, request, _PERM);
+      if (!auth.ok) return json({ ok: false, error: auth.error }, auth.status);
+
+      const report = [];
+      for (const phone of STATION_PHONES) {
+        const seed = STATION_SEED_DATA[phone];
+        if (!seed) continue;
+
+        // Make sure the station exists (and read its current state).
+        let stationRaw = await kv.get(`station:${phone}`);
+        let station;
+        if (!stationRaw) {
+          let name = `Station ${phone}`;
+          let address = '';
+          if (env.CUSTOMERS_KV) {
+            const custRaw = await env.CUSTOMERS_KV.get(`customer:${phone}`);
+            if (custRaw) {
+              try {
+                const c = JSON.parse(custRaw);
+                if (c.name) name = c.name;
+                if (c.deliveryAddress) address = c.deliveryAddress;
+                else if (c.address) address = c.address;
+              } catch {}
+            }
+          }
+          station = makeEmptyStation(phone, name, address);
+        } else {
+          station = JSON.parse(stationRaw);
+        }
+
+        const writes = [];
+        const movementsAdded = [];
+        const nowIso = new Date().toISOString();
+        const seedNote = 'Initialisation depuis Excel — mai 2026';
+
+        if (seed.deposited > 0) {
+          const m = { id: crypto.randomUUID(), phone, type: 'deposit', qty: seed.deposited, date: nowIso, notes: seedNote, createdBy: 'seed' };
+          writes.push(kv.put(`movement:${phone}:${m.id}`, JSON.stringify(m)));
+          movementsAdded.push('deposit');
+          station.currentStock = (Number(station.currentStock) || 0) + seed.deposited;
+          station.totalDeposited = (Number(station.totalDeposited) || 0) + seed.deposited;
+        }
+        if (seed.sold > 0) {
+          const amount = Math.round(seed.sold * (Number(station.unitPrice) || 0) * 100) / 100;
+          const m = { id: crypto.randomUUID(), phone, type: 'sale_report', qty: seed.sold, amount, date: nowIso, notes: seedNote, createdBy: 'seed' };
+          writes.push(kv.put(`movement:${phone}:${m.id}`, JSON.stringify(m)));
+          movementsAdded.push('sale_report');
+          station.currentStock = (Number(station.currentStock) || 0) - seed.sold;
+          station.totalSold = (Number(station.totalSold) || 0) + seed.sold;
+          station.amountDue = Math.round(((Number(station.amountDue) || 0) + amount) * 100) / 100;
+        }
+        if (seed.paid > 0) {
+          const m = { id: crypto.randomUUID(), phone, type: 'payment', amount: seed.paid, date: nowIso, notes: seedNote, createdBy: 'seed' };
+          writes.push(kv.put(`movement:${phone}:${m.id}`, JSON.stringify(m)));
+          movementsAdded.push('payment');
+          station.totalPaid = Math.round(((Number(station.totalPaid) || 0) + seed.paid) * 100) / 100;
+          station.amountDue = Math.round(((Number(station.amountDue) || 0) - seed.paid) * 100) / 100;
+        }
+
+        station.updatedAt = nowIso;
+        writes.push(kv.put(`station:${phone}`, JSON.stringify(station)));
+        await Promise.all(writes);
+        report.push({
+          phone, name: station.name, movementsAdded,
+          currentStock: station.currentStock, amountDue: station.amountDue,
+        });
+      }
+
+      try {
+        await logAdminAction(env, auth.customer, 'stations.seed', { report }, request);
+      } catch {}
+
+      return json({ ok: true, report });
+    } catch (err) {
+      console.error('[stations seed] crash:', err && err.message, err && err.stack);
+      return json({ ok: false, error: 'seed_from_excel crash: ' + (err && err.message), stack: err && err.stack }, 500);
+    }
+  }
+
+  return json({ ok: false, error: 'Unknown stations action: ' + action }, 400);
+}
+
+// ============================================================
 // Admin handler (product CRUD)
 // ============================================================
 async function handleAdmin(body, env, request) {
@@ -3767,6 +4151,19 @@ export default {
       try { body = await request.json(); }
       catch { return json({ ok: false, error: "Invalid JSON" }, 400); }
       return handleSales(body, env, request);
+    }
+
+    // ===== Stations partenaires (dépôt-vente, admin-only) =====
+    if (url.pathname === "/api/stations" && request.method === "POST") {
+      let body;
+      try { body = await request.json(); }
+      catch { return json({ ok: false, error: "Invalid JSON" }, 400); }
+      try {
+        return await handleStations(body, env, request);
+      } catch (err) {
+        console.error('[stations] crash:', err && err.message, err && err.stack);
+        return json({ ok: false, error: 'handleStations crash: ' + (err && err.message) }, 500);
+      }
     }
 
     // ===== Image upload =====

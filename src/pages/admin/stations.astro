@@ -1,0 +1,551 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+---
+<AdminLayout title="Stations partenaires" current="stations">
+  <header class="admin-section-head">
+    <div>
+      <div class="admin-eyebrow">Ventes</div>
+      <h1>Stations partenaires</h1>
+      <p class="help">Dépôt-vente dans les stations-service. Suivi par station des dépôts, ventes reportées et paiements.</p>
+    </div>
+    <div class="actions">
+      <button type="button" class="ad-btn ad-btn-outline" id="seedBtn" hidden>Initialiser depuis Excel</button>
+    </div>
+  </header>
+
+  <!-- KPI cards -->
+  <div class="st-kpis">
+    <div class="st-kpi">
+      <div class="st-kpi-label">Stations actives</div>
+      <div class="st-kpi-value"><span id="kpiActive">—</span> <small>/ 7</small></div>
+    </div>
+    <div class="st-kpi">
+      <div class="st-kpi-label">Stock en circulation</div>
+      <div class="st-kpi-value" id="kpiStockUnits">—</div>
+      <div class="st-kpi-meta" id="kpiStockValue">—</div>
+    </div>
+    <div class="st-kpi st-kpi--accent">
+      <div class="st-kpi-label">Total à récupérer</div>
+      <div class="st-kpi-value" id="kpiDue">—</div>
+    </div>
+    <div class="st-kpi">
+      <div class="st-kpi-label">Total encaissé</div>
+      <div class="st-kpi-value" id="kpiPaid">—</div>
+    </div>
+  </div>
+
+  <p id="stStatus" class="status-msg hidden"></p>
+
+  <!-- Stations table -->
+  <div class="st-table-wrap ad-card">
+    <table class="ad-table st-table">
+      <thead>
+        <tr>
+          <th>Nom</th>
+          <th class="num">Restants</th>
+          <th class="num">Vendus</th>
+          <th class="num">Donnés</th>
+          <th class="num">Prix</th>
+          <th class="num">À récupérer</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="stRows">
+        <tr><td colspan="7" style="text-align:center;padding:32px">Chargement…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ===== Detail modal ===== -->
+  <div class="modal hidden" id="detailModal">
+    <div class="modal-overlay" data-detail-close></div>
+    <div class="modal-box">
+      <button type="button" class="modal-close" data-detail-close aria-label="Fermer">×</button>
+      <div class="admin-eyebrow">Station</div>
+      <h2 id="detailTitle">—</h2>
+      <p class="muted" id="detailAddress"></p>
+
+      <div class="st-detail-summary">
+        <div><span class="lbl">Restants</span><span id="detailStock">—</span></div>
+        <div><span class="lbl">Vendus</span><span id="detailSold">—</span></div>
+        <div><span class="lbl">Donnés</span><span id="detailDeposited">—</span></div>
+        <div><span class="lbl">Prix unitaire</span><span id="detailUnit">—</span></div>
+        <div><span class="lbl">Encaissé</span><span id="detailPaid">—</span></div>
+        <div class="due"><span class="lbl">À récupérer</span><span id="detailDue">—</span></div>
+      </div>
+
+      <h3 class="st-detail-section">Historique (50 derniers)</h3>
+      <ul class="st-history" id="detailHistory">
+        <li class="muted">Chargement…</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== Movement modals (deposit / sale_report / payment) ===== -->
+  <div class="modal hidden" id="moveModal">
+    <div class="modal-overlay" data-move-close></div>
+    <div class="modal-box small">
+      <button type="button" class="modal-close" data-move-close aria-label="Fermer">×</button>
+      <div class="admin-eyebrow" id="moveEyebrow">Mouvement</div>
+      <h2 id="moveTitle">—</h2>
+      <p class="muted" id="moveSubtitle"></p>
+
+      <form id="moveForm" novalidate>
+        <label id="moveQtyLabel">
+          <span>Quantité (flacons) *</span>
+          <input type="number" id="moveQty" min="1" step="1" />
+        </label>
+        <label id="moveAmountLabel" hidden>
+          <span>Montant reçu (DT) *</span>
+          <input type="number" id="moveAmount" min="0.01" step="0.01" />
+        </label>
+        <label>
+          <span>Notes (optionnel)</span>
+          <textarea id="moveNotes" rows="2" maxlength="500"></textarea>
+        </label>
+        <p id="moveErr" class="status-msg hidden"></p>
+        <div class="form-actions">
+          <button type="button" class="ad-btn ad-btn-outline" data-move-close>Annuler</button>
+          <button type="submit" class="ad-btn ad-btn-primary" id="moveSave">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <style>
+    .st-kpis {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .st-kpi {
+      background: var(--ad-paper);
+      border: 1px solid var(--ad-border);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 1px 3px rgba(15, 81, 50, 0.04);
+    }
+    .st-kpi--accent { background: var(--ad-emerald); color: var(--ad-cream); border-color: var(--ad-emerald); }
+    .st-kpi--accent .st-kpi-value { color: var(--ad-gold); }
+    .st-kpi-label {
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      opacity: 0.75;
+      margin-bottom: 8px;
+    }
+    .st-kpi-value {
+      font-family: var(--ad-font-display);
+      font-size: 28px;
+      line-height: 1.1;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+    .st-kpi-value small { font-size: 14px; opacity: 0.55; font-weight: 400; }
+    .st-kpi-meta { font-size: 12px; opacity: 0.7; margin-top: 4px; }
+
+    .st-table-wrap { padding: 0; overflow-x: auto; }
+    .st-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .st-table th, .st-table td { padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--ad-border); }
+    .st-table th { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ad-ink-mute); font-weight: 500; }
+    .st-table tr:last-child td { border-bottom: none; }
+    .st-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .st-table .name { font-weight: 600; color: var(--ad-ink); }
+    .st-table .name small { display: block; font-size: 11px; color: var(--ad-ink-mute); font-weight: 400; margin-top: 2px; }
+
+    .st-due-zero    { color: #16a34a; font-weight: 600; }
+    .st-due-low     { color: #c2410c; font-weight: 600; }
+    .st-due-high    { color: #b91c1c; font-weight: 700; }
+
+    .st-row-actions { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+    .st-row-actions button {
+      background: transparent;
+      border: 1px solid var(--ad-border);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 11px;
+      cursor: pointer;
+      color: var(--ad-ink-soft);
+      font-family: var(--ad-font-body);
+    }
+    .st-row-actions button:hover { border-color: var(--ad-gold); color: var(--ad-ink); }
+    .st-row-actions button.dep:hover { color: var(--ad-emerald); border-color: var(--ad-emerald); }
+    .st-row-actions button.sale:hover { color: #c2410c; border-color: #c2410c; }
+    .st-row-actions button.pay:hover { color: #16a34a; border-color: #16a34a; }
+
+    /* Detail modal */
+    .st-detail-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 10px;
+      margin: 16px 0;
+      padding: 14px;
+      background: var(--ad-cream);
+      border-radius: 8px;
+    }
+    .st-detail-summary div { display: flex; flex-direction: column; gap: 2px; }
+    .st-detail-summary .lbl {
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ad-ink-mute);
+    }
+    .st-detail-summary span:not(.lbl) {
+      font-family: var(--ad-font-display);
+      font-size: 18px;
+      color: var(--ad-ink);
+      font-weight: 600;
+    }
+    .st-detail-summary .due span:not(.lbl) { color: var(--ad-emerald); }
+
+    .st-detail-section {
+      margin-top: 18px;
+      font-family: var(--ad-font-display);
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--ad-ink);
+    }
+    .st-history {
+      list-style: none;
+      padding: 0;
+      margin: 10px 0 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 40vh;
+      overflow-y: auto;
+    }
+    .st-history li {
+      display: grid;
+      grid-template-columns: 80px 1fr auto;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      background: var(--ad-cream);
+      font-size: 13px;
+      align-items: baseline;
+    }
+    .st-history li.muted { color: var(--ad-ink-mute); font-style: italic; text-align: center; display: block; }
+    .st-history .mv-type {
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .st-history .mv-type.deposit { color: var(--ad-emerald); }
+    .st-history .mv-type.sale_report { color: #c2410c; }
+    .st-history .mv-type.payment { color: #16a34a; }
+    .st-history .mv-meta { color: var(--ad-ink-mute); font-size: 11px; }
+    .st-history .mv-amount { font-weight: 600; color: var(--ad-ink); white-space: nowrap; }
+
+    /* Modal form */
+    #moveForm label { display: block; margin-bottom: 14px; }
+    #moveForm label > span {
+      display: block;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ad-ink-soft);
+      margin-bottom: 6px;
+    }
+    #moveForm input, #moveForm textarea {
+      width: 100%;
+      padding: 10px 14px;
+      min-height: 44px;
+      border: 1px solid var(--ad-border);
+      border-radius: 8px;
+      background: var(--ad-cream);
+      font-family: var(--ad-font-body);
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    #moveForm input:focus, #moveForm textarea:focus {
+      outline: none;
+      border-color: var(--ad-emerald);
+    }
+    #moveForm textarea { resize: vertical; min-height: 60px; }
+    #moveForm .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 18px;
+    }
+  </style>
+
+  <script>
+    import {
+      adminListStations,
+      adminGetStation,
+      adminAddStationMovement,
+      adminSeedStationsFromExcel,
+    } from '../../scripts/adminApi.js';
+
+    // ============ Helpers ============
+    const $ = (id) => document.getElementById(id);
+    function fmtDT(n) {
+      const v = Number(n) || 0;
+      return v.toFixed(2).replace('.', ',') + ' DT';
+    }
+    function escH(s) {
+      return String(s ?? '').replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      }[c]));
+    }
+    function fmtDate(iso) {
+      if (!iso) return '';
+      try {
+        return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: '2-digit' });
+      } catch { return iso.slice(0, 10); }
+    }
+    function dueClass(amount) {
+      const v = Number(amount) || 0;
+      if (v <= 0) return 'st-due-zero';
+      if (v > 300) return 'st-due-high';
+      return 'st-due-low';
+    }
+    function showStatus(msg, kind = 'success') {
+      const el = $('stStatus');
+      if (!el) return;
+      el.textContent = msg;
+      el.className = 'status-msg ' + kind;
+      el.classList.remove('hidden');
+      setTimeout(() => el.classList.add('hidden'), 4000);
+    }
+
+    // ============ State ============
+    let stations = [];
+    let summary = { activeCount: 0, totalStockUnits: 0, totalDue: 0, totalPaid: 0, totalSold: 0 };
+
+    // ============ Load + render ============
+    async function loadStations() {
+      const tbody = $('stRows');
+      if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px">Chargement…</td></tr>';
+      const res = await adminListStations();
+      if (!res || !res.ok) {
+        const msg = res?.error || 'Erreur de chargement';
+        if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:#b91c1c">${escH(msg)}</td></tr>`;
+        return;
+      }
+      stations = res.stations || [];
+      summary = res.summary || summary;
+
+      // KPIs
+      $('kpiActive').textContent = String(summary.activeCount || 0);
+      $('kpiStockUnits').textContent = String(summary.totalStockUnits || 0) + ' flacons';
+      // Stock value = currentStock × average unitPrice. Take the average so a
+      // station with a custom price doesn't skew the total absurdly.
+      let stockValue = 0;
+      stations.forEach((s) => { stockValue += (Number(s.currentStock) || 0) * (Number(s.unitPrice) || 0); });
+      $('kpiStockValue').textContent = `Valeur ${fmtDT(stockValue)}`;
+      $('kpiDue').textContent = fmtDT(summary.totalDue || 0);
+      $('kpiPaid').textContent = fmtDT(summary.totalPaid || 0);
+
+      // Seed button: visible only if every station has zero history.
+      const allEmpty = stations.length === 0 || stations.every((s) =>
+        (Number(s.totalDeposited) || 0) === 0 &&
+        (Number(s.totalSold) || 0) === 0 &&
+        (Number(s.totalPaid) || 0) === 0
+      );
+      const seedBtn = $('seedBtn');
+      if (seedBtn) seedBtn.hidden = !allEmpty;
+
+      // Table
+      if (!stations.length) {
+        if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--ad-ink-mute)">Aucune station. Cliquez sur "Initialiser depuis Excel" ou utilisez l'API <code>init_stations</code>.</td></tr>`;
+        return;
+      }
+      if (tbody) {
+        tbody.innerHTML = stations.map((s) => `
+          <tr data-phone="${escH(s.phone)}">
+            <td class="name">${escH(s.name)}<small>${escH(s.phone)}</small></td>
+            <td class="num">${Number(s.currentStock) || 0}</td>
+            <td class="num">${Number(s.totalSold) || 0}</td>
+            <td class="num">${Number(s.totalDeposited) || 0}</td>
+            <td class="num">${fmtDT(s.unitPrice)}</td>
+            <td class="num ${dueClass(s.amountDue)}">${fmtDT(s.amountDue)}</td>
+            <td>
+              <div class="st-row-actions">
+                <button type="button" data-act="detail" data-phone="${escH(s.phone)}">Détail</button>
+                <button type="button" class="dep"  data-act="deposit"     data-phone="${escH(s.phone)}">+ Dépôt</button>
+                <button type="button" class="sale" data-act="sale_report" data-phone="${escH(s.phone)}">+ Vente</button>
+                <button type="button" class="pay"  data-act="payment"     data-phone="${escH(s.phone)}">+ Paiement</button>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+      }
+    }
+
+    // ============ Table action delegation ============
+    $('stRows')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-act]');
+      if (!btn) return;
+      const act = btn.getAttribute('data-act');
+      const phone = btn.getAttribute('data-phone');
+      const station = stations.find((s) => s.phone === phone);
+      if (!station) return;
+      if (act === 'detail') openDetail(station);
+      else openMoveModal(station, act);
+    });
+
+    // ============ Detail modal ============
+    const detailModal = $('detailModal');
+    async function openDetail(station) {
+      $('detailTitle').textContent = station.name;
+      $('detailAddress').textContent = station.address || 'Adresse non renseignée';
+      $('detailStock').textContent = String(Number(station.currentStock) || 0);
+      $('detailSold').textContent = String(Number(station.totalSold) || 0);
+      $('detailDeposited').textContent = String(Number(station.totalDeposited) || 0);
+      $('detailUnit').textContent = fmtDT(station.unitPrice);
+      $('detailPaid').textContent = fmtDT(station.totalPaid);
+      $('detailDue').textContent = fmtDT(station.amountDue);
+      $('detailHistory').innerHTML = '<li class="muted">Chargement…</li>';
+      detailModal.classList.remove('hidden');
+      const res = await adminGetStation(station.phone);
+      if (!res || !res.ok) {
+        $('detailHistory').innerHTML = `<li class="muted">Erreur : ${escH(res?.error || 'inconnue')}</li>`;
+        return;
+      }
+      const movements = res.movements || [];
+      if (!movements.length) {
+        $('detailHistory').innerHTML = '<li class="muted">Aucun mouvement enregistré.</li>';
+        return;
+      }
+      const labels = { deposit: 'Dépôt', sale_report: 'Vente', payment: 'Paiement' };
+      $('detailHistory').innerHTML = movements.map((m) => {
+        const right = m.type === 'payment'
+          ? fmtDT(m.amount)
+          : m.type === 'sale_report'
+            ? `${m.qty} × ${fmtDT(m.amount || 0)}`
+            : `${m.qty} flacons`;
+        return `
+          <li>
+            <span class="mv-type ${escH(m.type)}">${escH(labels[m.type] || m.type)}</span>
+            <div>
+              <div>${escH(m.notes || '—')}</div>
+              <div class="mv-meta">${escH(fmtDate(m.date))} · ${escH(m.createdBy || '—')}</div>
+            </div>
+            <span class="mv-amount">${right}</span>
+          </li>
+        `;
+      }).join('');
+    }
+    document.querySelectorAll('[data-detail-close]').forEach((el) =>
+      el.addEventListener('click', () => detailModal.classList.add('hidden'))
+    );
+
+    // ============ Movement modal (deposit / sale / payment) ============
+    const moveModal = $('moveModal');
+    const moveForm = $('moveForm');
+    const moveQtyLabel = $('moveQtyLabel');
+    const moveAmountLabel = $('moveAmountLabel');
+    const moveQty = $('moveQty');
+    const moveAmount = $('moveAmount');
+    const moveNotes = $('moveNotes');
+    const moveErr = $('moveErr');
+    let movingStation = null;
+    let movingType = null;
+
+    function openMoveModal(station, type) {
+      movingStation = station;
+      movingType = type;
+      const labels = {
+        deposit: { eyebrow: 'Dépôt initial', title: 'Ajouter un dépôt' },
+        sale_report: { eyebrow: 'Vente reportée', title: 'Reporter une vente' },
+        payment: { eyebrow: 'Paiement', title: 'Enregistrer un paiement' },
+      };
+      const meta = labels[type];
+      $('moveEyebrow').textContent = meta.eyebrow;
+      $('moveTitle').textContent = meta.title;
+      $('moveSubtitle').textContent = `${station.name} · Restants ${Number(station.currentStock) || 0} · Dû ${fmtDT(station.amountDue)}`;
+      moveQty.value = '';
+      moveAmount.value = '';
+      moveNotes.value = '';
+      moveErr.classList.add('hidden');
+      // Qty vs amount field
+      moveQtyLabel.hidden = (type === 'payment');
+      moveAmountLabel.hidden = (type !== 'payment');
+      moveQty.required = (type !== 'payment');
+      moveAmount.required = (type === 'payment');
+      moveModal.classList.remove('hidden');
+      setTimeout(() => (type === 'payment' ? moveAmount : moveQty).focus(), 50);
+    }
+    document.querySelectorAll('[data-move-close]').forEach((el) =>
+      el.addEventListener('click', () => moveModal.classList.add('hidden'))
+    );
+
+    moveForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!movingStation || !movingType) return;
+      moveErr.classList.add('hidden');
+      const payload = {
+        phone: movingStation.phone,
+        type: movingType,
+        notes: moveNotes.value.trim() || undefined,
+      };
+      if (movingType === 'payment') {
+        const amount = Number(moveAmount.value);
+        if (!isFinite(amount) || amount <= 0) {
+          moveErr.textContent = 'Montant requis (> 0)';
+          moveErr.className = 'status-msg error';
+          moveErr.classList.remove('hidden');
+          return;
+        }
+        payload.amount = amount;
+      } else {
+        const qty = parseInt(moveQty.value, 10);
+        if (!Number.isInteger(qty) || qty <= 0) {
+          moveErr.textContent = 'Quantité requise (> 0)';
+          moveErr.className = 'status-msg error';
+          moveErr.classList.remove('hidden');
+          return;
+        }
+        payload.qty = qty;
+      }
+      const saveBtn = $('moveSave');
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Enregistrement…';
+      const res = await adminAddStationMovement(payload);
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Enregistrer';
+      if (!res || !res.ok) {
+        moveErr.textContent = res?.error || 'Échec de l\'enregistrement';
+        moveErr.className = 'status-msg error';
+        moveErr.classList.remove('hidden');
+        return;
+      }
+      moveModal.classList.add('hidden');
+      const labels = { deposit: 'Dépôt', sale_report: 'Vente', payment: 'Paiement' };
+      let msg = `${labels[movingType]} enregistré pour ${movingStation.name}`;
+      if (res.warnings && res.warnings.length) msg += ` (⚠ ${res.warnings.join(' / ')})`;
+      showStatus(msg, 'success');
+      await loadStations();
+    });
+
+    // ============ Seed button ============
+    $('seedBtn')?.addEventListener('click', async () => {
+      if (!confirm('Importer les chiffres de mai 2026 pour les 7 stations ?\n\nCette action crée 3 mouvements par station (dépôt + vente + paiement éventuel).\nCliquer plusieurs fois empilera les mouvements !')) return;
+      const btn = $('seedBtn');
+      btn.disabled = true;
+      btn.textContent = 'Import en cours…';
+      const res = await adminSeedStationsFromExcel();
+      btn.disabled = false;
+      btn.textContent = 'Initialiser depuis Excel';
+      if (!res || !res.ok) {
+        showStatus('Erreur : ' + (res?.error || 'inconnue'), 'error');
+        return;
+      }
+      const stationsCount = (res.report || []).length;
+      showStatus(`Import OK pour ${stationsCount} station${stationsCount > 1 ? 's' : ''}`, 'success');
+      await loadStations();
+    });
+
+    // ============ Boot ============
+    document.addEventListener('admin:ready', () => {
+      loadStations();
+    });
+    // Late attach (admin:ready may have fired before this script was parsed)
+    if (window.__adminPerms) loadStations();
+  </script>
+</AdminLayout>

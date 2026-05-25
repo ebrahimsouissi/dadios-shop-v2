@@ -11,6 +11,7 @@ const { current } = Astro.props;
 const NAV = [
   { id: 'accueil',   label: 'Accueil',              icon: '🏠', href: '/admin',           perm: null },
   { id: 'ventes',    label: 'Commandes & Boutique', icon: '🛒', href: '/admin/ventes',    perm: null },
+  { id: 'stations',  label: 'Stations',             icon: '⛽', href: '/admin/stations',  perm: 'sales' },
   { id: 'catalogue', label: 'Catalogue',            icon: '📦', href: '/admin/catalogue', perm: 'products' },
   { id: 'clients',   label: 'Clients',              icon: '👥', href: '/admin/clients',   perm: null },
   { id: 'contenu',   label: 'Contenu',              icon: '✍️', href: '/admin/contenu',   perm: null },

@@ -17,7 +17,8 @@ const NAV = [
     { id: 'accueil', label: 'Accueil', icon: '🏠', href: '/admin', perm: null },
   ]},
   { group: 'Ventes', items: [
-    { id: 'ventes', label: 'Commandes & Boutique', icon: '🛒', href: '/admin/ventes', perm: null /* shown if orders OR sales */ },
+    { id: 'ventes',   label: 'Commandes & Boutique', icon: '🛒', href: '/admin/ventes',   perm: null /* shown if orders OR sales */ },
+    { id: 'stations', label: 'Stations',             icon: '⛽', href: '/admin/stations', perm: 'sales' },
   ]},
   { group: 'Catalogue', items: [
     { id: 'catalogue', label: 'Produits', icon: '📦', href: '/admin/catalogue', perm: 'products' },
