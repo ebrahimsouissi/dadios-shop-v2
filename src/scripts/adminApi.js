@@ -266,6 +266,12 @@ export async function adminUpdateStationSettings({ phone, unitPrice, status } = 
 export async function adminSeedStationsFromExcel() {
   return stationsPost('seed_from_excel');
 }
+export async function adminRecomputeStation(phone) {
+  return stationsPost('recompute_station_totals', { phone });
+}
+export async function adminRecomputeAllStations() {
+  return stationsPost('recompute_station_totals', { phone: '*' });
+}
 
 /**
  * Uploads a Blob (cropped image) to the worker, returns public URL.

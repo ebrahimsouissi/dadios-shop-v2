@@ -9,6 +9,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       <p class="help">Dépôt-vente dans les stations-service. Suivi par station des dépôts, ventes reportées et paiements.</p>
     </div>
     <div class="actions">
+      <button type="button" class="ad-btn ad-btn-outline" id="recomputeAllBtn">🔄 Recalculer tout</button>
       <button type="button" class="ad-btn ad-btn-outline" id="seedBtn" hidden>Initialiser depuis Excel</button>
     </div>
   </header>
@@ -173,6 +174,10 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     .st-row-actions button.dep:hover { color: var(--ad-emerald); border-color: var(--ad-emerald); }
     .st-row-actions button.sale:hover { color: #c2410c; border-color: #c2410c; }
     .st-row-actions button.pay:hover { color: #16a34a; border-color: #16a34a; }
+    .st-row-actions button.rec { min-width: 32px; padding: 4px 6px; }
+    .st-row-actions button.rec:hover { color: var(--ad-emerald); border-color: var(--ad-emerald); background: var(--ad-cream); }
+    .st-row-actions button.is-busy { opacity: 0.5; pointer-events: none; }
+    .st-row-actions button.is-busy.rec::after { content: ' …'; }
 
     /* Detail modal */
     .st-detail-summary {
@@ -279,6 +284,8 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       adminGetStation,
       adminAddStationMovement,
       adminSeedStationsFromExcel,
+      adminRecomputeStation,
+      adminRecomputeAllStations,
     } from '../../scripts/adminApi.js';
 
     // ============ Helpers ============
@@ -370,6 +377,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
                 <button type="button" class="dep"  data-act="deposit"     data-phone="${escH(s.phone)}">+ Dépôt</button>
                 <button type="button" class="sale" data-act="sale_report" data-phone="${escH(s.phone)}">+ Vente</button>
                 <button type="button" class="pay"  data-act="payment"     data-phone="${escH(s.phone)}">+ Paiement</button>
+                <button type="button" class="rec"  data-act="recompute"   data-phone="${escH(s.phone)}" title="Recalculer les compteurs depuis les mouvements">🔄</button>
               </div>
             </td>
           </tr>
@@ -378,15 +386,62 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     }
 
     // ============ Table action delegation ============
-    $('stRows')?.addEventListener('click', (e) => {
+    $('stRows')?.addEventListener('click', async (e) => {
       const btn = e.target.closest('button[data-act]');
       if (!btn) return;
       const act = btn.getAttribute('data-act');
       const phone = btn.getAttribute('data-phone');
       const station = stations.find((s) => s.phone === phone);
       if (!station) return;
-      if (act === 'detail') openDetail(station);
-      else openMoveModal(station, act);
+      if (act === 'detail') return openDetail(station);
+      if (act === 'recompute') return runRecomputeOne(btn, station);
+      openMoveModal(station, act);
+    });
+
+    async function runRecomputeOne(btn, station) {
+      if (!confirm(`Recalculer les compteurs de ${station.name} depuis les mouvements ?`)) return;
+      btn.classList.add('is-busy');
+      btn.disabled = true;
+      try {
+        const res = await adminRecomputeStation(station.phone);
+        if (!res || !res.ok) {
+          showStatus('Erreur : ' + (res?.error || 'inconnue'), 'error');
+          return;
+        }
+        showStatus(`${station.name} recalculée — ${res.movementsProcessed} mouvements en ${res.durationMs}ms`, 'success');
+        await loadStations();
+      } finally {
+        btn.classList.remove('is-busy');
+        btn.disabled = false;
+      }
+    }
+
+    // ============ Global recompute ============
+    $('recomputeAllBtn')?.addEventListener('click', async () => {
+      if (!confirm('Recalculer TOUTES les stations ? Cette opération relit tous les mouvements.')) return;
+      const btn = $('recomputeAllBtn');
+      const label = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = '🔄 Recalcul en cours…';
+      try {
+        const res = await adminRecomputeAllStations();
+        if (!res || !res.ok) {
+          showStatus('Erreur : ' + (res?.error || 'inconnue'), 'error');
+          return;
+        }
+        const results = res.results || [];
+        const okCount = results.filter((r) => r.ok).length;
+        const failCount = results.length - okCount;
+        const totalMv = results.reduce((acc, r) => acc + (Number(r.movementsProcessed) || 0), 0);
+        const totalMs = results.reduce((acc, r) => acc + (Number(r.durationMs) || 0), 0);
+        let msg = `${okCount}/${results.length} stations recalculées — ${totalMv} mouvements en ${totalMs}ms`;
+        if (failCount > 0) msg += ` (⚠ ${failCount} échec${failCount > 1 ? 's' : ''})`;
+        showStatus(msg, failCount > 0 ? 'error' : 'success');
+        await loadStations();
+      } finally {
+        btn.disabled = false;
+        btn.textContent = label;
+      }
     });
 
     // ============ Detail modal ============

@@ -3596,11 +3596,15 @@ async function handleStations(body, env, request) {
       if (!raw) return json({ ok: false, error: 'Station introuvable' }, 404);
       const station = JSON.parse(raw);
 
+      const _nowIso = new Date().toISOString();
       const movement = {
         id: crypto.randomUUID(),
         phone,
         type,
-        date: new Date().toISOString(),
+        // `date` stays for back-compat with existing UI / older rows;
+        // `createdAt` is the canonical sort key used by the recompute.
+        date: _nowIso,
+        createdAt: _nowIso,
         notes: String(body.notes || '').slice(0, 500),
         createdBy: auth.customer.phone || 'admin',
       };
@@ -3744,7 +3748,7 @@ async function handleStations(body, env, request) {
         const seedNote = 'Initialisation depuis Excel — mai 2026';
 
         if (seed.deposited > 0) {
-          const m = { id: crypto.randomUUID(), phone, type: 'deposit', qty: seed.deposited, date: nowIso, notes: seedNote, createdBy: 'seed' };
+          const m = { id: crypto.randomUUID(), phone, type: 'deposit', qty: seed.deposited, date: nowIso, createdAt: nowIso, notes: seedNote, createdBy: 'seed' };
           writes.push(kv.put(`movement:${phone}:${m.id}`, JSON.stringify(m)));
           movementsAdded.push('deposit');
           station.currentStock = (Number(station.currentStock) || 0) + seed.deposited;
@@ -3752,7 +3756,7 @@ async function handleStations(body, env, request) {
         }
         if (seed.sold > 0) {
           const amount = Math.round(seed.sold * (Number(station.unitPrice) || 0) * 100) / 100;
-          const m = { id: crypto.randomUUID(), phone, type: 'sale_report', qty: seed.sold, amount, date: nowIso, notes: seedNote, createdBy: 'seed' };
+          const m = { id: crypto.randomUUID(), phone, type: 'sale_report', qty: seed.sold, amount, date: nowIso, createdAt: nowIso, notes: seedNote, createdBy: 'seed' };
           writes.push(kv.put(`movement:${phone}:${m.id}`, JSON.stringify(m)));
           movementsAdded.push('sale_report');
           station.currentStock = (Number(station.currentStock) || 0) - seed.sold;
@@ -3760,7 +3764,7 @@ async function handleStations(body, env, request) {
           station.amountDue = Math.round(((Number(station.amountDue) || 0) + amount) * 100) / 100;
         }
         if (seed.paid > 0) {
-          const m = { id: crypto.randomUUID(), phone, type: 'payment', amount: seed.paid, date: nowIso, notes: seedNote, createdBy: 'seed' };
+          const m = { id: crypto.randomUUID(), phone, type: 'payment', amount: seed.paid, date: nowIso, createdAt: nowIso, notes: seedNote, createdBy: 'seed' };
           writes.push(kv.put(`movement:${phone}:${m.id}`, JSON.stringify(m)));
           movementsAdded.push('payment');
           station.totalPaid = Math.round(((Number(station.totalPaid) || 0) + seed.paid) * 100) / 100;
@@ -3784,6 +3788,145 @@ async function handleStations(body, env, request) {
     } catch (err) {
       console.error('[stations seed] crash:', err && err.message, err && err.stack);
       return json({ ok: false, error: 'seed_from_excel crash: ' + (err && err.message), stack: err && err.stack }, 500);
+    }
+  }
+
+  // ---------- recompute_station_totals ----------
+  // Replay every movement under movement:{phone}:* in chronological
+  // order and rebuild the counters from scratch. Settings (name,
+  // unitPrice, address, status, createdAt, updatedAt) are preserved;
+  // ONLY currentStock / totalDeposited / totalSold / totalPaid /
+  // amountDue are recomputed. amountDue is NOT clamped — a negative
+  // value means the station overpaid (credit balance).
+  //
+  // body.phone === "*" walks STATION_PHONES and returns an array.
+  if (action === 'recompute_station_totals') {
+    try {
+      const auth = await requireAdminAuth(body, env, request, _PERM);
+      if (!auth.ok) return json({ ok: false, error: auth.error }, auth.status);
+
+      const target = String(body.phone || '').trim();
+      if (!target) return json({ ok: false, error: 'Champ requis: phone (téléphone ou "*")' }, 400);
+      const phones = target === '*' ? STATION_PHONES : [target];
+
+      async function recomputeOne(phone) {
+        const startMs = Date.now();
+        const raw = await kv.get(`station:${phone}`);
+        if (!raw) return { phone, ok: false, error: 'Station introuvable' };
+        let station;
+        try { station = JSON.parse(raw); }
+        catch { return { phone, ok: false, error: 'Station corrompue (JSON)' }; }
+
+        // Snapshot before mutation so the response can show diff.
+        const before = {
+          currentStock: Number(station.currentStock) || 0,
+          totalDeposited: Number(station.totalDeposited) || 0,
+          totalSold: Number(station.totalSold) || 0,
+          totalPaid: Number(station.totalPaid) || 0,
+          amountDue: Number(station.amountDue) || 0,
+        };
+
+        // Pull every movement under this phone.
+        const list = await kv.list({ prefix: `movement:${phone}:` });
+        const movements = [];
+        for (const key of list.keys) {
+          const mraw = await kv.get(key.name);
+          if (!mraw) continue;
+          try { movements.push(JSON.parse(mraw)); } catch {}
+        }
+        // Sort ASC by createdAt → date (older rows) → id (last-resort
+        // stable order). v4 UUIDs aren't time-ordered but they're
+        // unique so the tie-break stays deterministic across calls.
+        movements.sort((a, b) => {
+          const ka = String(a.createdAt || a.date || a.id || '');
+          const kb = String(b.createdAt || b.date || b.id || '');
+          return ka.localeCompare(kb);
+        });
+
+        // Reset compteurs.
+        let currentStock = 0;
+        let totalDeposited = 0;
+        let totalSold = 0;
+        let totalPaid = 0;
+        let amountDue = 0;
+
+        const fallbackPrice = Number(station.unitPrice) || 0;
+        for (const m of movements) {
+          if (m.type === 'deposit') {
+            const qty = Number(m.qty) || 0;
+            totalDeposited += qty;
+            currentStock += qty;
+          } else if (m.type === 'sale_report') {
+            const qty = Number(m.qty) || 0;
+            totalSold += qty;
+            currentStock -= qty;
+            // Use the stored amount when present (it's frozen at the
+            // price applied at the time of the report), otherwise
+            // multiply by today's unitPrice.
+            const amt = (typeof m.amount === 'number' && isFinite(m.amount))
+              ? m.amount
+              : qty * fallbackPrice;
+            amountDue += amt;
+          } else if (m.type === 'payment') {
+            const amt = Number(m.amount) || 0;
+            totalPaid += amt;
+            amountDue -= amt;
+          }
+        }
+
+        // Cents-clean rounding to dodge floating-point drift.
+        const round2 = (n) => Math.round(n * 100) / 100;
+        const after = {
+          currentStock,
+          totalDeposited,
+          totalSold,
+          totalPaid: round2(totalPaid),
+          amountDue: round2(amountDue),
+        };
+
+        // Apply ONLY the counters — settings stay intact.
+        station.currentStock = after.currentStock;
+        station.totalDeposited = after.totalDeposited;
+        station.totalSold = after.totalSold;
+        station.totalPaid = after.totalPaid;
+        station.amountDue = after.amountDue;
+        station.updatedAt = new Date().toISOString();
+        station.recomputedAt = station.updatedAt;
+
+        try {
+          await kv.put(`station:${phone}`, JSON.stringify(station));
+        } catch (err) {
+          return { phone, ok: false, error: 'KV.put failed: ' + (err && err.message) };
+        }
+
+        const durationMs = Date.now() - startMs;
+        console.log(`[stations recompute] ${phone} — ${movements.length} mv in ${durationMs}ms`);
+        return {
+          phone, ok: true,
+          before, after,
+          movementsProcessed: movements.length,
+          durationMs,
+        };
+      }
+
+      const results = [];
+      for (const p of phones) results.push(await recomputeOne(p));
+
+      try {
+        await logAdminAction(env, auth.customer, 'stations.recompute', {
+          target,
+          stations: results.map((r) => ({
+            phone: r.phone, ok: r.ok, error: r.error, movementsProcessed: r.movementsProcessed,
+          })),
+        }, request);
+      } catch {}
+
+      return target === '*'
+        ? json({ ok: true, results })
+        : json({ ok: results[0].ok, ...results[0] }, results[0].ok ? 200 : 500);
+    } catch (err) {
+      console.error('[stations recompute] crash:', err && err.message, err && err.stack);
+      return json({ ok: false, error: 'recompute_station_totals crash: ' + (err && err.message), stack: err && err.stack }, 500);
     }
   }
 
