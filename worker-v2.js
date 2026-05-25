@@ -2934,6 +2934,86 @@ async function handleSales(body, env, request) {
     return json({ ok: true, sale, loyalty });
   }
 
+  // ====================================================================
+  // admin_import_sale — historical data import (admin-only, not staff)
+  //   Mirror of create_sale but:
+  //     - requires admin auth + 'sales' permission (no staff token path)
+  //     - createdAt + day/month index keys come from body.saleDate
+  //       (ISO string), not the wall clock
+  //     - attribution: createdBy = body.employeeCode (must exist),
+  //       createdByName = that employee's name from KV
+  //     - no customer link, no loyalty stamps (we don't backfill those
+  //       for historical imports)
+  //     - logged in ADMIN_LOGS_KV as 'sale.import' so the audit trail
+  //       distinguishes back-fills from real-time tickets.
+  // ====================================================================
+  if (action === 'admin_import_sale') {
+    const auth = await requireAdminAuth(body, env, request, _PERM);
+    if (!auth.ok) return json({ ok: false, error: auth.error }, auth.status);
+
+    // saleDate is required and must parse to a real Date.
+    const rawDate = String(body.saleDate || '').trim();
+    if (!rawDate) return json({ ok: false, error: 'Champ requis: saleDate (ISO string)' }, 400);
+    const saleDate = new Date(rawDate);
+    if (isNaN(saleDate.getTime())) {
+      return json({ ok: false, error: `saleDate invalide: ${rawDate}` }, 400);
+    }
+
+    // Employee must exist (and be parseable) — name carries over.
+    const employeeCode = String(body.employeeCode || '').trim();
+    if (!isValidEmployeeCode(employeeCode)) {
+      return json({ ok: false, error: 'employeeCode invalide (4 chiffres requis)' }, 400);
+    }
+    const empRaw = await kv.get(`employee:${employeeCode}`);
+    if (!empRaw) return json({ ok: false, error: 'Employé introuvable' }, 404);
+    let employee;
+    try { employee = JSON.parse(empRaw); }
+    catch { return json({ ok: false, error: 'Employé corrompu' }, 500); }
+
+    // Items go through the same validator as the live POS path.
+    const validation = validateSaleItems(body.items, body.total);
+    if (!validation.ok) return json(validation, 400);
+
+    const id = crypto.randomUUID();
+    const sale = {
+      id,
+      items: validation.items,
+      total: validation.total,
+      paymentMethod: 'cash',
+      customerPhone: null,
+      customerName: null,
+      notes: String(body.notes || '').slice(0, 500) || null,
+      status: 'active',
+      createdAt: saleDate.toISOString(),
+      createdBy: employeeCode,
+      createdByName: employee.name || employeeCode,
+      importedAt: new Date().toISOString(),
+      importedBy: auth.customer.phone || 'admin',
+    };
+
+    // Day/month indexes use the back-dated saleDate, NOT wall clock —
+    // so the dashboard's date-range queries pick the import up under
+    // the correct historical bucket.
+    const dayKey = tunisDayKey(saleDate);
+    const monthKey = tunisMonthKey(saleDate);
+
+    await Promise.all([
+      kv.put(`sale:${id}`, JSON.stringify(sale)),
+      kv.put(`day:${dayKey}:sale:${id}`, ''),
+      kv.put(`month:${monthKey}:sale:${id}`, ''),
+      kv.put(`employee:${employeeCode}:sale:${id}`, ''),
+    ]);
+
+    await logAdminAction(env, auth.customer, 'sale.import', {
+      saleId: id,
+      saleDate: sale.createdAt,
+      employeeCode,
+      total: sale.total,
+    }, request);
+
+    return json({ ok: true, sale });
+  }
+
   if (action === 'list_my_sales') {
     const staff = await getStaffFromToken(body.staffToken, env);
     if (!staff) return json({ ok: false, error: 'Session invalide' }, 401);
