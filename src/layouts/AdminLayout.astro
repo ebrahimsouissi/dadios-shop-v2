@@ -524,6 +524,12 @@ const { title, current } = Astro.props;
         toggleFab(false);
       }
     });
+    // Clicking a FAB menu item (anchor) closes the menu — otherwise the
+    // overlay-style menu lingers above the modal we just opened on the
+    // same page (e.g. catalogue#new).
+    fabMenuEl?.addEventListener('click', (e) => {
+      if ((e.target as HTMLElement).closest('a')) toggleFab(false);
+    });
 
     // ============ Ctrl+K search ============
     const searchBtnEl = document.getElementById('adminSearchBtn');

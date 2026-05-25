@@ -552,6 +552,21 @@ const sizes = data.sizes;
   cancelBtn?.addEventListener('click', closeModal);
   overlay?.addEventListener('click', closeModal);
 
+  // Hash-driven open: the FAB menu's "Nouveau parfum" item is an
+  // <a href="/admin/catalogue#new">. From any other page that's a full
+  // navigation (we read the hash on admin:ready below). From inside
+  // /admin/catalogue itself, the URL just gains the hash and fires
+  // hashchange — without this handler the click would silently no-op.
+  function maybeOpenFromHash() {
+    if (window.location.hash === '#new') {
+      openNew();
+      // Clean the hash so a reload doesn't auto-reopen the modal.
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+  }
+  window.addEventListener('hashchange', maybeOpenFromHash);
+  document.addEventListener('admin:ready', () => maybeOpenFromHash());
+
   // ============ IMAGE UPLOAD UI ============
   imgPickBtn?.addEventListener('click', () => imgFile.click());
   imgRemoveBtn?.addEventListener('click', () => {
