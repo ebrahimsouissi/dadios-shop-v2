@@ -167,6 +167,9 @@ import Base from '../../layouts/Base.astro';
     flex-direction: column;
     text-align: left;
   }
+  /* `display: flex` above wins over the HTML `hidden` attribute by
+     default — force it back to none when hidden so the toggle works. */
+  .acc-form[hidden] { display: none !important; }
   .acc-form input[type="tel"],
   .acc-form input[type="text"],
   .acc-form input[type="password"] {
