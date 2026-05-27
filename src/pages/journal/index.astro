@@ -83,31 +83,36 @@ const initialArticles = buildtimeArticles.length ? buildtimeArticles : seedArtic
     flex-wrap: wrap;
     gap: 8px;
   }
-  .filter-pill {
-    padding: 8px 18px;
-    border-radius: 999px;
-    font-size: 13px;
-    letter-spacing: 0.02em;
-    cursor: pointer;
-    transition: all 200ms;
-    border: 0.5px solid rgba(15, 110, 86, 0.25);
-    background: transparent;
-    color: #0F6E56;
-    font-family: inherit;
-    font-weight: 400;
+  /* Global (not Astro-scoped): the pills are re-rendered client-side via
+     renderFilters() innerHTML, so injected buttons lack the scope
+     attribute. Scoped rules wouldn't match them → the style flashed once
+     on the server-rendered "Tous" then reverted. :global keeps the rule
+     matching after re-render; !important guards against load order. */
+  :global(.filter-pill) {
+    padding: 8px 18px !important;
+    border-radius: 999px !important;
+    font-size: 13px !important;
+    letter-spacing: 0.02em !important;
+    cursor: pointer !important;
+    transition: all 200ms !important;
+    border: 0.5px solid rgba(15, 110, 86, 0.25) !important;
+    background: transparent !important;
+    color: #0F6E56 !important;
+    font-family: inherit !important;
+    font-weight: 400 !important;
   }
-  .filter-pill:hover {
-    background: rgba(15, 110, 86, 0.06);
-    border-color: #0F6E56;
+  :global(.filter-pill:hover) {
+    background: rgba(15, 110, 86, 0.06) !important;
+    border-color: #0F6E56 !important;
   }
-  .filter-pill.active {
-    background: #0F6E56;
-    color: #FAF6EC;
-    border-color: #0F6E56;
+  :global(.filter-pill.active) {
+    background: #0F6E56 !important;
+    color: #FAF6EC !important;
+    border-color: #0F6E56 !important;
   }
-  .filter-pill:focus-visible {
-    outline: 2px solid #FAC775;
-    outline-offset: 2px;
+  :global(.filter-pill:focus-visible) {
+    outline: 2px solid #FAC775 !important;
+    outline-offset: 2px !important;
   }
 
   .journal-wrap {
