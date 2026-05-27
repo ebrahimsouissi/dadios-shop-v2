@@ -6,96 +6,72 @@ import Base from '../../layouts/Base.astro';
   description="Connectez-vous à votre compte Dadios ou créez-en un pour suivre votre fidélité."
 >
 
-<section class="acc-hero">
-  <div class="acc-hero-inner">
-    <div class="eyebrow">Espace client</div>
-    <h1>Mon compte</h1>
-    <p class="acc-lead">
-      <span class="script">Retrouvez votre fidélité et votre profil.</span>
-    </p>
-  </div>
-</section>
+<section class="acc-page">
+  <div class="acc-wrap">
+    <a href="/" class="acc-logo" aria-label="Retour à l'accueil Dadios">Dadios</a>
+    <div class="acc-tagline">— Tunis · Fragrances —</div>
 
-<section class="acc-wrap">
-  <div class="acc-card" role="region" aria-label="Authentification">
-    <div class="acc-tabs" role="tablist">
-      <button type="button" id="tabLogin" class="acc-tab active" role="tab" aria-selected="true">Se connecter</button>
-      <button type="button" id="tabSignup" class="acc-tab" role="tab" aria-selected="false">Créer un compte</button>
+    <h1 class="acc-title">Mon compte</h1>
+    <p class="acc-sub">Connectez-vous ou créez votre compte.</p>
+
+    <div class="acc-toggle-wrap">
+      <div class="acc-toggle" role="tablist" aria-label="Connexion ou inscription">
+        <button type="button" id="tabLogin" class="acc-toggle-btn is-active" role="tab" aria-selected="true">Connexion</button>
+        <button type="button" id="tabSignup" class="acc-toggle-btn" role="tab" aria-selected="false">Inscription</button>
+      </div>
     </div>
 
-    <!-- ===== LOGIN PANEL ===== -->
+    <!-- ===== LOGIN ===== -->
     <form id="loginForm" class="acc-form" novalidate>
-      <label>
-        <span>Téléphone</span>
-        <input type="tel" name="phone" id="loginPhone" required autocomplete="tel" placeholder="+216 56 731 891" inputmode="tel" />
-      </label>
-      <label>
-        <span>Mot de passe</span>
-        <input type="password" name="password" id="loginPwd" required autocomplete="current-password" minlength="6" />
-      </label>
-      <p id="loginErr" class="form-err" hidden></p>
-      <button type="submit" id="loginBtn" class="btn btn-primary acc-submit">Se connecter</button>
-      <button type="button" id="forgotBtn" class="acc-link">Mot de passe oublié ?</button>
+      <input type="tel" id="loginPhone" name="phone" placeholder="Téléphone" autocomplete="tel" inputmode="tel" required />
+      <input type="password" id="loginPwd" name="password" placeholder="Mot de passe" autocomplete="current-password" minlength="6" required />
+
+      <div class="acc-forgot-row">
+        <button type="button" id="forgotBtn" class="acc-forgot">Mot de passe oublié</button>
+      </div>
+
+      <p id="loginErr" class="acc-err" role="alert" aria-live="polite" hidden></p>
+      <button type="submit" id="loginBtn" class="acc-cta">Entrer</button>
     </form>
 
-    <!-- ===== SIGNUP PANEL ===== -->
-    <form id="signupForm" class="acc-form" hidden novalidate>
-      <label>
-        <span>Téléphone *</span>
-        <input type="tel" name="phone" id="signupPhone" required autocomplete="tel" placeholder="+216 56 731 891" inputmode="tel" />
-        <small>Numéro WhatsApp recommandé.</small>
-      </label>
-      <label>
-        <span>Mot de passe *</span>
-        <input type="password" name="password" id="signupPwd" required autocomplete="new-password" minlength="6" />
-        <small>6 caractères minimum.</small>
-      </label>
-      <label>
-        <span>Nom (facultatif)</span>
-        <input type="text" name="name" id="signupName" autocomplete="name" />
-      </label>
-      <label>
-        <span>Adresse (facultatif)</span>
-        <textarea name="address" id="signupAddress" rows="2" autocomplete="street-address"></textarea>
-      </label>
+    <!-- ===== SIGNUP ===== -->
+    <form id="signupForm" class="acc-form" novalidate hidden>
+      <input type="tel" id="signupPhone" name="phone" placeholder="Téléphone" autocomplete="tel" inputmode="tel" required />
+      <input type="text" id="signupName" name="name" placeholder="Nom complet" autocomplete="name" />
+      <input type="text" id="signupAddress" name="address" placeholder="Adresse (optionnel)" autocomplete="street-address" />
+      <input type="password" id="signupPwd" name="password" placeholder="Mot de passe — 6 caractères min" autocomplete="new-password" minlength="6" required />
 
-      <label class="signup-loyalty">
+      <label class="acc-loyalty">
         <input type="checkbox" id="signupLoyalty" checked />
-        <span>
-          Créer ma carte de fidélité Dadios
-          <small>8 tampons = 1 cadeau · Membres VIP : ×2 tampons par achat</small>
-        </span>
+        <span>Créer ma carte fidélité Dadios</span>
       </label>
 
-      <p id="signupErr" class="form-err" hidden></p>
-      <button type="submit" id="signupBtn" class="btn btn-primary acc-submit">Créer mon compte</button>
+      <p id="signupErr" class="acc-err" role="alert" aria-live="polite" hidden></p>
+      <button type="submit" id="signupBtn" class="acc-cta">Créer mon compte</button>
     </form>
-  </div>
 
-  <p class="acc-fineprint">
-    Vos informations restent privées. Votre numéro est utilisé uniquement pour
-    votre programme fidélité et le suivi de commande.
-  </p>
+    <div class="acc-footer">Service client · 99 000 000</div>
+  </div>
 </section>
 
-<!-- ===== FORGOT PASSWORD MODAL ===== -->
-<div id="forgotModal" class="modal" hidden>
-  <div class="modal-overlay" id="forgotOverlay"></div>
-  <div class="modal-box">
-    <button type="button" class="modal-close" id="forgotClose" aria-label="Fermer">×</button>
-    <div class="eyebrow">Réinitialisation</div>
-    <h2>Mot de passe oublié</h2>
-    <p>
+<!-- ===== FORGOT PASSWORD MODAL (préservé) ===== -->
+<div id="forgotModal" class="acc-modal" hidden>
+  <div class="acc-modal-overlay" id="forgotOverlay"></div>
+  <div class="acc-modal-box">
+    <button type="button" class="acc-modal-close" id="forgotClose" aria-label="Fermer">×</button>
+    <div class="acc-modal-eyebrow">— Réinitialisation —</div>
+    <h2 class="acc-modal-title">Mot de passe oublié</h2>
+    <p class="acc-modal-text">
       Pour des raisons de sécurité, la réinitialisation du mot de passe se fait
       avec notre équipe.
     </p>
-    <p class="muted">
+    <p class="acc-modal-text muted">
       Contactez-nous par WhatsApp au <strong>+216 56 731 891</strong>. Indiquez
       votre numéro de téléphone — nous vous enverrons un nouveau mot de passe
       temporaire que vous pourrez ensuite modifier.
     </p>
     <a
-      class="btn btn-primary forgot-cta"
+      class="acc-cta acc-modal-cta"
       href="https://wa.me/21656731891?text=Bonjour%20Dadios%2C%20je%20souhaite%20r%C3%A9initialiser%20le%20mot%20de%20passe%20de%20mon%20compte%20client."
       target="_blank"
       rel="noopener"
@@ -106,157 +82,201 @@ import Base from '../../layouts/Base.astro';
 </Base>
 
 <style>
-  .acc-hero {
-    background: var(--cream);
-    padding: 56px 32px 32px;
-    text-align: center;
-    border-bottom: 1px solid var(--border);
-  }
-  .acc-hero h1 { font-size: clamp(36px, 5vw, 52px); margin: 12px 0 10px; }
-  .acc-lead .script { font-size: 26px; }
-
-  .acc-wrap {
-    max-width: 520px;
-    margin: 0 auto;
-    padding: 40px 16px 96px;
-  }
-  .acc-card {
-    background: var(--cream-soft);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    overflow: hidden;
-  }
-
-  .acc-tabs {
+  /* ===== Page background — override layout ===== */
+  .acc-page {
+    background: #FAF6EC;
+    min-height: 100vh;
+    padding: 4rem 1rem;
     display: flex;
-    border-bottom: 1px solid var(--border);
-    background: var(--cream-warm);
+    align-items: flex-start;
+    justify-content: center;
   }
-  .acc-tab {
-    flex: 1;
-    padding: 16px 12px;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    font-family: var(--font-body);
-    font-size: 13px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--ink-mute);
-    border-bottom: 2px solid transparent;
-    transition: color .2s, border-color .2s, background .2s;
-  }
-  .acc-tab:hover { color: var(--ink); }
-  .acc-tab.active {
-    color: var(--emerald);
-    border-bottom-color: var(--emerald);
-    background: var(--cream-soft);
-  }
-
-  .acc-form { padding: 32px 28px; display: flex; flex-direction: column; gap: 18px; }
-  .acc-form label { display: block; }
-  .acc-form label > span {
-    display: block;
-    font-size: 11px;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--ink-soft);
-    margin-bottom: 6px;
-  }
-  .acc-form input,
-  .acc-form textarea {
+  .acc-wrap {
     width: 100%;
-    padding: 12px 14px;
-    border: 1px solid var(--border-strong);
-    border-radius: 8px;
-    background: var(--cream);
-    font-family: var(--font-body);
-    font-size: 14px;
-    color: var(--ink);
-    box-sizing: border-box;
-  }
-  .acc-form textarea { resize: vertical; min-height: 60px; }
-  .acc-form input:focus,
-  .acc-form textarea:focus { outline: none; border-color: var(--emerald); }
-  .acc-form small {
-    display: block;
-    margin-top: 4px;
-    font-size: 11px;
-    color: var(--ink-mute);
+    max-width: 340px;
+    text-align: center;
   }
 
-  .acc-submit { width: 100%; margin-top: 4px; }
-
-  /* Loyalty opt-in checkbox on the signup form */
-  .signup-loyalty {
-    display: grid !important;
-    grid-template-columns: auto 1fr;
-    gap: 12px;
-    align-items: start;
-    padding: 14px 16px;
-    background: var(--cream-soft);
-    border: 1px dashed var(--gold-soft);
-    border-radius: 10px;
-    cursor: pointer;
-  }
-  .signup-loyalty input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    margin: 2px 0 0;
-    accent-color: var(--emerald);
-    cursor: pointer;
-  }
-  .signup-loyalty > span {
-    font-size: 14px !important;
-    text-transform: none !important;
-    letter-spacing: 0 !important;
-    color: var(--ink) !important;
-    margin-bottom: 0 !important;
-    font-weight: 500;
-  }
-  .signup-loyalty > span small {
-    display: block;
+  /* ===== Logo + tagline ===== */
+  .acc-logo {
+    display: inline-block;
+    font-family: var(--font-display);
+    font-size: 32px;
     font-weight: 400;
-    color: var(--ink-mute);
-    font-size: 12px;
-    margin-top: 4px;
+    letter-spacing: 0.06em;
+    color: #0F6E56;
+    text-decoration: none;
+    line-height: 1;
+  }
+  .acc-tagline {
+    font-size: 10px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: #BA7517;
+    margin-top: 6px;
+    margin-bottom: 3rem;
+  }
+
+  /* ===== Heading ===== */
+  .acc-title {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 400;
+    color: #1a1a1a;
+    margin-bottom: 8px;
+    line-height: 1.2;
+  }
+  .acc-sub {
+    font-size: 13px;
+    color: rgba(0, 0, 0, 0.55);
+    margin-bottom: 2.5rem;
     line-height: 1.5;
   }
 
-  .form-err {
-    background: rgba(178, 58, 31, 0.08);
-    border: 1px solid #B23A1F;
-    color: #8a2a14;
-    padding: 10px 12px;
-    border-radius: 8px;
-    font-size: 13px;
-    margin: 4px 0 0;
+  /* ===== Toggle pill ===== */
+  .acc-toggle-wrap { text-align: center; margin-bottom: 2rem; }
+  .acc-toggle {
+    display: inline-flex;
+    background: rgba(0, 0, 0, 0.04);
+    padding: 3px;
+    border-radius: 999px;
+    gap: 2px;
   }
+  .acc-toggle-btn {
+    background: transparent;
+    border: none;
+    padding: 7px 22px;
+    font-family: inherit;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(0, 0, 0, 0.55);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background .2s, color .2s;
+  }
+  .acc-toggle-btn.is-active {
+    background: #0F6E56;
+    color: #FAF6EC;
+  }
+  .acc-toggle-btn:not(.is-active):hover { color: #1a1a1a; }
 
-  .acc-link {
+  /* ===== Forms ===== */
+  .acc-form {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+  }
+  .acc-form input[type="tel"],
+  .acc-form input[type="text"],
+  .acc-form input[type="password"] {
+    width: 100%;
+    padding: 13px 16px;
+    background: rgba(255, 255, 255, 0.6);
+    border: 0.5px solid rgba(0, 0, 0, 0.15);
+    border-radius: 2px;
+    font-family: inherit;
+    font-size: 14px;
+    color: #1a1a1a;
+    box-sizing: border-box;
+    outline: none;
+    margin-bottom: 12px;
+    transition: border-color .2s;
+  }
+  .acc-form input::placeholder {
+    color: rgba(0, 0, 0, 0.35);
+    font-style: italic;
+  }
+  .acc-form input:hover,
+  .acc-form input:focus { border-color: #0F6E56; }
+
+  /* Forgot row (login only) */
+  .acc-forgot-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: -4px;
+    margin-bottom: 1.5rem;
+  }
+  .acc-forgot {
     background: none;
     border: none;
-    color: var(--emerald);
-    font-size: 13px;
-    text-align: center;
+    padding: 0 0 1px 0;
+    font-family: inherit;
+    font-size: 11px;
+    color: rgba(0, 0, 0, 0.35);
+    text-decoration: none;
+    border-bottom: 0.5px solid rgba(0, 0, 0, 0.35);
     cursor: pointer;
-    padding: 8px;
-    font-family: var(--font-body);
-    text-decoration: underline;
+    line-height: 1.3;
   }
-  .acc-link:hover { color: var(--emerald-dark); }
+  .acc-forgot:hover { color: #0F6E56; border-bottom-color: #0F6E56; }
 
-  .acc-fineprint {
-    text-align: center;
+  /* Loyalty checkbox (signup) */
+  .acc-loyalty {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     font-size: 12px;
-    color: var(--ink-mute);
-    margin-top: 20px;
-    line-height: 1.6;
-    padding: 0 8px;
+    color: rgba(0, 0, 0, 0.55);
+    cursor: pointer;
+    margin-top: 4px;
+    margin-bottom: 1.5rem;
+  }
+  .acc-loyalty input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    accent-color: #0F6E56;
+    cursor: pointer;
+    margin: 0;
   }
 
-  /* ===== MODAL ===== */
-  .modal {
+  /* Error banner */
+  .acc-err {
+    background: #FCEBEB;
+    border-left: 2px solid #A32D2D;
+    color: #791F1F;
+    padding: 8px 12px;
+    border-radius: 2px;
+    font-size: 12px;
+    margin-bottom: 12px;
+    line-height: 1.4;
+  }
+  .acc-err[hidden] { display: none; }
+
+  /* CTA button */
+  .acc-cta {
+    width: 100%;
+    background: #0F6E56;
+    color: #FAF6EC;
+    border: 0;
+    padding: 14px;
+    font-family: inherit;
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: background .2s;
+    display: inline-block;
+    text-align: center;
+    text-decoration: none;
+    line-height: 1;
+  }
+  .acc-cta:hover { background: #085041; }
+  .acc-cta:disabled { opacity: 0.6; cursor: wait; }
+
+  /* Footer line */
+  .acc-footer {
+    margin-top: 3rem;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(0, 0, 0, 0.35);
+    text-align: center;
+  }
+
+  /* ===== Forgot modal (preserved, restyled to match) ===== */
+  .acc-modal {
     position: fixed;
     inset: 0;
     z-index: 200;
@@ -265,42 +285,64 @@ import Base from '../../layouts/Base.astro';
     justify-content: center;
     padding: 24px;
   }
-  .modal[hidden] { display: none !important; }
-  .modal-overlay {
+  .acc-modal[hidden] { display: none !important; }
+  .acc-modal-overlay {
     position: absolute;
     inset: 0;
-    background: rgba(5, 26, 14, 0.72);
+    background: rgba(15, 110, 86, 0.55);
     backdrop-filter: blur(4px);
   }
-  .modal-box {
+  .acc-modal-box {
     position: relative;
-    background: var(--cream);
-    border: 1px solid var(--border-strong);
-    border-radius: 14px;
+    background: #FAF6EC;
+    border: 0.5px solid rgba(0, 0, 0, 0.15);
+    border-radius: 4px;
     width: 100%;
-    max-width: 480px;
-    padding: 36px 32px 32px;
+    max-width: 380px;
+    padding: 36px 28px 28px;
+    text-align: center;
   }
-  .modal-close {
+  .acc-modal-close {
     position: absolute;
-    top: 14px;
-    right: 18px;
+    top: 12px;
+    right: 16px;
     background: none;
     border: none;
-    font-size: 26px;
+    font-size: 22px;
     cursor: pointer;
-    color: var(--ink-mute);
+    color: rgba(0, 0, 0, 0.35);
     line-height: 1;
+    padding: 4px;
   }
-  .modal-box h2 { font-size: 26px; margin: 6px 0 16px; }
-  .modal-box p { color: var(--ink-soft); line-height: 1.65; margin-bottom: 14px; }
-  .modal-box p.muted { color: var(--ink-mute); font-size: 14px; }
-  .forgot-cta { margin-top: 12px; width: 100%; }
+  .acc-modal-close:hover { color: #1a1a1a; }
+  .acc-modal-eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: #BA7517;
+    margin-bottom: 10px;
+  }
+  .acc-modal-title {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 400;
+    color: #1a1a1a;
+    margin-bottom: 16px;
+  }
+  .acc-modal-text {
+    font-size: 13px;
+    color: rgba(0, 0, 0, 0.55);
+    line-height: 1.6;
+    margin-bottom: 12px;
+  }
+  .acc-modal-text.muted { color: rgba(0, 0, 0, 0.45); font-size: 12px; }
+  .acc-modal-text strong { color: #0F6E56; font-weight: 500; }
+  .acc-modal-cta { margin-top: 12px; }
 
-  @media (max-width: 480px) {
-    .acc-hero { padding: 40px 16px 24px; }
-    .acc-form { padding: 24px 18px; }
-    .modal-box { padding: 28px 22px 24px; }
+  /* ===== Responsive ===== */
+  @media (max-width: 640px) {
+    .acc-page { padding: 3rem 1rem; }
+    .acc-logo { font-size: 28px; }
   }
 </style>
 
@@ -320,11 +362,8 @@ import Base from '../../layouts/Base.astro';
   const forgotClose = document.getElementById('forgotClose') as HTMLButtonElement;
   const forgotOverlay = document.getElementById('forgotOverlay') as HTMLElement;
 
-  // Post-auth destination. Honours an optional ?redirect= query param
-  // (used for deep links / nav-from-link flows), then falls back to the
-  // admin panel when the customer is tier=admin, otherwise the regular
-  // dashboard. The header "Mon compte" link always points to
-  // /compte/dashboard so admins can still see their customer profile.
+  // Post-auth destination. Honours ?redirect= (deep-link flow), routes
+  // admins to /admin, otherwise the customer dashboard.
   function destinationFor(customer: any): string {
     const params = new URLSearchParams(window.location.search);
     const redirect = params.get('redirect');
@@ -333,42 +372,47 @@ import Base from '../../layouts/Base.astro';
     return '/compte/dashboard';
   }
 
-  // ===== If already logged in, skip the form entirely =====
+  // Already logged in? Skip the form.
   (async () => {
     if (!isLoggedIn()) return;
     const res = await me();
-    if (res.ok) {
-      window.location.replace(destinationFor(res.customer));
-    }
-    // If me() fails, the helper already cleared the stale token, so we
-    // stay on this page with a fresh state.
+    if (res.ok) window.location.replace(destinationFor(res.customer));
+    // me() clears stale tokens on failure — nothing else to do.
   })();
 
-  // ===== Tab switching =====
+  // ===== Toggle =====
   function selectTab(which: 'login' | 'signup') {
     const isLogin = which === 'login';
-    tabLogin.classList.toggle('active', isLogin);
+    tabLogin.classList.toggle('is-active', isLogin);
     tabLogin.setAttribute('aria-selected', isLogin ? 'true' : 'false');
-    tabSignup.classList.toggle('active', !isLogin);
+    tabSignup.classList.toggle('is-active', !isLogin);
     tabSignup.setAttribute('aria-selected', isLogin ? 'false' : 'true');
     loginForm.hidden = !isLogin;
     signupForm.hidden = isLogin;
-    loginErr.hidden = true;
-    signupErr.hidden = true;
+    hideErr(loginErr);
+    hideErr(signupErr);
   }
   tabLogin.addEventListener('click', () => selectTab('login'));
   tabSignup.addEventListener('click', () => selectTab('signup'));
 
+  // ===== Error helpers (auto-hide after 5s) =====
+  const errTimers = new WeakMap<HTMLElement, number>();
   function showErr(el: HTMLElement, msg: string) {
     el.textContent = msg;
     el.hidden = false;
+    const prev = errTimers.get(el);
+    if (prev) window.clearTimeout(prev);
+    const t = window.setTimeout(() => hideErr(el), 5000);
+    errTimers.set(el, t);
   }
   function hideErr(el: HTMLElement) {
     el.hidden = true;
     el.textContent = '';
+    const prev = errTimers.get(el);
+    if (prev) { window.clearTimeout(prev); errTimers.delete(el); }
   }
 
-  // ===== Login submit =====
+  // ===== Login =====
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     hideErr(loginErr);
@@ -379,7 +423,8 @@ import Base from '../../layouts/Base.astro';
       return;
     }
     loginBtn.disabled = true;
-    loginBtn.textContent = 'Connexion...';
+    const origLabel = loginBtn.textContent;
+    loginBtn.textContent = 'Connexion en cours…';
     try {
       const res = await login({ phone, password });
       if (res.ok) {
@@ -389,18 +434,18 @@ import Base from '../../layouts/Base.astro';
       }
     } finally {
       loginBtn.disabled = false;
-      loginBtn.textContent = 'Se connecter';
+      loginBtn.textContent = origLabel;
     }
   });
 
-  // ===== Signup submit =====
+  // ===== Signup =====
   signupForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     hideErr(signupErr);
     const phone = (document.getElementById('signupPhone') as HTMLInputElement).value.trim();
     const password = (document.getElementById('signupPwd') as HTMLInputElement).value;
     const name = (document.getElementById('signupName') as HTMLInputElement).value.trim();
-    const address = (document.getElementById('signupAddress') as HTMLTextAreaElement).value.trim();
+    const address = (document.getElementById('signupAddress') as HTMLInputElement).value.trim();
     const wantLoyalty = (document.getElementById('signupLoyalty') as HTMLInputElement | null)?.checked ?? true;
     if (!phone) { showErr(signupErr, 'Numéro de téléphone requis.'); return; }
     if (!password || password.length < 6) {
@@ -408,12 +453,11 @@ import Base from '../../layouts/Base.astro';
       return;
     }
     signupBtn.disabled = true;
-    signupBtn.textContent = 'Création...';
+    const origLabel = signupBtn.textContent;
+    signupBtn.textContent = 'Création en cours…';
     try {
       const res = await signup({ phone, password, name, address, createLoyaltyCard: wantLoyalty });
       if (res.ok) {
-        // Surface the loyalty-link bonus via the URL so the dashboard can
-        // greet the user appropriately without coupling pages tightly.
         const qs = res.loyaltyLinked ? '?welcome=loyalty' : '?welcome=1';
         window.location.assign('/compte/dashboard' + qs);
       } else {
@@ -421,7 +465,7 @@ import Base from '../../layouts/Base.astro';
       }
     } finally {
       signupBtn.disabled = false;
-      signupBtn.textContent = 'Créer mon compte';
+      signupBtn.textContent = origLabel;
     }
   });
 
