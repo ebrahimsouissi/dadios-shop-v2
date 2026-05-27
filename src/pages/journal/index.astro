@@ -84,22 +84,30 @@ const initialArticles = buildtimeArticles.length ? buildtimeArticles : seedArtic
     gap: 8px;
   }
   .filter-pill {
-    padding: 8px 16px;
+    padding: 8px 18px;
     border-radius: 999px;
-    border: 1px solid var(--border);
-    background: var(--cream-soft);
-    font-family: var(--font-body);
-    font-size: 12px;
-    letter-spacing: 0.06em;
+    font-size: 13px;
+    letter-spacing: 0.02em;
     cursor: pointer;
-    color: var(--ink);
-    transition: all .2s;
+    transition: all 200ms;
+    border: 0.5px solid rgba(15, 110, 86, 0.25);
+    background: transparent;
+    color: #0F6E56;
+    font-family: inherit;
+    font-weight: 400;
   }
-  .filter-pill:hover { border-color: var(--gold-soft); }
+  .filter-pill:hover {
+    background: rgba(15, 110, 86, 0.06);
+    border-color: #0F6E56;
+  }
   .filter-pill.active {
-    background: var(--emerald);
-    color: var(--cream);
-    border-color: var(--emerald);
+    background: #0F6E56;
+    color: #FAF6EC;
+    border-color: #0F6E56;
+  }
+  .filter-pill:focus-visible {
+    outline: 2px solid #FAC775;
+    outline-offset: 2px;
   }
 
   .journal-wrap {
