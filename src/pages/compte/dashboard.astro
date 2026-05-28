@@ -837,68 +837,72 @@ import Base from '../../layouts/Base.astro';
     flex-shrink: 0;
   }
 
-  /* ===== orders — refonte émeraude ===== */
+  /* ===== orders — refonte émeraude (palette DADIOS officielle) =====
+     IMPORTANT : sélecteurs en :global() — les cartes sont injectées
+     par renderOrder() via ordersList.innerHTML après le mount, donc
+     elles n'ont pas le data-astro-cid de scope. Sans :global() le CSS
+     scopé ne matche pas et les cartes restent unstyled. */
   .orders-section {
     max-width: 1280px;
     margin: 32px auto 0;
     padding: 0 32px;
   }
-  .orders-title {
+  :global(.orders-title) {
     font-family: var(--font-display);
-    font-size: 22px;
-    font-weight: 400;
+    font-size: 24px;
+    font-weight: 500;
     color: var(--ink);
     margin: 0 0 1.25rem;
     line-height: 1.2;
   }
-  .orders-loading {
-    background: rgba(255, 255, 255, 0.5);
-    border: 0.5px solid rgba(0, 0, 0, 0.1);
-    border-radius: 12px;
+  :global(.orders-loading) {
+    background: var(--paper);
+    border: 0.5px solid var(--border-emerald);
+    border-radius: var(--r3);
     padding: 28px;
     text-align: center;
-    color: rgba(0, 0, 0, 0.55);
+    color: var(--ink-mute);
     font-style: italic;
     font-size: 13px;
   }
-  .orders-list {
+  :global(.orders-list) {
     display: flex;
     flex-direction: column;
     gap: 1rem;
   }
 
   /* Card — 3 zones: head / items / total */
-  .oc-card {
-    background: rgba(255, 255, 255, 0.7);
-    border: 0.5px solid rgba(0, 0, 0, 0.1);
-    border-radius: 12px;
+  :global(.oc-card) {
+    background: var(--paper);
+    border: 0.5px solid var(--border-emerald);
+    border-radius: var(--r3);
     overflow: hidden;
   }
 
   /* Head */
-  .oc-head {
+  :global(.oc-head) {
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 12px;
     padding: 14px 18px;
-    border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
+    border-bottom: 0.5px solid var(--border);
   }
-  .oc-ref-id {
+  :global(.oc-ref-id) {
     font-size: 13px;
     font-weight: 500;
     color: var(--ink);
     letter-spacing: 0.02em;
     line-height: 1.3;
   }
-  .oc-ref-date {
+  :global(.oc-ref-date) {
     font-size: 12px;
-    color: rgba(0, 0, 0, 0.55);
+    color: var(--ink-mute);
     margin-top: 2px;
   }
 
   /* Status badges */
-  .oc-badge {
+  :global(.oc-badge) {
     display: inline-flex;
     align-items: center;
     gap: 5px;
@@ -910,26 +914,27 @@ import Base from '../../layouts/Base.astro';
     font-weight: 500;
     white-space: nowrap;
   }
-  .oc-badge svg { flex-shrink: 0; }
-  .oc-badge-delivered { background: #E1F5EE; color: #085041; }
-  .oc-badge-confirmed { background: #E6F1FB; color: #0C447C; }
-  .oc-badge-pending   { background: #FAEEDA; color: #633806; }
-  .oc-badge-cancelled { background: #FCEBEB; color: #791F1F; }
+  :global(.oc-badge svg) { flex-shrink: 0; }
+  :global(.oc-badge-delivered) { background: rgba(14, 58, 31, 0.10); color: var(--emerald); }
+  :global(.oc-badge-confirmed) { background: rgba(212, 175, 55, 0.15); color: #6B5410; }
+  :global(.oc-badge-pending)   { background: rgba(212, 175, 55, 0.15); color: #6B5410; }
+  :global(.oc-badge-cancelled) { background: rgba(160, 45, 45, 0.10); color: #A02D2D; }
 
   /* Items */
-  .oc-items { padding: 0; }
-  .oc-item {
+  :global(.oc-items) { padding: 6px 18px; }
+  :global(.oc-item) {
     display: flex;
+    justify-content: space-between;
     align-items: center;
     gap: 12px;
-    padding: 6px 18px;
-    border-bottom: 0.5px solid rgba(0, 0, 0, 0.06);
+    padding: 10px 0;
+    border-bottom: 0.5px solid rgba(212, 175, 55, 0.12);
     min-height: 40px;
   }
-  .oc-item:last-child { border-bottom: none; }
-  .oc-item-qty {
-    background: rgba(15, 110, 86, 0.08);
-    color: #0F6E56;
+  :global(.oc-item:last-child) { border-bottom: none; }
+  :global(.oc-item-qty) {
+    background: rgba(14, 58, 31, 0.08);
+    color: var(--emerald);
     border-radius: 6px;
     min-width: 24px;
     height: 24px;
@@ -942,19 +947,19 @@ import Base from '../../layouts/Base.astro';
     font-variant-numeric: tabular-nums;
     flex-shrink: 0;
   }
-  .oc-item-name {
+  :global(.oc-item-name) {
     flex: 1;
     color: var(--ink);
     font-size: 14px;
     line-height: 1.4;
     min-width: 0;
   }
-  .oc-item-size {
-    color: rgba(0, 0, 0, 0.35);
+  :global(.oc-item-size) {
+    color: var(--ink-mute);
     font-size: 12px;
   }
-  .oc-item-price {
-    color: rgba(0, 0, 0, 0.55);
+  :global(.oc-item-price) {
+    color: var(--ink-soft);
     font-size: 13px;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
@@ -962,50 +967,53 @@ import Base from '../../layouts/Base.astro';
   }
 
   /* Total band */
-  .oc-total {
-    background: rgba(15, 110, 86, 0.04);
+  :global(.oc-total) {
+    background: rgba(14, 58, 31, 0.04);
     padding: 14px 18px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 12px;
   }
-  .oc-total-lbl {
+  :global(.oc-total-lbl) {
     font-size: 11px;
     letter-spacing: 0.16em;
     text-transform: uppercase;
-    color: rgba(0, 0, 0, 0.55);
+    color: var(--ink-mute);
     font-weight: 500;
   }
-  .oc-total-val {
+  :global(.oc-total-val) {
     font-family: var(--font-display);
     font-size: 20px;
     font-weight: 500;
-    color: #0F6E56;
+    color: var(--emerald);
     font-variant-numeric: tabular-nums;
   }
 
   /* Empty state */
-  .oc-empty {
-    background: rgba(255, 255, 255, 0.5);
-    border: 0.5px dashed rgba(0, 0, 0, 0.15);
-    border-radius: 12px;
+  :global(.oc-empty) {
+    background: var(--paper);
+    border: 0.5px dashed var(--border-emerald);
+    border-radius: var(--r3);
     padding: 36px 24px;
     text-align: center;
   }
-  .oc-empty p {
-    color: rgba(0, 0, 0, 0.55);
+  :global(.oc-empty p) {
+    color: var(--ink-mute);
     margin-bottom: 12px;
     font-size: 14px;
   }
-  .oc-empty-link {
-    color: #0F6E56;
+  :global(.oc-empty-link) {
+    color: var(--emerald);
     font-size: 13px;
     text-decoration: none;
-    border-bottom: 0.5px solid #0F6E56;
+    border-bottom: 0.5px solid var(--emerald);
     padding-bottom: 1px;
   }
-  .oc-empty-link:hover { color: #085041; border-bottom-color: #085041; }
+  :global(.oc-empty-link:hover) {
+    color: var(--emerald-dark);
+    border-bottom-color: var(--emerald-dark);
+  }
 
   .dash-welcome.ordered {
     background: rgba(212, 175, 55, 0.12);
@@ -1195,10 +1203,12 @@ import Base from '../../layouts/Base.astro';
     .dash-card { padding: 24px 20px 20px; }
     .stamps-row { gap: 6px; }
     .quick-tile { max-width: 100%; padding: 16px 18px; }
-    /* Order card: keep head + total on one line, let items wrap if cramped */
-    .oc-head, .oc-total { padding-left: 14px; padding-right: 14px; }
-    .oc-item { padding-left: 14px; padding-right: 14px; flex-wrap: wrap; }
-    .oc-item-price { width: 100%; padding-left: 36px; }
+    /* Order card: keep head + total on one line, let items wrap if cramped.
+       :global() to match injected DOM, same reason as the base rules above. */
+    :global(.oc-head), :global(.oc-total) { padding-left: 14px; padding-right: 14px; }
+    :global(.oc-items) { padding-left: 14px; padding-right: 14px; }
+    :global(.oc-item) { flex-wrap: wrap; }
+    :global(.oc-item-price) { width: 100%; padding-left: 36px; }
   }
 </style>
 
