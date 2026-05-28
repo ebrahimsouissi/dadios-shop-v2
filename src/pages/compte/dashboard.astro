@@ -239,18 +239,13 @@ import Base from '../../layouts/Base.astro';
 
   <!-- ===== Orders section ===== -->
   <section class="orders-section">
-    <header class="orders-head">
-      <div>
-        <div class="eyebrow">Historique</div>
-        <h2>Mes commandes</h2>
-      </div>
-    </header>
+    <h2 class="orders-title">Mes commandes</h2>
 
-    <div id="ordersLoading" class="orders-loading">Chargement de vos commandes...</div>
+    <div id="ordersLoading" class="orders-loading">Chargement de vos commandes…</div>
 
-    <div id="ordersEmpty" class="orders-empty" hidden>
-      <p>Aucune commande pour le moment.</p>
-      <a href="/parfums" class="btn btn-primary btn-sm">Découvrir nos parfums</a>
+    <div id="ordersEmpty" class="oc-empty" hidden>
+      <p>Vous n'avez pas encore de commande.</p>
+      <a href="/parfums" class="oc-empty-link">Découvrir nos parfums →</a>
     </div>
 
     <div id="ordersList" class="orders-list" hidden></div>
@@ -842,139 +837,175 @@ import Base from '../../layouts/Base.astro';
     flex-shrink: 0;
   }
 
-  /* ===== orders ===== */
+  /* ===== orders — refonte émeraude ===== */
   .orders-section {
     max-width: 1280px;
     margin: 32px auto 0;
     padding: 0 32px;
   }
-  .orders-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    margin-bottom: 18px;
-    gap: 16px;
-    flex-wrap: wrap;
+  .orders-title {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 400;
+    color: var(--ink);
+    margin: 0 0 1.25rem;
+    line-height: 1.2;
   }
-  .orders-head h2 { font-size: 24px; margin-top: 6px; }
   .orders-loading {
-    background: var(--cream-soft);
-    border: 1px solid var(--border);
-    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.5);
+    border: 0.5px solid rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
     padding: 28px;
     text-align: center;
-    color: var(--ink-mute);
+    color: rgba(0, 0, 0, 0.55);
     font-style: italic;
-  }
-  .orders-empty {
-    background: var(--cream-soft);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 36px 28px;
-    text-align: center;
-  }
-  .orders-empty p {
-    color: var(--ink-soft);
-    margin-bottom: 18px;
+    font-size: 13px;
   }
   .orders-list {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 1rem;
   }
-  .order-card {
-    background: var(--cream-soft);
-    border: 1px solid var(--border);
+
+  /* Card — 3 zones: head / items / total */
+  .oc-card {
+    background: rgba(255, 255, 255, 0.7);
+    border: 0.5px solid rgba(0, 0, 0, 0.1);
     border-radius: 12px;
-    padding: 20px 22px;
+    overflow: hidden;
   }
-  .order-head {
+
+  /* Head */
+  .oc-head {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 14px;
-    margin-bottom: 14px;
-    flex-wrap: wrap;
-    padding-bottom: 12px;
-    border-bottom: 1px solid var(--border);
+    gap: 12px;
+    padding: 14px 18px;
+    border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
   }
-  .order-ref {
-    font-family: var(--font-display);
-    font-size: 17px;
+  .oc-ref-id {
+    font-size: 13px;
+    font-weight: 500;
     color: var(--ink);
+    letter-spacing: 0.02em;
+    line-height: 1.3;
   }
-  .order-date {
+  .oc-ref-date {
     font-size: 12px;
-    color: var(--ink-mute);
-    letter-spacing: 0.06em;
-    margin-left: 8px;
+    color: rgba(0, 0, 0, 0.55);
+    margin-top: 2px;
   }
-  .order-status {
-    display: inline-block;
+
+  /* Status badges */
+  .oc-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
     padding: 4px 12px;
     border-radius: 999px;
     font-size: 11px;
-    letter-spacing: 0.16em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     font-weight: 500;
+    white-space: nowrap;
   }
-  .order-status.pending {
-    background: var(--cream-warm);
-    color: #A87C45;
-    border: 1px solid #c79e62;
-  }
-  .order-status.confirmed {
-    background: var(--gold-light);
-    color: var(--emerald);
-    border: 1px solid var(--gold);
-  }
-  .order-status.delivered {
-    background: var(--emerald);
-    color: var(--cream);
-    border: 1px solid var(--emerald);
-  }
-  .order-status.cancelled {
-    background: rgba(120, 104, 80, 0.15);
-    color: var(--ink-mute);
-    border: 1px solid rgba(120, 104, 80, 0.35);
-    text-decoration: line-through;
-  }
-  .order-items {
-    list-style: none;
-    padding: 0;
-    margin: 0 0 12px;
+  .oc-badge svg { flex-shrink: 0; }
+  .oc-badge-delivered { background: #E1F5EE; color: #085041; }
+  .oc-badge-confirmed { background: #E6F1FB; color: #0C447C; }
+  .oc-badge-pending   { background: #FAEEDA; color: #633806; }
+  .oc-badge-cancelled { background: #FCEBEB; color: #791F1F; }
+
+  /* Items */
+  .oc-items { padding: 0; }
+  .oc-item {
     display: flex;
-    flex-direction: column;
-    gap: 6px;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 18px;
+    border-bottom: 0.5px solid rgba(0, 0, 0, 0.06);
+    min-height: 40px;
   }
-  .order-items li {
+  .oc-item:last-child { border-bottom: none; }
+  .oc-item-qty {
+    background: rgba(15, 110, 86, 0.08);
+    color: #0F6E56;
+    border-radius: 6px;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+  }
+  .oc-item-name {
+    flex: 1;
+    color: var(--ink);
     font-size: 14px;
-    color: var(--ink-soft);
+    line-height: 1.4;
+    min-width: 0;
+  }
+  .oc-item-size {
+    color: rgba(0, 0, 0, 0.35);
+    font-size: 12px;
+  }
+  .oc-item-price {
+    color: rgba(0, 0, 0, 0.55);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    text-align: right;
+  }
+
+  /* Total band */
+  .oc-total {
+    background: rgba(15, 110, 86, 0.04);
+    padding: 14px 18px;
     display: flex;
     justify-content: space-between;
+    align-items: center;
     gap: 12px;
   }
-  .order-items .li-name { color: var(--ink); }
-  .order-total {
-    padding-top: 12px;
-    border-top: 1px solid var(--border);
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    font-family: var(--font-display);
-  }
-  .order-total .lbl {
+  .oc-total-lbl {
     font-size: 11px;
-    letter-spacing: 0.22em;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
-    color: var(--ink-mute);
-    font-family: var(--font-body);
+    color: rgba(0, 0, 0, 0.55);
     font-weight: 500;
   }
-  .order-total .val {
-    font-size: 22px;
-    color: var(--emerald);
+  .oc-total-val {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 500;
+    color: #0F6E56;
+    font-variant-numeric: tabular-nums;
   }
+
+  /* Empty state */
+  .oc-empty {
+    background: rgba(255, 255, 255, 0.5);
+    border: 0.5px dashed rgba(0, 0, 0, 0.15);
+    border-radius: 12px;
+    padding: 36px 24px;
+    text-align: center;
+  }
+  .oc-empty p {
+    color: rgba(0, 0, 0, 0.55);
+    margin-bottom: 12px;
+    font-size: 14px;
+  }
+  .oc-empty-link {
+    color: #0F6E56;
+    font-size: 13px;
+    text-decoration: none;
+    border-bottom: 0.5px solid #0F6E56;
+    padding-bottom: 1px;
+  }
+  .oc-empty-link:hover { color: #085041; border-bottom-color: #085041; }
 
   .dash-welcome.ordered {
     background: rgba(212, 175, 55, 0.12);
@@ -1159,14 +1190,15 @@ import Base from '../../layouts/Base.astro';
     .dash-grid, .dash-hero, .dash-soon, .dash-footer,
     .dash-quick, .orders-section { padding-left: 16px; padding-right: 16px; }
     .crumb-wrap { padding: 12px 16px 0; }
-    .order-head { flex-direction: column; align-items: flex-start; gap: 8px; }
   }
   @media (max-width: 480px) {
     .dash-card { padding: 24px 20px 20px; }
     .stamps-row { gap: 6px; }
     .quick-tile { max-width: 100%; padding: 16px 18px; }
-    .order-card { padding: 16px 18px; }
-    .order-items li { font-size: 13px; }
+    /* Order card: keep head + total on one line, let items wrap if cramped */
+    .oc-head, .oc-total { padding-left: 14px; padding-right: 14px; }
+    .oc-item { padding-left: 14px; padding-right: 14px; flex-wrap: wrap; }
+    .oc-item-price { width: 100%; padding-left: 36px; }
   }
 </style>
 
@@ -1539,31 +1571,53 @@ import Base from '../../layouts/Base.astro';
   function fmtDate(iso: string) {
     if (!iso) return '';
     try {
-      return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+      return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
     } catch { return iso; }
+  }
+
+  // Tabler-style inline SVGs (12×12). currentColor inherits the badge tint.
+  const BADGE_ICONS: Record<string, string> = {
+    delivered: '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>',
+    confirmed: '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>',
+    pending:   '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>',
+    cancelled: '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+  };
+  function statusBadge(status: string) {
+    const label = STATUS_LABEL[status] || status;
+    const icon = BADGE_ICONS[status] || '';
+    return `<span class="oc-badge oc-badge-${escHtml(status)}">${icon}<span>${escHtml(label)}</span></span>`;
   }
 
   function renderOrder(o: any) {
     const itemsHtml = (o.items || [])
       .map((i: any) => {
-        const sub = (Number(i.price) || 0) * (Number(i.qty) || 1);
-        const sizeStr = i.size ? ` (${escHtml(i.size)})` : '';
-        return `<li><span class="li-name">${Number(i.qty) || 1}× ${escHtml(i.name)}${sizeStr}</span><span class="li-val">${sub} DT</span></li>`;
+        const qty = Number(i.qty) || 1;
+        const sub = (Number(i.price) || 0) * qty;
+        const sizePart = i.size ? `<span class="oc-item-size"> · ${escHtml(i.size)}</span>` : '';
+        return `<div class="oc-item">
+          <span class="oc-item-qty">${qty}</span>
+          <span class="oc-item-name">${escHtml(i.name)}${sizePart}</span>
+          <span class="oc-item-price">${sub} DT</span>
+        </div>`;
       })
       .join('');
     const status = String(o.status || 'pending');
-    return `<article class="order-card">
-      <header class="order-head">
+    return `<article class="oc-card">
+      <header class="oc-head">
         <div>
-          <span class="order-ref">Commande #${escHtml(shortId(o.id))}</span>
-          <span class="order-date">${escHtml(fmtDate(o.createdAt))}</span>
+          <div class="oc-ref-id">Commande #${escHtml(shortId(o.id))}</div>
+          <div class="oc-ref-date">${escHtml(fmtDate(o.createdAt))}</div>
         </div>
-        <span class="order-status ${escHtml(status)}">${escHtml(STATUS_LABEL[status] || status)}</span>
+        ${statusBadge(status)}
       </header>
-      <ul class="order-items">${itemsHtml}</ul>
-      <div class="order-total"><span class="lbl">Total</span><span class="val">${Number(o.total) || 0} DT</span></div>
+      <div class="oc-items">${itemsHtml}</div>
+      <div class="oc-total">
+        <span class="oc-total-lbl">Total</span>
+        <span class="oc-total-val">${Number(o.total) || 0} DT</span>
+      </div>
     </article>`;
   }
+
 
   async function loadOrders() {
     ordersLoading.hidden = false;
