@@ -14,37 +14,341 @@
   ],
   "products": [
     {
-      "slug": "sauvage-elixir",
-      "name": "Sauvage Élixir",
-      "inspiredBy": "Dior Sauvage Élixir",
+      "name": "212 VIP",
+      "slug": "212-vip",
       "gender": "homme",
-      "family": "Boisé · Épicé",
-      "shortDescription": "Une fragrance puissante et envoûtante. Lavande, cannelle et bois précieux composent une signature audacieuse.",
+      "inspiredBy": "Carolina Herrera 212 VIP Men",
+      "family": "Oriental épicé",
       "topNotes": [
-        "Lavande",
-        "Réglisse",
-        "Cannelle"
+        "Vodka mandarine",
+        "Citron",
+        "Poivre"
       ],
       "heartNotes": [
-        "Noix de muscade",
-        "Cardamome"
+        "Gingembre",
+        "Menthe"
       ],
       "baseNotes": [
-        "Santal",
-        "Bois de Gaïac",
-        "Patchouli"
+        "Rhum",
+        "Musc",
+        "Bois ambré"
       ],
-      "longevity": "9 h",
-      "sillage": "Énorme",
+      "shortDescription": "L'esprit de la fête new-yorkaise, vodka-mandarine et gingembre sur un fond rhum boisé. Festif et magnétique.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Acqua di Gio",
+      "slug": "acqua-di-gio",
+      "gender": "homme",
+      "inspiredBy": "Giorgio Armani Acqua di Giò",
+      "family": "Aquatique aromatique",
+      "topNotes": [
+        "Bergamote",
+        "Néroli",
+        "Mandarine verte"
+      ],
+      "heartNotes": [
+        "Romarin",
+        "Notes marines",
+        "Jasmin"
+      ],
+      "baseNotes": [
+        "Musc blanc",
+        "Patchouli",
+        "Bois de cèdre"
+      ],
+      "shortDescription": "L'iconique fraîcheur marine, agrumes et notes aquatiques sur un fond boisé. Frais, propre et intemporel.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Afternoon",
+      "slug": "afternoon",
+      "gender": "mixte",
+      "inspiredBy": "Maison Margiela Replica vibe / Afternoon",
+      "family": "Boisé aromatique",
+      "topNotes": [
+        "Bergamote",
+        "Poivre rose"
+      ],
+      "heartNotes": [
+        "Jasmin",
+        "Iris",
+        "Notes vertes"
+      ],
+      "baseNotes": [
+        "Musc",
+        "Bois de cèdre",
+        "Ambre"
+      ],
+      "shortDescription": "Une après-midi ensoleillée capturée : notes vertes et bois clairs, frais, lumineux et apaisant.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Alien",
+      "slug": "alien",
+      "gender": "femme",
+      "inspiredBy": "Mugler Alien",
+      "family": "Oriental floral",
+      "topNotes": [
+        "Jasmin Sambac"
+      ],
+      "heartNotes": [
+        "Bois de Cachemire",
+        "Jasmin"
+      ],
+      "baseNotes": [
+        "Ambre blanc",
+        "Vanille",
+        "Bois précieux"
+      ],
+      "shortDescription": "Jasmin solaire et hypnotique sur un ambre lumineux et boisé. Mystique, puissant et inoubliable.",
+      "longevity": "8 h",
+      "sillage": "Fort",
       "seasons": [
         "Hiver",
-        "Automne"
+        "Automne",
+        "Printemps",
+        "Été"
       ],
       "moments": [
         "Soir",
         "Événement"
       ],
       "featured": true,
+      "image": ""
+    },
+    {
+      "name": "All of Me",
+      "slug": "all-of-me",
+      "gender": "femme",
+      "inspiredBy": "Parfums de Marly vibe / All of Me",
+      "family": "Floral fruité",
+      "topNotes": [
+        "Fruits rouges",
+        "Bergamote"
+      ],
+      "heartNotes": [
+        "Rose",
+        "Pivoine",
+        "Jasmin"
+      ],
+      "baseNotes": [
+        "Vanille",
+        "Musc",
+        "Bois"
+      ],
+      "shortDescription": "Floral fruité généreux et lumineux, rose et fruits rouges sur un fond doux et musqué.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Ambassador",
+      "slug": "ambassador",
+      "gender": "homme",
+      "inspiredBy": "Lattafa / vibe Ambassador",
+      "family": "Boisé épicé",
+      "topNotes": [
+        "Bergamote",
+        "Poivre",
+        "Pomme"
+      ],
+      "heartNotes": [
+        "Lavande",
+        "Géranium",
+        "Bois"
+      ],
+      "baseNotes": [
+        "Ambre",
+        "Cèdre",
+        "Musc",
+        "Vanille"
+      ],
+      "shortDescription": "Boisé épicé masculin et confiant, frais en tête et chaud en fond. Polyvalent et élégant au quotidien.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Amiret Al Arab",
+      "slug": "amiret-al-arab",
+      "gender": "mixte",
+      "inspiredBy": "Asdaaf / Lattafa Ameerat Al Arab",
+      "family": "Floral oriental boisé",
+      "topNotes": [
+        "Agrumes",
+        "Bergamote",
+        "Raisin",
+        "Orange"
+      ],
+      "heartNotes": [
+        "Rose",
+        "Jasmin",
+        "Gardénia",
+        "Musc blanc"
+      ],
+      "baseNotes": [
+        "Oud",
+        "Ambre",
+        "Vanille",
+        "Bois de santal"
+      ],
+      "shortDescription": "Princesse d'Arabie : fruits et fleurs lumineux sur un fond boisé d'oud et d'ambre. Élégance orientale.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Aqua Marine",
+      "slug": "aqua-marine",
+      "gender": "homme",
+      "inspiredBy": "vibe aquatique frais",
+      "family": "Aquatique",
+      "topNotes": [
+        "Notes marines",
+        "Bergamote",
+        "Citron"
+      ],
+      "heartNotes": [
+        "Lavande",
+        "Romarin",
+        "Notes aquatiques"
+      ],
+      "baseNotes": [
+        "Musc",
+        "Ambre",
+        "Bois"
+      ],
+      "shortDescription": "Brise marine pure et vivifiante, agrumes et notes aquatiques. Léger, frais et parfait pour l'été.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Armani Code",
+      "slug": "armani-code",
+      "gender": "homme",
+      "inspiredBy": "Giorgio Armani Code",
+      "family": "Oriental aromatique",
+      "topNotes": [
+        "Bergamote",
+        "Citron",
+        "Anis étoilé"
+      ],
+      "heartNotes": [
+        "Fleur d'oranger",
+        "Olivier",
+        "Guaïac"
+      ],
+      "baseNotes": [
+        "Cuir",
+        "Fève tonka",
+        "Bois de santal",
+        "Tabac"
+      ],
+      "shortDescription": "Séduction nocturne, agrumes et fleur d'oranger sur un cuir-tabac chaud. Mystérieux, élégant et irrésistible.",
+      "longevity": "7 h",
+      "sillage": "Fort",
+      "seasons": [
+        "Hiver",
+        "Automne",
+        "Printemps",
+        "Été"
+      ],
+      "moments": [
+        "Jour",
+        "Soir"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Aviator",
+      "slug": "aviator",
+      "gender": "homme",
+      "inspiredBy": "vibe Aviator / boisé aromatique",
+      "family": "Boisé aromatique",
+      "topNotes": [
+        "Bergamote",
+        "Poivre",
+        "Notes vertes"
+      ],
+      "heartNotes": [
+        "Lavande",
+        "Géranium",
+        "Bois"
+      ],
+      "baseNotes": [
+        "Vétiver",
+        "Ambre",
+        "Cuir",
+        "Musc"
+      ],
+      "shortDescription": "Aventurier et viril, herbes aromatiques et bois sur un cuir ambré. Confiance et liberté en sillage.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
       "image": ""
     },
     {
@@ -81,6 +385,71 @@
       "image": ""
     },
     {
+      "name": "Baccarat Rouge",
+      "slug": "baccarat-rouge",
+      "gender": "mixte",
+      "inspiredBy": "Maison Francis Kurkdjian Baccarat Rouge 540",
+      "family": "Ambré floral",
+      "topNotes": [
+        "Safran",
+        "Jasmin"
+      ],
+      "heartNotes": [
+        "Ambre gris",
+        "Bois de cèdre"
+      ],
+      "baseNotes": [
+        "Résine de sapin",
+        "Musc",
+        "Bois"
+      ],
+      "shortDescription": "L'iconique : safran et jasmin sur un ambre cristallin et boisé. Sucré, minéral, addictif et inimitable.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Black XS",
+      "slug": "black-xs",
+      "gender": "homme",
+      "inspiredBy": "Paco Rabanne Black XS",
+      "family": "Boisé épicé",
+      "topNotes": [
+        "Citron",
+        "Praline",
+        "Kalamansi"
+      ],
+      "heartNotes": [
+        "Cannelle",
+        "Sauge",
+        "Bois de gaïac"
+      ],
+      "baseNotes": [
+        "Patchouli",
+        "Tagète",
+        "Ambre",
+        "Bois"
+      ],
+      "shortDescription": "Rock et sensuel, praline et citron sur un fond boisé épicé. Audacieux, sombre et magnétique.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
       "slug": "bleu-de-chanel",
       "name": "Bleu",
       "inspiredBy": "Chanel Bleu de Chanel EDP",
@@ -114,102 +483,264 @@
       "image": ""
     },
     {
-      "slug": "alien",
-      "name": "Alien",
-      "inspiredBy": "Mugler Alien",
-      "gender": "femme",
-      "family": "Floral · Ambré",
-      "shortDescription": "Mystérieux et magnétique. Jasmin sambac et ambre poudré pour une présence inoubliable.",
+      "name": "Bleu Chanel",
+      "slug": "bleu-chanel",
+      "gender": "homme",
+      "inspiredBy": "Chanel Bleu de Chanel",
+      "family": "Boisé aromatique",
       "topNotes": [
-        "Jasmin Sambac"
+        "Pamplemousse",
+        "Citron",
+        "Menthe",
+        "Poivre rose"
       ],
       "heartNotes": [
-        "Ambre",
-        "Cashmeran"
+        "Gingembre",
+        "Muscade",
+        "Jasmin",
+        "Bois de santal"
       ],
       "baseNotes": [
-        "Bois de oud",
-        "Patchouli"
+        "Encens",
+        "Vétiver",
+        "Cèdre",
+        "Bois de santal",
+        "Ambre"
       ],
-      "longevity": "8 h",
-      "sillage": "Fort",
+      "shortDescription": "L'élégance bleue intemporelle, agrumes frais et bois nobles sur un fond d'encens et vétiver. Sophistiqué et viril.",
+      "longevity": "—",
+      "sillage": "—",
       "seasons": [
-        "Hiver",
-        "Automne",
-        "Printemps",
-        "Été"
+        "—"
       ],
       "moments": [
-        "Soir",
-        "Événement"
-      ],
-      "featured": true,
-      "image": ""
-    },
-    {
-      "slug": "prada-paradoxe",
-      "name": "Paradoxe",
-      "inspiredBy": "Prada Paradoxe",
-      "gender": "femme",
-      "family": "Floral · Vanillé",
-      "shortDescription": "Fleur d'oranger lumineuse et vanille onctueuse. Un parfum qui change avec la lumière du jour.",
-      "topNotes": [
-        "Bergamote",
-        "Poire"
-      ],
-      "heartNotes": [
-        "Néroli",
-        "Jasmin"
-      ],
-      "baseNotes": [
-        "Vanille",
-        "Ambre",
-        "Musc"
-      ],
-      "longevity": "7 h",
-      "sillage": "Fort",
-      "seasons": [
-        "Printemps",
-        "Été",
-        "Automne"
-      ],
-      "moments": [
-        "Jour",
-        "Soir"
+        "—"
       ],
       "featured": false,
       "image": ""
     },
     {
-      "slug": "armani-code",
-      "name": "Armani Code",
-      "inspiredBy": "Giorgio Armani Armani Code Parfum",
-      "gender": "homme",
-      "family": "Iris · Boisé",
-      "shortDescription": "L'iris poudré rencontre la fève tonka. Élégance racée, parfaite pour les hommes au goût sûr.",
+      "name": "Bois d'Argent",
+      "slug": "bois-d-argent",
+      "gender": "mixte",
+      "inspiredBy": "Dior Bois d'Argent",
+      "family": "Boisé poudré",
       "topNotes": [
-        "Bergamote",
-        "Aldéhydes"
+        "Iris",
+        "Lavande",
+        "Bergamote"
       ],
       "heartNotes": [
-        "Iris",
-        "Sauge sclarée"
+        "Encens",
+        "Miel",
+        "Notes boisées"
       ],
       "baseNotes": [
-        "Fève Tonka",
-        "Cèdre"
+        "Myrrhe",
+        "Ambre",
+        "Musc",
+        "Bois de santal"
       ],
-      "longevity": "7 h",
-      "sillage": "Fort",
+      "shortDescription": "Bois argenté et poudré, iris et encens sur un fond ambré miellé. Raffinement discret et précieux.",
+      "longevity": "—",
+      "sillage": "—",
       "seasons": [
-        "Hiver",
-        "Automne",
-        "Printemps",
-        "Été"
+        "—"
       ],
       "moments": [
-        "Jour",
-        "Soir"
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Born in Roma",
+      "slug": "born-in-roma",
+      "gender": "femme",
+      "inspiredBy": "Valentino Donna Born in Roma",
+      "family": "Floral",
+      "topNotes": [
+        "Cassis",
+        "Bergamote"
+      ],
+      "heartNotes": [
+        "Jasmin",
+        "Fleur de Roma"
+      ],
+      "baseNotes": [
+        "Vanille bourbon",
+        "Bois de cèdre",
+        "Musc"
+      ],
+      "shortDescription": "Floral moderne et contrasté, jasmin lumineux sur une vanille boisée. Audacieux et féminin.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Boss Beyond",
+      "slug": "boss-beyond",
+      "gender": "homme",
+      "inspiredBy": "Hugo Boss Boss Bottled Beyond",
+      "family": "Boisé aromatique",
+      "topNotes": [
+        "Bergamote",
+        "Pomme",
+        "Notes vertes"
+      ],
+      "heartNotes": [
+        "Lavande",
+        "Sauge",
+        "Géranium"
+      ],
+      "baseNotes": [
+        "Cèdre",
+        "Ambre",
+        "Musc"
+      ],
+      "shortDescription": "Évolution moderne du classique Boss, frais et boisé. Confiant, net et parfait pour l'homme d'aujourd'hui.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Boss Orange",
+      "slug": "boss-orange",
+      "gender": "femme",
+      "inspiredBy": "Hugo Boss Boss Orange",
+      "family": "Floral boisé",
+      "topNotes": [
+        "Pomme",
+        "Orange"
+      ],
+      "heartNotes": [
+        "Fleur d'oranger",
+        "Œillet",
+        "Freesia"
+      ],
+      "baseNotes": [
+        "Bois de santal",
+        "Vanille",
+        "Olivier"
+      ],
+      "shortDescription": "Chaleureux et lumineux, pomme et fleur d'oranger sur un fond vanillé boisé. Convivial et féminin.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Boss The Scent",
+      "slug": "boss-the-scent",
+      "gender": "homme",
+      "inspiredBy": "Hugo Boss The Scent",
+      "family": "Oriental épicé",
+      "topNotes": [
+        "Gingembre",
+        "Mandarine"
+      ],
+      "heartNotes": [
+        "Lavande",
+        "Maninka (cuir mielleux)"
+      ],
+      "baseNotes": [
+        "Cuir",
+        "Bois"
+      ],
+      "shortDescription": "Séduction maîtrisée : gingembre épicé et accord maninka envoûtant sur un cuir chaud. Magnétique.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Burberry Her",
+      "slug": "burberry-her",
+      "gender": "femme",
+      "inspiredBy": "Burberry Her",
+      "family": "Gourmand fruité",
+      "topNotes": [
+        "Fruits rouges",
+        "Cassis",
+        "Myrtille"
+      ],
+      "heartNotes": [
+        "Jasmin",
+        "Violette"
+      ],
+      "baseNotes": [
+        "Musc",
+        "Bois de santal",
+        "Vanille",
+        "Ambre"
+      ],
+      "shortDescription": "Fruits rouges acidulés et confiturés sur un fond musqué et boisé. Jeune, joyeux et addictif.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Bvlgari J.N",
+      "slug": "bvlgari-j-n",
+      "gender": "femme",
+      "inspiredBy": "Bvlgari Jasmin Noir",
+      "family": "Floral boisé",
+      "topNotes": [
+        "Gardénia",
+        "Agrumes",
+        "Réglisse verte"
+      ],
+      "heartNotes": [
+        "Jasmin Sambac",
+        "Amande"
+      ],
+      "baseNotes": [
+        "Fève tonka",
+        "Bois précieux",
+        "Ambre",
+        "Musc"
+      ],
+      "shortDescription": "Jasmin sombre et envoûtant, amande et gardénia sur un fond boisé ambré. Mystérieux et sensuel.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
       ],
       "featured": false,
       "image": ""
@@ -249,33 +780,1033 @@
       "image": ""
     },
     {
-      "slug": "terre-hermes",
-      "name": "Terre",
-      "inspiredBy": "Hermès Terre d'Hermès",
-      "gender": "homme",
-      "family": "Boisé · Terreux",
-      "shortDescription": "L'orange et le vétiver, le minéral et le végétal. Un parfum qui sent la terre après la pluie.",
+      "name": "Chloé",
+      "slug": "chloe",
+      "gender": "femme",
+      "inspiredBy": "Chloé Eau de Parfum (Signature)",
+      "family": "Floral",
       "topNotes": [
-        "Orange",
-        "Pamplemousse"
+        "Pivoine",
+        "Litchi",
+        "Freesia"
       ],
       "heartNotes": [
+        "Rose",
+        "Magnolia",
+        "Muguet"
+      ],
+      "baseNotes": [
+        "Cèdre",
+        "Ambre",
+        "Musc"
+      ],
+      "shortDescription": "Rose poudrée et naturelle, fraîche et romantique, sur un fond délicat de cèdre et de musc. Intemporel.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Cinema",
+      "slug": "cinema",
+      "gender": "femme",
+      "inspiredBy": "Yves Saint Laurent Cinéma",
+      "family": "Floral oriental",
+      "topNotes": [
+        "Clémentine",
+        "Cyclamen",
+        "Myrtille"
+      ],
+      "heartNotes": [
+        "Fleur d'amandier",
+        "Jasmin",
+        "Pivoine"
+      ],
+      "baseNotes": [
+        "Vanille",
+        "Ambre",
+        "Musc",
+        "Bois de santal"
+      ],
+      "shortDescription": "Floral lumineux et féminin, cœur d'amandier et de jasmin sur un fond chaud de vanille ambrée.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "CK One",
+      "slug": "ck-one",
+      "gender": "mixte",
+      "inspiredBy": "Calvin Klein CK One",
+      "family": "Aromatique agrumé",
+      "topNotes": [
+        "Bergamote",
+        "Cardamome",
+        "Ananas",
+        "Citron"
+      ],
+      "heartNotes": [
+        "Thé vert",
+        "Muguet",
+        "Jasmin",
+        "Violette"
+      ],
+      "baseNotes": [
+        "Musc",
+        "Ambre",
+        "Cèdre",
+        "Mousse de chêne"
+      ],
+      "shortDescription": "Le frais universel et unisexe : agrumes et thé vert nets et propres. Minimaliste, léger et intemporel.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Coco Toi",
+      "slug": "coco-toi",
+      "gender": "femme",
+      "inspiredBy": "Chanel Coco Mademoiselle",
+      "family": "Chypré floral",
+      "topNotes": [
+        "Orange",
+        "Bergamote",
+        "Mandarine"
+      ],
+      "heartNotes": [
+        "Rose",
+        "Jasmin",
+        "Litchi"
+      ],
+      "baseNotes": [
+        "Patchouli",
+        "Vétiver",
+        "Vanille",
+        "Musc blanc"
+      ],
+      "shortDescription": "Chypre frais et pétillant, agrumes étincelants et rose-jasmin sur un patchouli élégant. Une icône de féminité.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Creed Aventus",
+      "slug": "creed-aventus",
+      "gender": "homme",
+      "inspiredBy": "Creed Aventus",
+      "family": "Chypré fruité",
+      "topNotes": [
+        "Ananas",
+        "Bergamote",
+        "Cassis",
+        "Pomme"
+      ],
+      "heartNotes": [
+        "Bouleau",
+        "Patchouli",
+        "Jasmin",
+        "Rose"
+      ],
+      "baseNotes": [
+        "Musc",
+        "Mousse de chêne",
+        "Ambre gris",
+        "Vanille"
+      ],
+      "shortDescription": "La légende : ananas fumé et bouleau sur un fond de mousse et de musc. Puissance, succès et charisme.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "D&G King",
+      "slug": "d-g-king",
+      "gender": "homme",
+      "inspiredBy": "Dolce & Gabbana K (King)",
+      "family": "Boisé aromatique",
+      "topNotes": [
+        "Citron de Sicile",
+        "Pamplemousse",
+        "Genièvre",
         "Poivre"
+      ],
+      "heartNotes": [
+        "Sauge",
+        "Géranium",
+        "Piment"
+      ],
+      "baseNotes": [
+        "Cèdre",
+        "Bois de gaïac",
+        "Vétiver",
+        "Patchouli"
+      ],
+      "shortDescription": "Royauté virile, agrumes méditerranéens et épices sur un fond boisé sec. Charismatique, frais et affirmé.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "D&G Vibe 3",
+      "slug": "d-g-vibe-3",
+      "gender": "femme",
+      "inspiredBy": "Dolce & Gabbana L'Imperatrice (n°3)",
+      "family": "Fruité frais",
+      "topNotes": [
+        "Pastèque",
+        "Kiwi"
+      ],
+      "heartNotes": [
+        "Cyclamen",
+        "Jasmin"
+      ],
+      "baseNotes": [
+        "Musc",
+        "Notes aquatiques"
+      ],
+      "shortDescription": "Pastèque juteuse et fraîche, fruité aquatique pétillant. Léger, sexy et parfait pour les journées chaudes.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Dareej",
+      "slug": "dareej",
+      "gender": "mixte",
+      "inspiredBy": "Lattafa / vibe Dareej (à vérifier)",
+      "family": "Oriental boisé",
+      "topNotes": [
+        "Épices",
+        "Bergamote",
+        "Safran"
+      ],
+      "heartNotes": [
+        "Rose",
+        "Bois",
+        "Oud"
+      ],
+      "baseNotes": [
+        "Ambre",
+        "Musc",
+        "Bois de santal",
+        "Vanille"
+      ],
+      "shortDescription": "Oriental chaleureux et épicé, rose et bois sur un fond ambré. Sensuel, riche et profondément envoûtant.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Delina",
+      "slug": "delina",
+      "gender": "femme",
+      "inspiredBy": "Parfums de Marly Delina",
+      "family": "Floral fruité",
+      "topNotes": [
+        "Litchi",
+        "Rhubarbe",
+        "Bergamote",
+        "Nagarmotha"
+      ],
+      "heartNotes": [
+        "Rose turque",
+        "Pivoine",
+        "Muguet",
+        "Vanille"
+      ],
+      "baseNotes": [
+        "Musc",
+        "Cèdre",
+        "Bois de oud",
+        "Vétiver"
+      ],
+      "shortDescription": "Rose pétillante et raffinée, litchi juteux et rhubarbe acidulée sur un fond musqué et boisé. Élégance absolue.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Devotion",
+      "slug": "devotion",
+      "gender": "femme",
+      "inspiredBy": "Dolce & Gabbana Devotion",
+      "family": "Gourmand",
+      "topNotes": [
+        "Citron candi",
+        "Bergamote"
+      ],
+      "heartNotes": [
+        "Fleur d'oranger",
+        "Néroli"
+      ],
+      "baseNotes": [
+        "Crème de panettone",
+        "Vanille",
+        "Caramel",
+        "Musc"
+      ],
+      "shortDescription": "Gourmand solaire italien, citron confit et fleur d'oranger sur une crème vanillée. Doux et lumineux.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Fantasmagory",
+      "slug": "fantasmagory",
+      "gender": "femme",
+      "inspiredBy": "vibe gourmand fantaisie (à vérifier)",
+      "family": "Gourmand fruité",
+      "topNotes": [
+        "Fruits",
+        "Bonbon",
+        "Bergamote"
+      ],
+      "heartNotes": [
+        "Fleurs",
+        "Caramel"
+      ],
+      "baseNotes": [
+        "Vanille",
+        "Musc",
+        "Sucre"
+      ],
+      "shortDescription": "Féerie sucrée et fruitée, bonbons et caramel sur un fond vanillé. Ludique, joyeux et délicieusement addictif.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Flamenco",
+      "slug": "flamenco",
+      "gender": "femme",
+      "inspiredBy": "vibe espagnol floral (à vérifier)",
+      "family": "Floral fruité",
+      "topNotes": [
+        "Fruits rouges",
+        "Agrumes"
+      ],
+      "heartNotes": [
+        "Rose",
+        "Jasmin",
+        "Pivoine"
+      ],
+      "baseNotes": [
+        "Musc",
+        "Vanille",
+        "Bois"
+      ],
+      "shortDescription": "Passionné et dansant, fleurs vives et fruits rouges sur un fond chaud. Féminin, joyeux et plein de caractère.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Givenchy Pi",
+      "slug": "givenchy-pi",
+      "gender": "homme",
+      "inspiredBy": "Givenchy Pi",
+      "family": "Oriental boisé",
+      "topNotes": [
+        "Mandarine",
+        "Estragon",
+        "Basilic"
+      ],
+      "heartNotes": [
+        "Fève tonka",
+        "Romarin",
+        "Géranium"
+      ],
+      "baseNotes": [
+        "Vanille",
+        "Ambre",
+        "Bois de santal",
+        "Cèdre"
+      ],
+      "shortDescription": "Vanille boisée chaleureuse et intemporelle, fève tonka et bois sur un fond ambré. Doux, viril et confortable.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Good Girl",
+      "slug": "good-girl",
+      "gender": "femme",
+      "inspiredBy": "Carolina Herrera Good Girl",
+      "family": "Floral oriental",
+      "topNotes": [
+        "Amande",
+        "Café",
+        "Bergamote",
+        "Citron"
+      ],
+      "heartNotes": [
+        "Tubéreuse",
+        "Jasmin Sambac",
+        "Fève tonka",
+        "Iris"
+      ],
+      "baseNotes": [
+        "Cacao",
+        "Vanille",
+        "Praline",
+        "Musc",
+        "Ambre"
+      ],
+      "shortDescription": "Le contraste du jour et de la nuit : tubéreuse lumineuse et amande-café gourmand sur fond de cacao et fève tonka.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Hacivat Nichane",
+      "slug": "hacivat-nichane",
+      "gender": "mixte",
+      "inspiredBy": "Nishane Hacivat",
+      "family": "Chypré fruité",
+      "topNotes": [
+        "Ananas",
+        "Pamplemousse",
+        "Bergamote"
+      ],
+      "heartNotes": [
+        "Cèdre",
+        "Patchouli",
+        "Jasmin"
+      ],
+      "baseNotes": [
+        "Mousse de chêne",
+        "Notes boisées"
+      ],
+      "shortDescription": "Ananas juteux et agrumes sur un fond boisé mousseux. Niche, frais et sophistiqué — un cousin d'Aventus.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Homme Idéal",
+      "slug": "homme-ideal",
+      "gender": "homme",
+      "inspiredBy": "Guerlain L'Homme Idéal",
+      "family": "Aromatique amandé",
+      "topNotes": [
+        "Amande",
+        "Bergamote",
+        "Citron"
+      ],
+      "heartNotes": [
+        "Amande amère",
+        "Cannelle",
+        "Rose"
+      ],
+      "baseNotes": [
+        "Fève tonka",
+        "Bois de santal",
+        "Cuir",
+        "Vanille"
+      ],
+      "shortDescription": "L'homme idéal : amande gourmande et agrumes sur un fond boisé cuiré. Élégant, viril et raffiné.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Hugo Boss",
+      "slug": "hugo-boss",
+      "gender": "homme",
+      "inspiredBy": "Hugo Boss Bottled",
+      "family": "Boisé épicé",
+      "topNotes": [
+        "Pomme",
+        "Bergamote",
+        "Citron"
+      ],
+      "heartNotes": [
+        "Cannelle",
+        "Géranium",
+        "Œillet"
+      ],
+      "baseNotes": [
+        "Bois de santal",
+        "Cèdre",
+        "Vanille",
+        "Musc"
+      ],
+      "shortDescription": "L'élégance au quotidien : pomme fraîche et cannelle épicée sur un fond boisé. Professionnel et raffiné.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Idole",
+      "slug": "idole",
+      "gender": "femme",
+      "inspiredBy": "Lancôme Idôle",
+      "family": "Floral musqué",
+      "topNotes": [
+        "Bergamote",
+        "Poire"
+      ],
+      "heartNotes": [
+        "Rose",
+        "Jasmin"
+      ],
+      "baseNotes": [
+        "Musc blanc",
+        "Vanille",
+        "Bois de santal"
+      ],
+      "shortDescription": "Un floral clair et minimaliste, rose et jasmin transparents, fond de musc propre. Fraîcheur féminine et contemporaine.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Idole Power",
+      "slug": "idole-power",
+      "gender": "femme",
+      "inspiredBy": "Lancôme Idôle (intense)",
+      "family": "Floral musqué",
+      "topNotes": [
+        "Bergamote",
+        "Poire",
+        "Rose"
+      ],
+      "heartNotes": [
+        "Rose",
+        "Jasmin",
+        "Pivoine"
+      ],
+      "baseNotes": [
+        "Vanille",
+        "Musc blanc",
+        "Patchouli"
+      ],
+      "shortDescription": "Rose moderne et nette, propre et lumineuse, sur un fond de musc blanc et de vanille discrète.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Imagination",
+      "slug": "imagination",
+      "gender": "homme",
+      "inspiredBy": "Louis Vuitton Imagination",
+      "family": "Boisé épicé agrumé",
+      "topNotes": [
+        "Bergamote",
+        "Mandarine",
+        "Orange"
+      ],
+      "heartNotes": [
+        "Thé noir",
+        "Gingembre",
+        "Cardamome"
+      ],
+      "baseNotes": [
+        "Ambre",
+        "Bois de santal",
+        "Musc"
+      ],
+      "shortDescription": "Agrumes pétillants et thé noir épicé sur un fond ambré clair. Lumineux, raffiné et facile à porter.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Immensité",
+      "slug": "immensite",
+      "gender": "homme",
+      "inspiredBy": "Louis Vuitton vibe / immensité",
+      "family": "Aromatique agrumé",
+      "topNotes": [
+        "Bergamote",
+        "Gingembre",
+        "Romarin"
+      ],
+      "heartNotes": [
+        "Géranium",
+        "Notes marines"
+      ],
+      "baseNotes": [
+        "Ambre",
+        "Bois",
+        "Musc"
+      ],
+      "shortDescription": "Vaste et lumineux comme l'horizon, agrumes et gingembre frais sur un fond ambré boisé. Aérien et élégant.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Interdit",
+      "slug": "interdit",
+      "gender": "femme",
+      "inspiredBy": "Givenchy L'Interdit",
+      "family": "Floral boisé",
+      "topNotes": [
+        "Poire",
+        "Bergamote",
+        "Fleur d'oranger"
+      ],
+      "heartNotes": [
+        "Tubéreuse",
+        "Jasmin",
+        "Fleur d'oranger"
       ],
       "baseNotes": [
         "Vétiver",
-        "Cèdre",
-        "Patchouli"
+        "Patchouli",
+        "Bois de santal",
+        "Ambre",
+        "Vanille"
       ],
-      "longevity": "7 h",
-      "sillage": "Fort",
+      "shortDescription": "Fleurs blanches lumineuses sur un fond ténébreux et boisé. Le contraste de l'innocence et de l'interdit.",
+      "longevity": "—",
+      "sillage": "—",
       "seasons": [
-        "Printemps",
-        "Été",
-        "Automne"
+        "—"
       ],
       "moments": [
-        "Jour"
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Invictus",
+      "slug": "invictus",
+      "gender": "homme",
+      "inspiredBy": "Paco Rabanne Invictus",
+      "family": "Aquatique boisé",
+      "topNotes": [
+        "Pamplemousse",
+        "Note marine",
+        "Mandarine"
+      ],
+      "heartNotes": [
+        "Feuille de laurier",
+        "Jasmin"
+      ],
+      "baseNotes": [
+        "Ambre gris",
+        "Gaïac",
+        "Mousse de chêne",
+        "Patchouli"
+      ],
+      "shortDescription": "Fraîcheur marine victorieuse, pamplemousse et notes aquatiques sur un fond boisé ambré. Sportif et magnétique.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "K. Maldive",
+      "slug": "k-maldive",
+      "gender": "femme",
+      "inspiredBy": "Kayali Vanilla 28 / vibe Maldives",
+      "family": "Gourmand vanillé",
+      "topNotes": [
+        "Noix de coco",
+        "Bergamote"
+      ],
+      "heartNotes": [
+        "Fleur d'oranger",
+        "Vanille de Madagascar"
+      ],
+      "baseNotes": [
+        "Vanille",
+        "Musc",
+        "Ambre",
+        "Caramel brun"
+      ],
+      "shortDescription": "Évasion tropicale : noix de coco et vanille crémeuse, douceur solaire et chaleureuse comme un sable blanc.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "K. Pistache",
+      "slug": "k-pistache",
+      "gender": "femme",
+      "inspiredBy": "Kayali Pistachio Gelato",
+      "family": "Gourmand",
+      "topNotes": [
+        "Pistache",
+        "Amande"
+      ],
+      "heartNotes": [
+        "Praline",
+        "Fleur d'oranger"
+      ],
+      "baseNotes": [
+        "Vanille",
+        "Musc",
+        "Caramel"
+      ],
+      "shortDescription": "Glace à la pistache en flacon : pistache crémeuse et praline sucrée sur un fond de vanille gourmande.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Kayali Juicy Apple",
+      "slug": "kayali-juicy-apple",
+      "gender": "femme",
+      "inspiredBy": "Kayali Juicy Apple Sephora vibe",
+      "family": "Gourmand fruité",
+      "topNotes": [
+        "Pomme rouge",
+        "Poire"
+      ],
+      "heartNotes": [
+        "Caramel",
+        "Fleur d'oranger"
+      ],
+      "baseNotes": [
+        "Vanille",
+        "Musc",
+        "Bois"
+      ],
+      "shortDescription": "Pomme rouge juteuse et caramélisée, croquante et sucrée sur un fond crémeux de vanille.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Kenzo",
+      "slug": "kenzo",
+      "gender": "mixte",
+      "inspiredBy": "Kenzo Flower / Kenzo Homme",
+      "family": "Floral / Aquatique",
+      "topNotes": [
+        "Notes marines",
+        "Bergamote"
+      ],
+      "heartNotes": [
+        "Coquelicot",
+        "Rose",
+        "Violette"
+      ],
+      "baseNotes": [
+        "Musc",
+        "Bois",
+        "Vanille"
+      ],
+      "shortDescription": "Signature Kenzo : floral poudré ou aquatique frais selon l'humeur, élégant et reconnaissable.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "L'Instant de Guerlain",
+      "slug": "l-instant-de-guerlain",
+      "gender": "femme",
+      "inspiredBy": "Guerlain L'Instant",
+      "family": "Floral ambré",
+      "topNotes": [
+        "Bergamote",
+        "Magnolia",
+        "Fleur de thé"
+      ],
+      "heartNotes": [
+        "Jasmin",
+        "Ylang-ylang",
+        "Miel"
+      ],
+      "baseNotes": [
+        "Ambre",
+        "Vanille",
+        "Bois de santal",
+        "Musc"
+      ],
+      "shortDescription": "Floral miellé d'une grande élégance, magnolia et jasmin sur un fond ambré chaud et raffiné.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "La Nuit Trésor",
+      "slug": "la-nuit-tresor",
+      "gender": "femme",
+      "inspiredBy": "Lancôme La Nuit Trésor",
+      "family": "Oriental gourmand",
+      "topNotes": [
+        "Litchi",
+        "Bergamote",
+        "Poire"
+      ],
+      "heartNotes": [
+        "Rose",
+        "Pivoine",
+        "Fleur d'oranger"
+      ],
+      "baseNotes": [
+        "Praline",
+        "Vanille",
+        "Fève tonka",
+        "Patchouli",
+        "Encens"
+      ],
+      "shortDescription": "Rose praline intense et sensuelle, gourmandise vanillée sur un fond profond de fève tonka et patchouli.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Lacoste Blanc",
+      "slug": "lacoste-blanc",
+      "gender": "homme",
+      "inspiredBy": "Lacoste Blanc / L.12.12 Blanc",
+      "family": "Aromatique boisé",
+      "topNotes": [
+        "Pamplemousse",
+        "Cardamome",
+        "Romarin"
+      ],
+      "heartNotes": [
+        "Tubéreuse",
+        "Cèdre de Virginie"
+      ],
+      "baseNotes": [
+        "Bois de santal",
+        "Musc",
+        "Cacao"
+      ],
+      "shortDescription": "Propre, net et lumineux, agrumes et tubéreuse sur un fond boisé. La fraîcheur élégante par excellence.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Lacoste Noir",
+      "slug": "lacoste-noir",
+      "gender": "homme",
+      "inspiredBy": "Lacoste L'Homme / Eau de Lacoste Noir",
+      "family": "Boisé épicé",
+      "topNotes": [
+        "Mandarine",
+        "Pomme",
+        "Cèdre"
+      ],
+      "heartNotes": [
+        "Notes lactées",
+        "Cardamome",
+        "Bois"
+      ],
+      "baseNotes": [
+        "Musc",
+        "Ambre",
+        "Bois de santal"
+      ],
+      "shortDescription": "Boisé moderne et crémeux, pomme et notes lactées sur un fond musqué. Frais, propre et élégant.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
       ],
       "featured": false,
       "image": ""
@@ -309,6 +1840,959 @@
       "moments": [
         "Soir",
         "Événement"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Libre",
+      "slug": "libre",
+      "gender": "femme",
+      "inspiredBy": "Yves Saint Laurent Libre",
+      "family": "Floral aromatique",
+      "topNotes": [
+        "Mandarine",
+        "Cassis",
+        "Lavande",
+        "Bergamote"
+      ],
+      "heartNotes": [
+        "Lavande",
+        "Fleur d'oranger",
+        "Jasmin"
+      ],
+      "baseNotes": [
+        "Vanille",
+        "Musc",
+        "Ambre gris",
+        "Cèdre"
+      ],
+      "shortDescription": "Tension entre lavande fraîche et fleur d'oranger chaude, sur une vanille sensuelle. Liberté féminine et audacieuse.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Marshmallow",
+      "slug": "marshmallow",
+      "gender": "femme",
+      "inspiredBy": "Kayali Yum Boujee Marshmallow",
+      "family": "Gourmand",
+      "topNotes": [
+        "Guimauve",
+        "Sucre vanillé"
+      ],
+      "heartNotes": [
+        "Fleur d'oranger",
+        "Caramel"
+      ],
+      "baseNotes": [
+        "Vanille",
+        "Musc",
+        "Ambre"
+      ],
+      "shortDescription": "Doux comme une guimauve grillée, sucre vanillé et caramel fondant. Câlin gourmand et réconfortant.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Moon Tale",
+      "slug": "moon-tale",
+      "gender": "mixte",
+      "inspiredBy": "vibe niche lunaire (à vérifier)",
+      "family": "Ambré boisé",
+      "topNotes": [
+        "Safran",
+        "Bergamote"
+      ],
+      "heartNotes": [
+        "Rose",
+        "Iris",
+        "Notes boisées"
+      ],
+      "baseNotes": [
+        "Ambre",
+        "Musc",
+        "Bois de santal",
+        "Vanille"
+      ],
+      "shortDescription": "Conte nocturne et mystérieux, safran et rose sur un fond ambré boisé. Sensuel et enveloppant comme la nuit.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Musk Tahara",
+      "slug": "musk-tahara",
+      "gender": "mixte",
+      "inspiredBy": "Musc Tahara (musc blanc arabe classique)",
+      "family": "Musqué propre",
+      "topNotes": [
+        "Musc blanc",
+        "Aldéhydes"
+      ],
+      "heartNotes": [
+        "Fleurs blanches",
+        "Poudre"
+      ],
+      "baseNotes": [
+        "Musc",
+        "Bois blanc",
+        "Ambre clair"
+      ],
+      "shortDescription": "Musc blanc d'une pureté absolue, propre, poudré et délicat. La fraîcheur du linge frais et de la peau nette.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "My Burberry",
+      "slug": "my-burberry",
+      "gender": "femme",
+      "inspiredBy": "Burberry My Burberry",
+      "family": "Floral",
+      "topNotes": [
+        "Pois de senteur",
+        "Bergamote",
+        "Verveine"
+      ],
+      "heartNotes": [
+        "Géranium",
+        "Pomme dorée",
+        "Freesia"
+      ],
+      "baseNotes": [
+        "Rose damascena",
+        "Patchouli"
+      ],
+      "shortDescription": "Un bouquet anglais après la pluie : pois de senteur et freesia frais sur un fond de rose et patchouli.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "My Way",
+      "slug": "my-way",
+      "gender": "femme",
+      "inspiredBy": "Giorgio Armani My Way",
+      "family": "Floral",
+      "topNotes": [
+        "Bergamote",
+        "Fleur d'oranger"
+      ],
+      "heartNotes": [
+        "Tubéreuse",
+        "Jasmin de l'Inde"
+      ],
+      "baseNotes": [
+        "Vanille",
+        "Bois de santal",
+        "Musc blanc"
+      ],
+      "shortDescription": "Floral blanc lumineux et moderne, tubéreuse et fleur d'oranger sur un fond crémeux de vanille et santal.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "One Million",
+      "slug": "one-million",
+      "gender": "homme",
+      "inspiredBy": "Paco Rabanne 1 Million",
+      "family": "Oriental épicé",
+      "topNotes": [
+        "Pamplemousse",
+        "Menthe",
+        "Mandarine sanguine"
+      ],
+      "heartNotes": [
+        "Cannelle",
+        "Épices",
+        "Rose"
+      ],
+      "baseNotes": [
+        "Cuir",
+        "Bois ambré",
+        "Patchouli"
+      ],
+      "shortDescription": "Or liquide : agrumes frais et cannelle épicée sur un cuir ambré. Audacieux, opulent et séducteur.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "slug": "prada-paradoxe",
+      "name": "Paradoxe",
+      "inspiredBy": "Prada Paradoxe",
+      "gender": "femme",
+      "family": "Floral · Vanillé",
+      "shortDescription": "Fleur d'oranger lumineuse et vanille onctueuse. Un parfum qui change avec la lumière du jour.",
+      "topNotes": [
+        "Bergamote",
+        "Poire"
+      ],
+      "heartNotes": [
+        "Néroli",
+        "Jasmin"
+      ],
+      "baseNotes": [
+        "Vanille",
+        "Ambre",
+        "Musc"
+      ],
+      "longevity": "7 h",
+      "sillage": "Fort",
+      "seasons": [
+        "Printemps",
+        "Été",
+        "Automne"
+      ],
+      "moments": [
+        "Jour",
+        "Soir"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Prada Paradox",
+      "slug": "prada-paradox",
+      "gender": "femme",
+      "inspiredBy": "Prada Paradoxe",
+      "family": "Floral ambré",
+      "topNotes": [
+        "Bergamote",
+        "Néroli"
+      ],
+      "heartNotes": [
+        "Fleur d'oranger",
+        "Jasmin"
+      ],
+      "baseNotes": [
+        "Vanille",
+        "Musc",
+        "Ambre",
+        "Notes boisées"
+      ],
+      "shortDescription": "Floral ambré moderne et changeant, néroli et fleur d'oranger sur un fond vanillé musqué. Multiple et libre.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Profondo",
+      "slug": "profondo",
+      "gender": "homme",
+      "inspiredBy": "Giorgio Armani Acqua di Giò Profondo",
+      "family": "Aquatique aromatique",
+      "topNotes": [
+        "Bergamote",
+        "Notes marines",
+        "Aquozone"
+      ],
+      "heartNotes": [
+        "Romarin",
+        "Lavande",
+        "Cyprès",
+        "Mastic"
+      ],
+      "baseNotes": [
+        "Musc minéral",
+        "Patchouli",
+        "Ambre"
+      ],
+      "shortDescription": "L'océan profond la nuit : notes marines minérales et herbes aromatiques sur un fond boisé. Élégant et frais.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Robe Noir",
+      "slug": "robe-noir",
+      "gender": "femme",
+      "inspiredBy": "Lattafa Yara Moi / robe noire (à vérifier)",
+      "family": "Oriental vanillé",
+      "topNotes": [
+        "Fruits rouges",
+        "Bergamote"
+      ],
+      "heartNotes": [
+        "Fleurs blanches",
+        "Jasmin"
+      ],
+      "baseNotes": [
+        "Vanille",
+        "Ambre",
+        "Musc"
+      ],
+      "shortDescription": "Oriental féminin et mystérieux, fruits et fleurs sur un fond vanillé ambré. Sensuel et habillé.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "slug": "sauvage-elixir",
+      "name": "Sauvage Élixir",
+      "inspiredBy": "Dior Sauvage Élixir",
+      "gender": "homme",
+      "family": "Boisé · Épicé",
+      "shortDescription": "Une fragrance puissante et envoûtante. Lavande, cannelle et bois précieux composent une signature audacieuse.",
+      "topNotes": [
+        "Lavande",
+        "Réglisse",
+        "Cannelle"
+      ],
+      "heartNotes": [
+        "Noix de muscade",
+        "Cardamome"
+      ],
+      "baseNotes": [
+        "Santal",
+        "Bois de Gaïac",
+        "Patchouli"
+      ],
+      "longevity": "9 h",
+      "sillage": "Énorme",
+      "seasons": [
+        "Hiver",
+        "Automne"
+      ],
+      "moments": [
+        "Soir",
+        "Événement"
+      ],
+      "featured": true,
+      "image": ""
+    },
+    {
+      "name": "Spicebomb",
+      "slug": "spicebomb",
+      "gender": "homme",
+      "inspiredBy": "Viktor & Rolf Spicebomb",
+      "family": "Oriental épicé",
+      "topNotes": [
+        "Poivre rose",
+        "Piment",
+        "Bergamote",
+        "Feuille d'oranger"
+      ],
+      "heartNotes": [
+        "Safran",
+        "Paprika",
+        "Cuir"
+      ],
+      "baseNotes": [
+        "Tabac",
+        "Bois de santal",
+        "Fève tonka",
+        "Vétiver"
+      ],
+      "shortDescription": "Explosion d'épices, poivre et piment incandescents sur un cuir-tabac chaud. Puissant, viril et addictif.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Stronger With You",
+      "slug": "stronger-with-you",
+      "gender": "homme",
+      "inspiredBy": "Giorgio Armani Stronger With You",
+      "family": "Oriental épicé",
+      "topNotes": [
+        "Cardamome",
+        "Poivre rose",
+        "Violette"
+      ],
+      "heartNotes": [
+        "Sauge",
+        "Géranium",
+        "Châtaigne grillée"
+      ],
+      "baseNotes": [
+        "Vanille",
+        "Sucre brun",
+        "Ambre",
+        "Bois"
+      ],
+      "shortDescription": "Chaud et gourmand, châtaigne grillée et cardamome sur une vanille sucrée. Magnétique et sensuel.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Sun Song",
+      "slug": "sun-song",
+      "gender": "mixte",
+      "inspiredBy": "Louis Vuitton Sun Song",
+      "family": "Agrumé floral",
+      "topNotes": [
+        "Citron",
+        "Bergamote",
+        "Mandarine"
+      ],
+      "heartNotes": [
+        "Néroli",
+        "Fleur d'oranger",
+        "Notes vertes"
+      ],
+      "baseNotes": [
+        "Musc",
+        "Bois clair",
+        "Ambre"
+      ],
+      "shortDescription": "Hymne au soleil, agrumes éclatants et néroli lumineux. Joyeux, frais et pétillant comme un matin d'été.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Symphonie",
+      "slug": "symphonie",
+      "gender": "mixte",
+      "inspiredBy": "Parfums de Marly vibe (à vérifier)",
+      "family": "Floral boisé",
+      "topNotes": [
+        "Bergamote",
+        "Poivre rose"
+      ],
+      "heartNotes": [
+        "Rose",
+        "Iris",
+        "Jasmin"
+      ],
+      "baseNotes": [
+        "Bois",
+        "Ambre",
+        "Musc",
+        "Vanille"
+      ],
+      "shortDescription": "Composition harmonieuse et raffinée, fleurs et bois en équilibre sur un fond chaud. Élégance polyvalente.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "slug": "terre-hermes",
+      "name": "Terre",
+      "inspiredBy": "Hermès Terre d'Hermès",
+      "gender": "homme",
+      "family": "Boisé · Terreux",
+      "shortDescription": "L'orange et le vétiver, le minéral et le végétal. Un parfum qui sent la terre après la pluie.",
+      "topNotes": [
+        "Orange",
+        "Pamplemousse"
+      ],
+      "heartNotes": [
+        "Poivre"
+      ],
+      "baseNotes": [
+        "Vétiver",
+        "Cèdre",
+        "Patchouli"
+      ],
+      "longevity": "7 h",
+      "sillage": "Fort",
+      "seasons": [
+        "Printemps",
+        "Été",
+        "Automne"
+      ],
+      "moments": [
+        "Jour"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "The One",
+      "slug": "the-one",
+      "gender": "femme",
+      "inspiredBy": "Dolce & Gabbana The One",
+      "family": "Oriental floral",
+      "topNotes": [
+        "Bergamote",
+        "Mandarine",
+        "Litchi",
+        "Pêche"
+      ],
+      "heartNotes": [
+        "Jasmin",
+        "Lys",
+        "Muguet"
+      ],
+      "baseNotes": [
+        "Vanille",
+        "Ambre",
+        "Musc",
+        "Vétiver"
+      ],
+      "shortDescription": "Floral oriental chaud et sophistiqué, fruits lumineux et fleurs sensuelles sur un fond vanillé ambré.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Tom Ford Tobacco Vanille",
+      "slug": "tom-ford-tobacco-vanille",
+      "gender": "mixte",
+      "inspiredBy": "Tom Ford Tobacco Vanille",
+      "family": "Oriental épicé",
+      "topNotes": [
+        "Feuille de tabac",
+        "Épices",
+        "Notes aromatiques"
+      ],
+      "heartNotes": [
+        "Vanille",
+        "Cacao",
+        "Fève tonka",
+        "Fruit du tabac"
+      ],
+      "baseNotes": [
+        "Bois sec",
+        "Fève tonka",
+        "Vanille"
+      ],
+      "shortDescription": "Tabac doux et vanille riche, cacao et épices chaleureuses. Opulent, cosy et inimitablement luxueux.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Tom Ford Vanille",
+      "slug": "tom-ford-vanille",
+      "gender": "mixte",
+      "inspiredBy": "Tom Ford Tobacco Vanille / vibe vanille",
+      "family": "Gourmand vanillé",
+      "topNotes": [
+        "Vanille",
+        "Épices"
+      ],
+      "heartNotes": [
+        "Fleurs",
+        "Fève tonka"
+      ],
+      "baseNotes": [
+        "Vanille de Madagascar",
+        "Bois",
+        "Ambre"
+      ],
+      "shortDescription": "Vanille luxueuse et profonde, épicée et boisée. Riche, opulente et enveloppante — une signature de luxe.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Turathi Électrique",
+      "slug": "turathi-electrique",
+      "gender": "mixte",
+      "inspiredBy": "Afnan Turathi Electric",
+      "family": "Aromatique fruité frais",
+      "topNotes": [
+        "Bergamote",
+        "Pamplemousse rose",
+        "Poire",
+        "Mandarine"
+      ],
+      "heartNotes": [
+        "Pomme",
+        "Bois de cèdre",
+        "Fleur d'oranger"
+      ],
+      "baseNotes": [
+        "Vanille",
+        "Ambre",
+        "Musc",
+        "Ambroxan"
+      ],
+      "shortDescription": "Été éternel : agrumes pétillants et pomme fraîche sur un fond vanillé ambré. Lumineux, frais et moderne.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Vanilla Candy",
+      "slug": "vanilla-candy",
+      "gender": "femme",
+      "inspiredBy": "Prada Candy",
+      "family": "Gourmand vanillé",
+      "topNotes": [
+        "Caramel",
+        "Bergamote"
+      ],
+      "heartNotes": [
+        "Vanille",
+        "Musc blanc"
+      ],
+      "baseNotes": [
+        "Benjoin",
+        "Poudre",
+        "Ambre"
+      ],
+      "shortDescription": "Un gourmand sucré et caramélisé, vanille crémeuse et poudrée — une douceur enveloppante et addictive.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Vanilla Powder",
+      "slug": "vanilla-powder",
+      "gender": "femme",
+      "inspiredBy": "Brume / vibe vanille poudrée",
+      "family": "Gourmand poudré",
+      "topNotes": [
+        "Vanille",
+        "Amande"
+      ],
+      "heartNotes": [
+        "Héliotrope",
+        "Iris poudré"
+      ],
+      "baseNotes": [
+        "Musc blanc",
+        "Fève tonka",
+        "Bois doux"
+      ],
+      "shortDescription": "Vanille poudrée et cotonneuse, douceur d'iris et d'amande. Une caresse soyeuse, propre et réconfortante.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Versace Eros",
+      "slug": "versace-eros",
+      "gender": "homme",
+      "inspiredBy": "Versace Eros",
+      "family": "Aromatique fougère",
+      "topNotes": [
+        "Menthe",
+        "Pomme verte",
+        "Citron"
+      ],
+      "heartNotes": [
+        "Fève tonka",
+        "Géranium",
+        "Ambroxan"
+      ],
+      "baseNotes": [
+        "Vanille",
+        "Vétiver",
+        "Mousse de chêne",
+        "Cèdre"
+      ],
+      "shortDescription": "Désir incarné : menthe glaciale et pomme verte sur une vanille boisée. Frais, sucré et puissant.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Vert Malachite",
+      "slug": "vert-malachite",
+      "gender": "mixte",
+      "inspiredBy": "Rosendo Mateu / Tom Ford vibe vert",
+      "family": "Boisé vert",
+      "topNotes": [
+        "Galbanum",
+        "Bergamote",
+        "Notes vertes"
+      ],
+      "heartNotes": [
+        "Iris",
+        "Violette",
+        "Géranium"
+      ],
+      "baseNotes": [
+        "Vétiver",
+        "Mousse",
+        "Bois",
+        "Ambre"
+      ],
+      "shortDescription": "Vert profond et minéral, galbanum et iris sur un fond boisé mousseux. Élégance fraîche et sophistiquée.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Victoria's Secret Intense",
+      "slug": "victoria-s-secret-intense",
+      "gender": "femme",
+      "inspiredBy": "Victoria's Secret Bombshell Intense",
+      "family": "Floral fruité",
+      "topNotes": [
+        "Fruit de la passion",
+        "Pamplemousse"
+      ],
+      "heartNotes": [
+        "Pivoine",
+        "Orchidée Vanda"
+      ],
+      "baseNotes": [
+        "Musc",
+        "Bois",
+        "Vanille"
+      ],
+      "shortDescription": "Bombe fruitée-florale, fruit de la passion juteux et pivoine éclatante. Glamour, sexy et plein d'énergie.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Yara Elixir",
+      "slug": "yara-elixir",
+      "gender": "femme",
+      "inspiredBy": "Lattafa Yara Elixir",
+      "family": "Gourmand fruité",
+      "topNotes": [
+        "Fraise s'mores",
+        "Cassis"
+      ],
+      "heartNotes": [
+        "Jasmin",
+        "Fleur d'oranger"
+      ],
+      "baseNotes": [
+        "Vanille",
+        "Caramel",
+        "Ambre",
+        "Musc"
+      ],
+      "shortDescription": "Version crémeuse et fruitée de Yara : fraise gourmande et fleurs lumineuses sur un fond ambré addictif.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Yara Lattafa",
+      "slug": "yara-lattafa",
+      "gender": "femme",
+      "inspiredBy": "Lattafa Yara",
+      "family": "Oriental vanillé",
+      "topNotes": [
+        "Orchidée",
+        "Héliotrope",
+        "Tangerine"
+      ],
+      "heartNotes": [
+        "Gardénia",
+        "Fleur d'oranger"
+      ],
+      "baseNotes": [
+        "Vanille",
+        "Musc",
+        "Bois de santal"
+      ],
+      "shortDescription": "Gourmand floral très populaire : orchidée crémeuse et vanille douce, sillage chaleureux et réconfortant.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
+      ],
+      "featured": false,
+      "image": ""
+    },
+    {
+      "name": "Yves Saint Laurent Y",
+      "slug": "yves-saint-laurent-y",
+      "gender": "homme",
+      "inspiredBy": "Yves Saint Laurent Y",
+      "family": "Aromatique fougère",
+      "topNotes": [
+        "Bergamote",
+        "Gingembre",
+        "Pomme",
+        "Sauge"
+      ],
+      "heartNotes": [
+        "Sauge",
+        "Géranium",
+        "Genévrier"
+      ],
+      "baseNotes": [
+        "Bois d'ambre",
+        "Vétiver",
+        "Fève tonka",
+        "Cèdre"
+      ],
+      "shortDescription": "Le contraste du noir et blanc : fraîcheur de sauge et bois ambrés profonds. Moderne, net et affirmé.",
+      "longevity": "—",
+      "sillage": "—",
+      "seasons": [
+        "—"
+      ],
+      "moments": [
+        "—"
       ],
       "featured": false,
       "image": ""
