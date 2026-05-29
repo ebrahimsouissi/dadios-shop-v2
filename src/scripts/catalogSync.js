@@ -169,6 +169,10 @@ export function renderProductCardHtml(product, sizes, scope = '') {
 
   const heart = `<span class="card-heart"${scope} data-wishlist-toggle data-slug="${slug}" role="button" tabindex="0" aria-label="Ajouter aux favoris" aria-pressed="false"><svg class="heart-icon"${scope} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"${scope}/></svg></span>`;
 
+  // Description used only by the /parfums/ "grid-1" view mode (hidden
+   // by default in the ProductCard scoped CSS; revealed via :global()).
+  const desc = escHtml(product.shortDescription || '');
+
   return `<a href="/parfums/${slug}" class="card" data-card-slug="${slug}"${scope}>
   <div class="card-img"${scope}>
     ${imageBlock}
@@ -180,6 +184,7 @@ export function renderProductCardHtml(product, sizes, scope = '') {
   <div class="card-body"${scope}>
     <div class="eyebrow card-family"${scope}>${family}</div>
     <h3 class="card-name"${scope}>${name}</h3>
+    <p class="card-desc"${scope}>${desc}</p>
     <div class="card-sizes"${scope}>${sizeChips}</div>
     ${wholesaleBlock}
     <div class="card-cta"${scope}>Voir le parfum →</div>

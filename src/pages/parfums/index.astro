@@ -29,6 +29,19 @@ const allFamilies = [...new Set(products.map((p: any) => p.family))].sort();
       <button class="filter-btn" data-value="homme">Homme</button>
       <button class="filter-btn" data-value="femme">Femme</button>
       <button class="filter-btn" data-value="mixte">Mixte</button>
+      {/* Mobile-only view-mode cycle button. Server-rendered with the
+          grid-2 icon to match the default class on .cat-grid below — JS
+          swaps to the persisted mode at mount. Distinct from .filter-btn
+          so it isn't caught by the gender-filter active-toggle handler. */}
+      <button
+        type="button"
+        id="viewToggle"
+        class="view-mode-toggle"
+        title="Changer l'affichage"
+        aria-label="Affichage : Grille 2 colonnes — cliquer pour changer"
+      >
+        <span class="view-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><rect x="3.5" y="3.5" width="7" height="7" rx="1"/><rect x="13.5" y="3.5" width="7" height="7" rx="1"/><rect x="3.5" y="13.5" width="7" height="7" rx="1"/><rect x="13.5" y="13.5" width="7" height="7" rx="1"/></svg></span>
+      </button>
     </div>
     <input
       type="search"
@@ -40,7 +53,7 @@ const allFamilies = [...new Set(products.map((p: any) => p.family))].sort();
 </section>
 
 <section class="cat-grid-wrap">
-  <div class="cat-grid" id="productGrid">
+  <div class="cat-grid view-grid-2" id="productGrid">
     {products.map((p: any) => (
       <div class="grid-item" data-gender={p.gender} data-name={p.name.toLowerCase()} data-family={p.family.toLowerCase()}>
         <ProductCard product={p} sizes={sizes} />
@@ -144,6 +157,140 @@ const allFamilies = [...new Set(products.map((p: any) => p.family))].sort();
     .search-input { width: 100%; }
     .cat-grid-wrap { padding: 32px 16px 56px; }
   }
+
+  /* ============ View-mode toggle (mobile only) ============ */
+  .view-mode-toggle {
+    background: transparent;
+    border: 1px solid var(--gold-soft);
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 999px;
+    cursor: pointer;
+    color: var(--ink);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 4px;
+    transition: background .2s, border-color .2s, color .2s;
+  }
+  .view-mode-toggle:hover {
+    background: var(--cream-soft);
+    border-color: var(--gold);
+    color: var(--emerald);
+  }
+  .view-mode-toggle:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+  }
+  .view-mode-toggle .view-icon { display: inline-flex; line-height: 0; }
+  .view-mode-toggle svg { display: block; }
+
+  @media (min-width: 769px) {
+    .view-mode-toggle { display: none; }
+  }
+
+  /* ============ View-mode layouts (mobile only) ============
+     The default `.cat-grid` rule above uses an auto-fit grid that works
+     for desktop. On mobile we override per view class. `:global()` is
+     required to penetrate the ProductCard scoped styles for .card,
+     .card-img, .card-name, .card-desc, etc. (the card is rendered by a
+     different .astro file with its own data-astro-cid).
+     Smooth transitions to avoid violent re-layouts on mode change. */
+  .cat-grid { transition: gap 200ms ease; }
+  .cat-grid :global(.card),
+  .cat-grid :global(.card-img),
+  .cat-grid :global(.card-body),
+  .cat-grid :global(.card-name) { transition: all 200ms ease; }
+
+  @media (max-width: 768px) {
+    /* grid-2 — default 2 columns */
+    .cat-grid.view-grid-2 {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    .cat-grid.view-grid-2 :global(.card-body) { padding: 14px 16px 16px; }
+    .cat-grid.view-grid-2 :global(.card-name) { font-size: 18px; margin-bottom: 8px; }
+
+    /* grid-1 — single full-width column, taller image, description visible */
+    .cat-grid.view-grid-1 {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    .cat-grid.view-grid-1 :global(.card-img) { aspect-ratio: 3 / 4; }
+    .cat-grid.view-grid-1 :global(.card-name) { font-size: 28px; }
+    .cat-grid.view-grid-1 :global(.card-desc) {
+      display: block;
+      font-size: 13px;
+      color: var(--ink-soft);
+      margin: -6px 0 14px;
+      line-height: 1.55;
+    }
+
+    /* list-detail — horizontal: 80×80 image + body, minimal chrome */
+    .cat-grid.view-list-detail {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .cat-grid.view-list-detail .grid-item :global(.card) {
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      gap: 12px;
+      align-items: stretch;
+      padding: 6px;
+      border-radius: 10px;
+    }
+    .cat-grid.view-list-detail .grid-item :global(.card:hover) {
+      transform: none; /* le translateY:-4px casse l'alignement horizontal */
+    }
+    .cat-grid.view-list-detail :global(.card-img) {
+      width: 80px;
+      height: 80px;
+      aspect-ratio: 1 / 1;
+      border-bottom: none;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .cat-grid.view-list-detail :global(.card-img img),
+    .cat-grid.view-list-detail :global(.card-img svg) {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .cat-grid.view-list-detail :global(.card-body) {
+      padding: 4px 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 4px;
+      min-width: 0;
+    }
+    .cat-grid.view-list-detail :global(.card-name) {
+      font-size: 17px;
+      margin-bottom: 0;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .cat-grid.view-list-detail :global(.card-family) { margin-bottom: 0; }
+    .cat-grid.view-list-detail :global(.card-sizes) {
+      margin-bottom: 0;
+      gap: 4px;
+      flex-wrap: nowrap;
+    }
+    .cat-grid.view-list-detail :global(.size-chip) {
+      font-size: 11px;
+      padding: 3px 8px;
+    }
+    /* Hide the secondary chrome to keep the row dense and readable. */
+    .cat-grid.view-list-detail :global(.card-cta),
+    .cat-grid.view-list-detail :global(.card-heart),
+    .cat-grid.view-list-detail :global(.card-badge),
+    .cat-grid.view-list-detail :global(.card-vip-badge),
+    .cat-grid.view-list-detail :global(.card-gender) { display: none; }
+  }
 </style>
 
 <script id="__sizes" type="application/json" set:html={JSON.stringify(sizes)}></script>
@@ -219,6 +366,59 @@ const allFamilies = [...new Set(products.map((p: any) => p.family))].sort();
     const btn = document.querySelector(`.filter-btn[data-value="${initialGender}"]`);
     if (btn) (btn as HTMLElement).click();
   }
+
+  // ============ View-mode toggle (mobile only) ============
+  // Cycles grid-2 → grid-1 → list-detail → grid-2, persisted in
+  // localStorage so the user keeps their preferred layout on refresh.
+  // The CSS-only `.view-mode-toggle { display: none }` desktop rule
+  // makes the button invisible on > 768px; the JS still runs but the
+  // grid class stays harmless (desktop ignores .view-* classes).
+  const VIEW_KEY = 'dadios_view_mode';
+  const VIEW_MODES = ['grid-2', 'grid-1', 'list-detail'] as const;
+  type ViewMode = typeof VIEW_MODES[number];
+  const VIEW_LABELS: Record<ViewMode, string> = {
+    'grid-2': 'Grille 2 colonnes',
+    'grid-1': 'Grande grille',
+    'list-detail': 'Liste détaillée',
+  };
+  const VIEW_ICONS: Record<ViewMode, string> = {
+    'grid-2': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><rect x="3.5" y="3.5" width="7" height="7" rx="1"/><rect x="13.5" y="3.5" width="7" height="7" rx="1"/><rect x="3.5" y="13.5" width="7" height="7" rx="1"/><rect x="13.5" y="13.5" width="7" height="7" rx="1"/></svg>',
+    'grid-1': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><rect x="4" y="4" width="16" height="16" rx="1.5"/></svg>',
+    'list-detail': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>',
+  };
+
+  const viewToggle = document.getElementById('viewToggle') as HTMLButtonElement | null;
+  const viewIconEl = viewToggle?.querySelector('.view-icon') as HTMLElement | null;
+
+  let viewMode: ViewMode = 'grid-2';
+  try {
+    const stored = localStorage.getItem(VIEW_KEY);
+    if (stored && (VIEW_MODES as readonly string[]).includes(stored)) {
+      viewMode = stored as ViewMode;
+    }
+  } catch {}
+
+  function applyViewMode(mode: ViewMode) {
+    if (!grid) return;
+    VIEW_MODES.forEach((m) => grid.classList.remove(`view-${m}`));
+    grid.classList.add(`view-${mode}`);
+    if (viewIconEl) viewIconEl.innerHTML = VIEW_ICONS[mode];
+    if (viewToggle) {
+      viewToggle.setAttribute(
+        'aria-label',
+        `Affichage : ${VIEW_LABELS[mode]} — cliquer pour changer`,
+      );
+    }
+  }
+
+  applyViewMode(viewMode);
+
+  viewToggle?.addEventListener('click', () => {
+    const i = VIEW_MODES.indexOf(viewMode);
+    viewMode = VIEW_MODES[(i + 1) % VIEW_MODES.length];
+    try { localStorage.setItem(VIEW_KEY, viewMode); } catch {}
+    applyViewMode(viewMode);
+  });
 
   // After initial paint, refresh from KV; if products are returned, re-render
   // the grid (which fully overrides the static products.json baked at build)

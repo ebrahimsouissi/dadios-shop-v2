@@ -7,6 +7,7 @@ export interface Props {
     family: string;
     featured?: boolean;
     image?: string;
+    shortDescription?: string;
   };
   sizes: Array<{ code: string; label: string; price: number }>;
 }
@@ -50,6 +51,7 @@ const hasImage = product.image && product.image.length > 0;
   <div class="card-body">
     <div class="eyebrow card-family">{product.family}</div>
     <h3 class="card-name">{product.name}</h3>
+    <p class="card-desc">{product.shortDescription || ''}</p>
     <div class="card-sizes">
       {sizes.map(s => (
         <span class="size-chip">{s.code} · {s.price} DT</span>
@@ -190,6 +192,15 @@ const hasImage = product.image && product.image.length > 0;
   .card-body { padding: 20px 22px 22px; }
   .card-family { margin-bottom: 6px; }
   .card-name { font-size: 22px; margin-bottom: 14px; }
+  /* Hidden by default — revealed only in the /parfums/ "grid-1" view mode
+     via :global() override on the parent .cat-grid.view-grid-1. */
+  .card-desc {
+    display: none;
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin: -6px 0 14px;
+    line-height: 1.55;
+  }
   .card-sizes { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
   .size-chip {
     border: 1px solid var(--border-strong);
