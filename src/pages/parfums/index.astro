@@ -138,7 +138,9 @@ const allFamilies = [...new Set(products.map((p: any) => p.family))].sort();
   .grid-item.hidden { display: none; }
 
   @media (max-width: 880px) {
-    .cat-controls { top: 0; padding: 14px 16px; }
+    /* top: 60px compense la hauteur du .nav (lui-même sticky top:0
+       z-index:100) — sans ce décalage les controls glissent SOUS la nav. */
+    .cat-controls { top: 60px; padding: 14px 16px; }
     .search-input { width: 100%; }
     .cat-grid-wrap { padding: 32px 16px 56px; }
   }

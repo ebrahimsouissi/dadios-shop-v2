@@ -59,7 +59,11 @@ body {
   background: var(--cream);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  overflow-x: hidden;
+  /* `clip` (au lieu de `hidden`) empêche le débordement horizontal SANS
+     créer de contexte de défilement — laisse les position:sticky des
+     descendants (nav, .cat-controls) coller au viewport. `hidden` cassait
+     le sticky des filtres /parfums/ sur iOS Safari. */
+  overflow-x: clip;
 }
 
 /* Prevent body scroll when a drawer/modal is open */
