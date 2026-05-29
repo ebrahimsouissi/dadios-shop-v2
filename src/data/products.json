@@ -34,6 +34,7 @@
         "Bois ambré"
       ],
       "shortDescription": "L'esprit de la fête new-yorkaise, vodka-mandarine et gingembre sur un fond rhum boisé. Festif et magnétique.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/212-vip-1780054397482.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -42,8 +43,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Acqua di Gio",
@@ -67,6 +67,7 @@
         "Bois de cèdre"
       ],
       "shortDescription": "L'iconique fraîcheur marine, agrumes et notes aquatiques sur un fond boisé. Frais, propre et intemporel.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/acqua-di-gio-1780054399172.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -75,8 +76,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Afternoon",
@@ -99,6 +99,7 @@
         "Ambre"
       ],
       "shortDescription": "Une après-midi ensoleillée capturée : notes vertes et bois clairs, frais, lumineux et apaisant.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/afternoon-1780054401190.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -107,8 +108,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Alien",
@@ -129,6 +129,7 @@
         "Bois précieux"
       ],
       "shortDescription": "Jasmin solaire et hypnotique sur un ambre lumineux et boisé. Mystique, puissant et inoubliable.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/alien-1780054449837.png",
       "longevity": "8 h",
       "sillage": "Fort",
       "seasons": [
@@ -141,8 +142,7 @@
         "Soir",
         "Événement"
       ],
-      "featured": true,
-      "image": ""
+      "featured": true
     },
     {
       "name": "All of Me",
@@ -165,6 +165,7 @@
         "Bois"
       ],
       "shortDescription": "Floral fruité généreux et lumineux, rose et fruits rouges sur un fond doux et musqué.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/all-of-me-1780054451451.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -173,8 +174,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Ambassador",
@@ -199,6 +199,7 @@
         "Vanille"
       ],
       "shortDescription": "Boisé épicé masculin et confiant, frais en tête et chaud en fond. Polyvalent et élégant au quotidien.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/ambassador-1780054402751.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -207,8 +208,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Amiret Al Arab",
@@ -235,6 +235,7 @@
         "Bois de santal"
       ],
       "shortDescription": "Princesse d'Arabie : fruits et fleurs lumineux sur un fond boisé d'oud et d'ambre. Élégance orientale.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/amiret-al-arab-1780054452756.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -243,8 +244,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Aqua Marine",
@@ -268,6 +268,7 @@
         "Bois"
       ],
       "shortDescription": "Brise marine pure et vivifiante, agrumes et notes aquatiques. Léger, frais et parfait pour l'été.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/aqua-marine-1780054404341.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -276,8 +277,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Armani Code",
@@ -302,6 +302,7 @@
         "Tabac"
       ],
       "shortDescription": "Séduction nocturne, agrumes et fleur d'oranger sur un cuir-tabac chaud. Mystérieux, élégant et irrésistible.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/armani-code-1780054405761.png",
       "longevity": "7 h",
       "sillage": "Fort",
       "seasons": [
@@ -314,8 +315,7 @@
         "Jour",
         "Soir"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Aviator",
@@ -340,6 +340,7 @@
         "Musc"
       ],
       "shortDescription": "Aventurier et viril, herbes aromatiques et bois sur un cuir ambré. Confiance et liberté en sillage.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/aviator-1780054407367.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -348,8 +349,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "slug": "baccarat-rouge-540",
@@ -404,6 +404,7 @@
         "Bois"
       ],
       "shortDescription": "L'iconique : safran et jasmin sur un ambre cristallin et boisé. Sucré, minéral, addictif et inimitable.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/baccarat-rouge-1780054454054.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -412,8 +413,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Black XS",
@@ -438,6 +438,7 @@
         "Bois"
       ],
       "shortDescription": "Rock et sensuel, praline et citron sur un fond boisé épicé. Audacieux, sombre et magnétique.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/black-xs-1780054408798.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -446,8 +447,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "slug": "bleu-de-chanel",
@@ -508,6 +508,7 @@
         "Ambre"
       ],
       "shortDescription": "L'élégance bleue intemporelle, agrumes frais et bois nobles sur un fond d'encens et vétiver. Sophistiqué et viril.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/bleu-chanel-1780054410381.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -516,8 +517,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Bois d'Argent",
@@ -542,6 +542,7 @@
         "Bois de santal"
       ],
       "shortDescription": "Bois argenté et poudré, iris et encens sur un fond ambré miellé. Raffinement discret et précieux.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/bois-d-argent-1780054411682.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -550,8 +551,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Born in Roma",
@@ -573,6 +573,7 @@
         "Musc"
       ],
       "shortDescription": "Floral moderne et contrasté, jasmin lumineux sur une vanille boisée. Audacieux et féminin.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/born-in-roma-1780054455391.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -581,8 +582,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Boss Beyond",
@@ -606,6 +606,7 @@
         "Musc"
       ],
       "shortDescription": "Évolution moderne du classique Boss, frais et boisé. Confiant, net et parfait pour l'homme d'aujourd'hui.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/boss-beyond-1780054413043.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -614,8 +615,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Boss Orange",
@@ -638,6 +638,7 @@
         "Olivier"
       ],
       "shortDescription": "Chaleureux et lumineux, pomme et fleur d'oranger sur un fond vanillé boisé. Convivial et féminin.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/boss-orange-1780054456648.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -646,8 +647,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Boss The Scent",
@@ -668,6 +668,7 @@
         "Bois"
       ],
       "shortDescription": "Séduction maîtrisée : gingembre épicé et accord maninka envoûtant sur un cuir chaud. Magnétique.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/boss-the-scent-1780054414736.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -676,8 +677,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Burberry Her",
@@ -701,6 +701,7 @@
         "Ambre"
       ],
       "shortDescription": "Fruits rouges acidulés et confiturés sur un fond musqué et boisé. Jeune, joyeux et addictif.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/burberry-her-1780054457997.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -709,8 +710,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Bvlgari J.N",
@@ -734,6 +734,7 @@
         "Musc"
       ],
       "shortDescription": "Jasmin sombre et envoûtant, amande et gardénia sur un fond boisé ambré. Mystérieux et sensuel.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/bvlgari-j-n-1780054459224.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -742,8 +743,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "slug": "chloe-edp",
@@ -801,6 +801,7 @@
         "Musc"
       ],
       "shortDescription": "Rose poudrée et naturelle, fraîche et romantique, sur un fond délicat de cèdre et de musc. Intemporel.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/chloe-1780054460528.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -809,8 +810,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Cinema",
@@ -835,6 +835,7 @@
         "Bois de santal"
       ],
       "shortDescription": "Floral lumineux et féminin, cœur d'amandier et de jasmin sur un fond chaud de vanille ambrée.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/cinema-1780054461853.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -843,8 +844,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "CK One",
@@ -871,6 +871,7 @@
         "Mousse de chêne"
       ],
       "shortDescription": "Le frais universel et unisexe : agrumes et thé vert nets et propres. Minimaliste, léger et intemporel.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/ck-one-1780054416393.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -879,8 +880,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Coco Toi",
@@ -905,6 +905,7 @@
         "Musc blanc"
       ],
       "shortDescription": "Chypre frais et pétillant, agrumes étincelants et rose-jasmin sur un patchouli élégant. Une icône de féminité.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/coco-toi-1780054463059.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -913,8 +914,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Creed Aventus",
@@ -941,6 +941,7 @@
         "Vanille"
       ],
       "shortDescription": "La légende : ananas fumé et bouleau sur un fond de mousse et de musc. Puissance, succès et charisme.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/creed-aventus-1780054417693.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -949,8 +950,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "D&G King",
@@ -976,6 +976,7 @@
         "Patchouli"
       ],
       "shortDescription": "Royauté virile, agrumes méditerranéens et épices sur un fond boisé sec. Charismatique, frais et affirmé.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/d-g-king-1780054420773.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -984,8 +985,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "D&G Vibe 3",
@@ -1006,6 +1006,7 @@
         "Notes aquatiques"
       ],
       "shortDescription": "Pastèque juteuse et fraîche, fruité aquatique pétillant. Léger, sexy et parfait pour les journées chaudes.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/d-g-vibe-3-1780054467440.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -1014,8 +1015,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Dareej",
@@ -1040,6 +1040,7 @@
         "Vanille"
       ],
       "shortDescription": "Oriental chaleureux et épicé, rose et bois sur un fond ambré. Sensuel, riche et profondément envoûtant.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/dareej-1780054419344.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -1048,8 +1049,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Delina",
@@ -1076,6 +1076,7 @@
         "Vétiver"
       ],
       "shortDescription": "Rose pétillante et raffinée, litchi juteux et rhubarbe acidulée sur un fond musqué et boisé. Élégance absolue.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/delina-1780054464812.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -1084,8 +1085,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Devotion",
@@ -1108,6 +1108,7 @@
         "Musc"
       ],
       "shortDescription": "Gourmand solaire italien, citron confit et fleur d'oranger sur une crème vanillée. Doux et lumineux.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/devotion-1780054466092.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -1116,8 +1117,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Fantasmagory",
@@ -1140,6 +1140,7 @@
         "Sucre"
       ],
       "shortDescription": "Féerie sucrée et fruitée, bonbons et caramel sur un fond vanillé. Ludique, joyeux et délicieusement addictif.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/fantasmagory-1780054468709.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -1148,8 +1149,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Flamenco",
@@ -1172,6 +1172,7 @@
         "Bois"
       ],
       "shortDescription": "Passionné et dansant, fleurs vives et fruits rouges sur un fond chaud. Féminin, joyeux et plein de caractère.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/flamenco-1780054469881.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -1180,8 +1181,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Givenchy Pi",
@@ -1206,6 +1206,7 @@
         "Cèdre"
       ],
       "shortDescription": "Vanille boisée chaleureuse et intemporelle, fève tonka et bois sur un fond ambré. Doux, viril et confortable.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/givenchy-pi-1780054422090.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -1214,8 +1215,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Good Girl",
@@ -1243,6 +1243,7 @@
         "Ambre"
       ],
       "shortDescription": "Le contraste du jour et de la nuit : tubéreuse lumineuse et amande-café gourmand sur fond de cacao et fève tonka.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/good-girl-1780054471143.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -1251,8 +1252,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Hacivat Nichane",
@@ -1275,6 +1275,7 @@
         "Notes boisées"
       ],
       "shortDescription": "Ananas juteux et agrumes sur un fond boisé mousseux. Niche, frais et sophistiqué — un cousin d'Aventus.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/hacivat-nichane-1780054423685.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -1283,8 +1284,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Homme Idéal",
@@ -1309,6 +1309,7 @@
         "Vanille"
       ],
       "shortDescription": "L'homme idéal : amande gourmande et agrumes sur un fond boisé cuiré. Élégant, viril et raffiné.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/homme-ideal-1780054424987.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -1317,8 +1318,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Hugo Boss",
@@ -1343,6 +1343,7 @@
         "Musc"
       ],
       "shortDescription": "L'élégance au quotidien : pomme fraîche et cannelle épicée sur un fond boisé. Professionnel et raffiné.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/hugo-boss-1780054426578.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -1351,8 +1352,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Idole",
@@ -1374,6 +1374,7 @@
         "Bois de santal"
       ],
       "shortDescription": "Un floral clair et minimaliste, rose et jasmin transparents, fond de musc propre. Fraîcheur féminine et contemporaine.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/idole-1780054472402.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -1382,8 +1383,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Idole Power",
@@ -1407,6 +1407,7 @@
         "Patchouli"
       ],
       "shortDescription": "Rose moderne et nette, propre et lumineuse, sur un fond de musc blanc et de vanille discrète.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/idole-power-1780054473673.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -1415,8 +1416,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Imagination",
@@ -1440,6 +1440,7 @@
         "Musc"
       ],
       "shortDescription": "Agrumes pétillants et thé noir épicé sur un fond ambré clair. Lumineux, raffiné et facile à porter.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/imagination-1780054428156.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -1448,8 +1449,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Immensité",
@@ -1472,6 +1472,7 @@
         "Musc"
       ],
       "shortDescription": "Vaste et lumineux comme l'horizon, agrumes et gingembre frais sur un fond ambré boisé. Aérien et élégant.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/immensite-1780054429565.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -1480,8 +1481,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Interdit",
@@ -1507,6 +1507,7 @@
         "Vanille"
       ],
       "shortDescription": "Fleurs blanches lumineuses sur un fond ténébreux et boisé. Le contraste de l'innocence et de l'interdit.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/interdit-1780054474903.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -1515,8 +1516,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Invictus",
@@ -1540,6 +1540,7 @@
         "Patchouli"
       ],
       "shortDescription": "Fraîcheur marine victorieuse, pamplemousse et notes aquatiques sur un fond boisé ambré. Sportif et magnétique.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/invictus-1780054431040.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -1548,8 +1549,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "K. Maldive",
@@ -1572,6 +1572,7 @@
         "Caramel brun"
       ],
       "shortDescription": "Évasion tropicale : noix de coco et vanille crémeuse, douceur solaire et chaleureuse comme un sable blanc.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/k-maldive-1780054477468.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -1580,8 +1581,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "K. Pistache",
@@ -1603,6 +1603,7 @@
         "Caramel"
       ],
       "shortDescription": "Glace à la pistache en flacon : pistache crémeuse et praline sucrée sur un fond de vanille gourmande.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/k-pistache-1780054478904.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -1611,8 +1612,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Kayali Juicy Apple",
@@ -1634,6 +1634,7 @@
         "Bois"
       ],
       "shortDescription": "Pomme rouge juteuse et caramélisée, croquante et sucrée sur un fond crémeux de vanille.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/kayali-juicy-apple-1780054476172.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -1642,8 +1643,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Kenzo",
@@ -1666,6 +1666,7 @@
         "Vanille"
       ],
       "shortDescription": "Signature Kenzo : floral poudré ou aquatique frais selon l'humeur, élégant et reconnaissable.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/kenzo-1780054480251.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -1674,8 +1675,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "L'Instant de Guerlain",
@@ -1700,6 +1700,7 @@
         "Musc"
       ],
       "shortDescription": "Floral miellé d'une grande élégance, magnolia et jasmin sur un fond ambré chaud et raffiné.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/l-instant-de-guerlain-1780054484090.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -1708,8 +1709,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "La Nuit Trésor",
@@ -1735,6 +1735,7 @@
         "Encens"
       ],
       "shortDescription": "Rose praline intense et sensuelle, gourmandise vanillée sur un fond profond de fève tonka et patchouli.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/la-nuit-tresor-1780054481480.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -1743,8 +1744,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Lacoste Blanc",
@@ -1767,6 +1767,7 @@
         "Cacao"
       ],
       "shortDescription": "Propre, net et lumineux, agrumes et tubéreuse sur un fond boisé. La fraîcheur élégante par excellence.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/lacoste-blanc-1780054432429.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -1775,8 +1776,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Lacoste Noir",
@@ -1800,6 +1800,7 @@
         "Bois de santal"
       ],
       "shortDescription": "Boisé moderne et crémeux, pomme et notes lactées sur un fond musqué. Frais, propre et élégant.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/lacoste-noir-1780054433747.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -1808,8 +1809,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "slug": "libre-le-parfum",
@@ -1868,6 +1868,7 @@
         "Cèdre"
       ],
       "shortDescription": "Tension entre lavande fraîche et fleur d'oranger chaude, sur une vanille sensuelle. Liberté féminine et audacieuse.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/libre-1780054482819.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -1876,8 +1877,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Marshmallow",
@@ -1899,6 +1899,7 @@
         "Ambre"
       ],
       "shortDescription": "Doux comme une guimauve grillée, sucre vanillé et caramel fondant. Câlin gourmand et réconfortant.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/marshmallow-1780054485411.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -1907,8 +1908,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Moon Tale",
@@ -1932,6 +1932,7 @@
         "Vanille"
       ],
       "shortDescription": "Conte nocturne et mystérieux, safran et rose sur un fond ambré boisé. Sensuel et enveloppant comme la nuit.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/moon-tale-1780054487199.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -1940,8 +1941,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Musk Tahara",
@@ -1963,6 +1963,7 @@
         "Ambre clair"
       ],
       "shortDescription": "Musc blanc d'une pureté absolue, propre, poudré et délicat. La fraîcheur du linge frais et de la peau nette.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/musk-tahara-1780054488513.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -1971,8 +1972,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "My Burberry",
@@ -1995,6 +1995,7 @@
         "Patchouli"
       ],
       "shortDescription": "Un bouquet anglais après la pluie : pois de senteur et freesia frais sur un fond de rose et patchouli.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/my-burberry-1780054489912.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -2003,8 +2004,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "My Way",
@@ -2026,6 +2026,7 @@
         "Musc blanc"
       ],
       "shortDescription": "Floral blanc lumineux et moderne, tubéreuse et fleur d'oranger sur un fond crémeux de vanille et santal.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/my-way-1780054491413.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -2034,8 +2035,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "One Million",
@@ -2059,6 +2059,7 @@
         "Patchouli"
       ],
       "shortDescription": "Or liquide : agrumes frais et cannelle épicée sur un cuir ambré. Audacieux, opulent et séducteur.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/one-million-1780054435179.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -2067,8 +2068,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "slug": "prada-paradoxe",
@@ -2125,6 +2125,7 @@
         "Notes boisées"
       ],
       "shortDescription": "Floral ambré moderne et changeant, néroli et fleur d'oranger sur un fond vanillé musqué. Multiple et libre.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/prada-paradox-1780054493070.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -2133,8 +2134,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Profondo",
@@ -2159,6 +2159,7 @@
         "Ambre"
       ],
       "shortDescription": "L'océan profond la nuit : notes marines minérales et herbes aromatiques sur un fond boisé. Élégant et frais.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/profondo-1780054436601.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -2167,8 +2168,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Robe Noir",
@@ -2190,6 +2190,7 @@
         "Musc"
       ],
       "shortDescription": "Oriental féminin et mystérieux, fruits et fleurs sur un fond vanillé ambré. Sensuel et habillé.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/robe-noir-1780054494391.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -2198,8 +2199,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "slug": "sauvage-elixir",
@@ -2259,6 +2259,7 @@
         "Vétiver"
       ],
       "shortDescription": "Explosion d'épices, poivre et piment incandescents sur un cuir-tabac chaud. Puissant, viril et addictif.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/spicebomb-1780054438060.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -2267,8 +2268,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Stronger With You",
@@ -2293,6 +2293,7 @@
         "Bois"
       ],
       "shortDescription": "Chaud et gourmand, châtaigne grillée et cardamome sur une vanille sucrée. Magnétique et sensuel.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/stronger-with-you-1780054439482.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -2301,8 +2302,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Sun Song",
@@ -2326,6 +2326,7 @@
         "Ambre"
       ],
       "shortDescription": "Hymne au soleil, agrumes éclatants et néroli lumineux. Joyeux, frais et pétillant comme un matin d'été.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/sun-song-1780054441083.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -2334,8 +2335,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Symphonie",
@@ -2359,6 +2359,7 @@
         "Vanille"
       ],
       "shortDescription": "Composition harmonieuse et raffinée, fleurs et bois en équilibre sur un fond chaud. Élégance polyvalente.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/symphonie-1780054495687.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -2367,8 +2368,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "slug": "terre-hermes",
@@ -2426,6 +2426,7 @@
         "Vétiver"
       ],
       "shortDescription": "Floral oriental chaud et sophistiqué, fruits lumineux et fleurs sensuelles sur un fond vanillé ambré.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/the-one-1780054497020.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -2434,8 +2435,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Tom Ford Tobacco Vanille",
@@ -2460,6 +2460,7 @@
         "Vanille"
       ],
       "shortDescription": "Tabac doux et vanille riche, cacao et épices chaleureuses. Opulent, cosy et inimitablement luxueux.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/tom-ford-tobacco-vanille-1780054442522.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -2468,8 +2469,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Tom Ford Vanille",
@@ -2491,6 +2491,7 @@
         "Ambre"
       ],
       "shortDescription": "Vanille luxueuse et profonde, épicée et boisée. Riche, opulente et enveloppante — une signature de luxe.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/tom-ford-vanille-1780054498295.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -2499,8 +2500,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Turathi Électrique",
@@ -2526,6 +2526,7 @@
         "Ambroxan"
       ],
       "shortDescription": "Été éternel : agrumes pétillants et pomme fraîche sur un fond vanillé ambré. Lumineux, frais et moderne.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/turathi-electrique-1780054444050.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -2534,8 +2535,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Vanilla Candy",
@@ -2557,6 +2557,8 @@
         "Ambre"
       ],
       "shortDescription": "Un gourmand sucré et caramélisé, vanille crémeuse et poudrée — une douceur enveloppante et addictive.",
+      "featured": false,
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/vanilla-candy-1780053001634.jpg",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -2564,9 +2566,7 @@
       ],
       "moments": [
         "—"
-      ],
-      "featured": false,
-      "image": ""
+      ]
     },
     {
       "name": "Vanilla Powder",
@@ -2588,6 +2588,7 @@
         "Bois doux"
       ],
       "shortDescription": "Vanille poudrée et cotonneuse, douceur d'iris et d'amande. Une caresse soyeuse, propre et réconfortante.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/vanilla-powder-1780054499587.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -2596,8 +2597,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Versace Eros",
@@ -2622,6 +2622,7 @@
         "Cèdre"
       ],
       "shortDescription": "Désir incarné : menthe glaciale et pomme verte sur une vanille boisée. Frais, sucré et puissant.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/versace-eros-1780054445474.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -2630,8 +2631,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Vert Malachite",
@@ -2656,6 +2656,7 @@
         "Ambre"
       ],
       "shortDescription": "Vert profond et minéral, galbanum et iris sur un fond boisé mousseux. Élégance fraîche et sophistiquée.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/vert-malachite-1780054447257.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -2664,8 +2665,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Victoria's Secret Intense",
@@ -2687,6 +2687,7 @@
         "Vanille"
       ],
       "shortDescription": "Bombe fruitée-florale, fruit de la passion juteux et pivoine éclatante. Glamour, sexy et plein d'énergie.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/victoria-s-secret-intense-1780054501134.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -2695,8 +2696,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Yara Elixir",
@@ -2719,6 +2719,7 @@
         "Musc"
       ],
       "shortDescription": "Version crémeuse et fruitée de Yara : fraise gourmande et fleurs lumineuses sur un fond ambré addictif.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/yara-elixir-1780054502510.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -2727,8 +2728,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Yara Lattafa",
@@ -2751,6 +2751,7 @@
         "Bois de santal"
       ],
       "shortDescription": "Gourmand floral très populaire : orchidée crémeuse et vanille douce, sillage chaleureux et réconfortant.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/yara-lattafa-1780054503821.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -2759,8 +2760,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     },
     {
       "name": "Yves Saint Laurent Y",
@@ -2786,6 +2786,7 @@
         "Cèdre"
       ],
       "shortDescription": "Le contraste du noir et blanc : fraîcheur de sauge et bois ambrés profonds. Moderne, net et affirmé.",
+      "image": "https://pub-56e87daa09a644529006c60145bf8646.r2.dev/products/yves-saint-laurent-y-1780054448584.png",
       "longevity": "—",
       "sillage": "—",
       "seasons": [
@@ -2794,8 +2795,7 @@
       "moments": [
         "—"
       ],
-      "featured": false,
-      "image": ""
+      "featured": false
     }
   ]
 }

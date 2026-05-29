@@ -30,13 +30,16 @@ const TARGET = path.join(__dirname, '..', 'src', 'data', 'products.json');
 // Display fields the page expects but that the worker doesn't store.
 // Strings get '—' so the UI shows a clear placeholder, arrays get a
 // single '—' element so .join(' · ') still renders something.
+// NOTE: `image` is intentionally NOT in this list — it IS stored by
+// the worker (after /api/upload), and the conditional preserve-existing
+// logic below would otherwise lock locally-blank entries to '' even
+// when the worker has freshly attached a URL.
 const DISPLAY_DEFAULTS = {
   longevity: '—',
   sillage: '—',
   seasons: ['—'],
   moments: ['—'],
   featured: false,
-  image: '',
 };
 
 // Worker-only fields we strip so the JSON stays close to its original
