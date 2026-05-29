@@ -154,6 +154,12 @@ import Base from '../layouts/Base.astro';
     align-items: center;
     justify-content: center;
   }
+  /* display:flex/grid above wins over the HTML [hidden] attribute by
+     default — force display:none back on when the JS toggle sets hidden.
+     Without this, both #cartEmpty and #cartBody are always visible and
+     the empty banner shows even when the cart has items. */
+  .cart-empty[hidden],
+  .cart-body[hidden] { display: none !important; }
   .empty-bottle {
     background: var(--cream-warm);
     border-radius: 999px;
