@@ -98,20 +98,13 @@ const sizes = data.sizes;
       <a href="/boutique" class="btn btn-outline btn-sm" style="margin-top:24px">Visiter notre boutique</a>
     </div>
     <div class="story-image">
-      <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
-        <rect width="400" height="400" fill="#EFE6D3"/>
-        <rect x="40" y="120" width="320" height="240" fill="#D4C3A0"/>
-        <rect x="80" y="160" width="40" height="160" fill="#0E3A1F"/>
-        <rect x="140" y="180" width="40" height="140" fill="#0E3A1F"/>
-        <rect x="200" y="170" width="40" height="150" fill="#0E3A1F"/>
-        <rect x="260" y="190" width="40" height="130" fill="#0E3A1F"/>
-        <rect x="86" y="200" width="28" height="40" fill="#D4AF37" opacity="0.3"/>
-        <rect x="146" y="220" width="28" height="40" fill="#D4AF37" opacity="0.3"/>
-        <rect x="206" y="210" width="28" height="40" fill="#D4AF37" opacity="0.3"/>
-        <rect x="266" y="230" width="28" height="40" fill="#D4AF37" opacity="0.3"/>
-        <line x1="40" y1="155" x2="360" y2="155" stroke="#A87C45" stroke-width="2"/>
-        <text x="200" y="380" text-anchor="middle" font-family="Allura, cursive" font-size="22" fill="rgba(168,124,69,0.6)">l'atelier</text>
-      </svg>
+      <img
+        src="/images/atelier.jpg"
+        alt="L'atelier Dadios — flacon de parfum tenu en main"
+        width="1200"
+        height="1200"
+        loading="lazy"
+      />
     </div>
   </div>
 </section>
@@ -265,7 +258,8 @@ const sizes = data.sizes;
     overflow: hidden;
     border: 1px solid var(--border);
   }
-  .story-image svg { width: 100%; height: auto; display: block; }
+  .story-image svg,
+  .story-image img { width: 100%; height: auto; display: block; object-fit: cover; }
 
   @media (max-width: 880px) {
     .hero { padding: 40px 16px 56px; }
