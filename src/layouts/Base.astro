@@ -107,10 +107,10 @@ const canonical = new URL(Astro.url.pathname, Astro.site).toString();
       </a>
     </div>
 
-    <a href="/admin" class="nav-drawer-admin" id="navDrawerAdmin" hidden>
-      <span>Espace administrateur</span>
-      <span class="badge">Admin</span>
-    </a>
+    {/* Conditional anchor slot — populated client-side only when adminMe()
+        confirms tier='admin'. Empty server-rendered so View Source can't
+        reveal the protected route's existence to guests / regular customers. */}
+    <div id="navDrawerAdminSlot"></div>
   </aside>
 
   <main>
@@ -252,18 +252,25 @@ const canonical = new URL(Astro.url.pathname, Astro.site).toString();
       onScroll();
     }
 
-    // ============ Admin link in drawer (conditional) ============
-    // Only show "Espace administrateur" if the customer session resolves to a
-    // tier='admin' account. The actual permission check is async — we fail
-    // closed (link stays hidden) on any error / non-admin.
-    const adminLink = document.getElementById('navDrawerAdmin') as HTMLElement | null;
-    if (adminLink && isLoggedIn()) {
+    // ============ Admin link in drawer (conditional injection) ============
+    // The anchor is NOT in the server-rendered HTML — we INJECT it into
+    // #navDrawerAdminSlot only after adminMe() confirms tier='admin'. Guests
+    // and regular customers never get the link in their DOM, so View Source
+    // can't reveal /admin's existence. Fail-closed on any error / non-admin.
+    const adminSlot = document.getElementById('navDrawerAdminSlot') as HTMLElement | null;
+    if (adminSlot && isLoggedIn()) {
       (async () => {
         try {
           const { adminMe } = await import('../scripts/adminApi.js');
           const res = await adminMe();
           if (res && res.ok && res.isAdmin) {
-            adminLink.hidden = false;
+            // Same markup as before — preserves the existing CSS hooks
+            // (.nav-drawer-admin, .badge) so no visual regression.
+            adminSlot.innerHTML =
+              '<a href="/admin" class="nav-drawer-admin">' +
+              '<span>Espace administrateur</span>' +
+              '<span class="badge">Admin</span>' +
+              '</a>';
           }
         } catch {}
       })();
