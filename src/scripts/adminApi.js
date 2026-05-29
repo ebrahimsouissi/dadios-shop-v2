@@ -275,7 +275,11 @@ export async function adminRecomputeAllStations() {
 
 /**
  * Uploads a Blob (cropped image) to the worker, returns public URL.
- * Sends the password in a header since the body is binary.
+ * Body is binary, so credentials travel as headers (no JSON envelope).
+ * Phase 13: sends BOTH the admin session token (preferred — enables
+ * tier=admin auth + per-permission gating) AND the legacy admin
+ * password (back-compat for unmigrated clients / emergency fallback).
+ * Worker tries session first, falls back to password.
  */
 export async function uploadImage(blob, slugHint = '') {
   const res = await fetch(apiUrl('/api/upload'), {
@@ -283,6 +287,7 @@ export async function uploadImage(blob, slugHint = '') {
     headers: {
       'Content-Type': blob.type,
       'x-admin-password': getPassword(),
+      'x-session-token': getAdminSessionToken(),
       'x-slug-hint': slugHint,
     },
     body: blob,

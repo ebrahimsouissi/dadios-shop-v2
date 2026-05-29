@@ -669,46 +669,77 @@ async function adminDeleteProduct(body, env) {
 // Image upload to R2
 // ============================================================
 async function adminUploadImage(request, env) {
-  // For image uploads, password comes from a header (since body is binary file)
-  const password = request.headers.get("x-admin-password");
-  if (!password || password !== env.ADMIN_PASSWORD) {
-    return json({ ok: false, error: "Unauthorized" }, 401);
+  // === Auth : accepte session admin OU password legacy ===
+  // Phase 13 : aligné sur /api/admin qui accepte les deux. Le body
+  // étant binaire (le fichier image), on ne peut pas passer le token
+  // dans le body JSON comme ailleurs — il vient donc d'un header.
+  let authorized = false;
+
+  // 1) Session via header x-session-token (préféré pour les uploads
+  //    car le body est binaire, on ne peut pas mettre du JSON dedans)
+  const sessionToken = request.headers.get('x-session-token');
+  if (sessionToken && env.CUSTOMERS_KV) {
+    const sessRaw = await env.CUSTOMERS_KV.get(`session:${sessionToken}`);
+    if (sessRaw) {
+      try {
+        const sess = JSON.parse(sessRaw);
+        if (sess.isEmergency) {
+          authorized = true;
+        } else if (sess.phone) {
+          const custRaw = await env.CUSTOMERS_KV.get(`customer:${sess.phone}`);
+          if (custRaw) {
+            const c = JSON.parse(custRaw);
+            if (c.tier === 'admin') {
+              const perms = Array.isArray(c.adminPermissions) ? c.adminPermissions : [];
+              if (perms.includes('all') || perms.includes('products')) {
+                authorized = true;
+              }
+            }
+          }
+        }
+      } catch {}
+    }
   }
 
+  // 2) Legacy : header x-admin-password (back-compat anciens clients)
+  if (!authorized) {
+    const password = request.headers.get('x-admin-password');
+    if (password && password === env.ADMIN_PASSWORD) {
+      authorized = true;
+    }
+  }
+
+  if (!authorized) {
+    return json({ ok: false, error: 'Unauthorized' }, 401);
+  }
+
+  // === Reste du code inchangé : validation contentType, taille, R2 upload ===
   if (!env.IMAGES) {
-    return json({ ok: false, error: "R2 bucket IMAGES not bound" }, 500);
+    return json({ ok: false, error: 'R2 bucket IMAGES not bound' }, 500);
   }
 
-  const contentType = request.headers.get("content-type") || "";
+  const contentType = request.headers.get('content-type') || '';
   if (!isValidImageType(contentType)) {
-    return json(
-      { ok: false, error: "Invalid image type. JPG/PNG/WebP only." },
-      400
-    );
+    return json({ ok: false, error: 'Invalid image type. JPG/PNG/WebP only.' }, 400);
   }
 
-  // Size limit: 5MB
-  const contentLength = parseInt(request.headers.get("content-length") || "0");
+  const contentLength = parseInt(request.headers.get('content-length') || '0');
   if (contentLength > 5 * 1024 * 1024) {
-    return json({ ok: false, error: "Image too large (max 5MB)" }, 400);
+    return json({ ok: false, error: 'Image too large (max 5MB)' }, 400);
   }
 
-  // Filename hint from client (for human-readable URLs)
-  const slugHint = slugify(request.headers.get("x-slug-hint") || "image");
-  const ext = contentType === "image/png" ? "png" : contentType === "image/webp" ? "webp" : "jpg";
+  const slugHint = slugify(request.headers.get('x-slug-hint') || 'image');
+  const ext = contentType === 'image/png' ? 'png' :
+              contentType === 'image/webp' ? 'webp' : 'jpg';
 
-  // Unique filename: slug + timestamp
   const filename = `products/${slugHint}-${Date.now()}.${ext}`;
-
-  // Upload to R2
   const arrayBuffer = await request.arrayBuffer();
   await env.IMAGES.put(filename, arrayBuffer, {
     httpMetadata: { contentType },
   });
 
-  // Build public URL
-  const base = env.PUBLIC_IMAGES_BASE_URL || "";
-  const url = base ? `${base.replace(/\/$/, "")}/${filename}` : `/${filename}`;
+  const base = env.PUBLIC_IMAGES_BASE_URL || '';
+  const url = base ? `${base.replace(/\/$/, '')}/${filename}` : `/${filename}`;
 
   return json({ ok: true, url, filename });
 }
