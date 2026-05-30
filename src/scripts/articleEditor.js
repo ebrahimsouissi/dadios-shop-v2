@@ -172,7 +172,18 @@ export function initArticleEditor({ initial = {}, isEdit = false } = {}) {
     heroStatus.textContent = 'Téléversement de l’image…';
     heroStatus.className = 'art-hero-status';
     const slugHint = `articles/${slugEl.value || 'cover'}`;
-    const res = await uploadImage(f, slugHint);
+    // try/catch garantit que toute exception (réseau, JSON parse, 401
+    // qui throw côté fetch) bascule le status sur erreur — sinon le
+    // message restait à "Téléversement…" pour toujours et l'utilisateur
+    // ne savait pas pourquoi l'image n'apparaissait pas.
+    let res;
+    try {
+      res = await uploadImage(f, slugHint);
+    } catch (err) {
+      heroStatus.textContent = (err && err.message) ? `Erreur : ${err.message}` : 'Échec du téléversement.';
+      heroStatus.className = 'art-hero-status error';
+      return;
+    }
     if (res && res.ok && res.url) {
       heroImage = res.url;
       renderHero();
@@ -234,7 +245,15 @@ export function initArticleEditor({ initial = {}, isEdit = false } = {}) {
     heroStatus.textContent = 'Téléversement de l’image…';
     heroStatus.className = 'art-hero-status';
     const slugHint = `articles/${slugEl.value || 'inline'}`;
-    const res = await uploadImage(f, slugHint);
+    let res;
+    try {
+      res = await uploadImage(f, slugHint);
+    } catch (err) {
+      inlineImgFile.value = '';
+      heroStatus.textContent = (err && err.message) ? `Erreur : ${err.message}` : 'Échec du téléversement.';
+      heroStatus.className = 'art-hero-status error';
+      return;
+    }
     inlineImgFile.value = '';
     if (res && res.ok && res.url) {
       editor.chain().focus().setImage({ src: res.url, alt: '' }).run();

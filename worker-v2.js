@@ -691,7 +691,15 @@ async function adminUploadImage(request, env) {
             const c = JSON.parse(custRaw);
             if (c.tier === 'admin') {
               const perms = Array.isArray(c.adminPermissions) ? c.adminPermissions : [];
-              if (perms.includes('all') || perms.includes('products')) {
+              // /api/upload sert deux usages legit : images produit (perm
+              // 'products') ET images d'articles de journal (perm 'articles').
+              // Limiter à 'products' faisait rejeter les admins journalistes
+              // → 401 silencieux côté éditeur d'article.
+              if (
+                perms.includes('all') ||
+                perms.includes('products') ||
+                perms.includes('articles')
+              ) {
                 authorized = true;
               }
             }
