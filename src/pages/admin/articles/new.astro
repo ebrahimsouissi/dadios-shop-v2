@@ -83,7 +83,7 @@ import ArticleEditor from '../../../components/ArticleEditor.astro';
    *      TipTap. This deterministic ordering avoids the race that would
    *      happen if the editor self-bootstrapped inside the component.
    */
-  import { getPassword, checkPassword } from '../../../scripts/adminApi.js';
+  import { adminMe } from '../../../scripts/adminApi.js';
   import { adminGetArticle } from '../../../scripts/articlesApi.js';
   import { initArticleEditor } from '../../../scripts/articleEditor.js';
 
@@ -93,13 +93,15 @@ import ArticleEditor from '../../../components/ArticleEditor.astro';
   const titleEl = document.getElementById('adminBarTitle') as HTMLElement;
 
   (async () => {
-    const pw = getPassword();
-    if (!pw) {
-      window.location.replace('/admin');
-      return;
-    }
-    const ok = await checkPassword(pw);
-    if (!ok) {
+    // Phase 13 unified auth — adminMe() calls /api/admin admin_me which
+    // sends BOTH the session token (preferred) AND the legacy password
+    // via adminAuthBody(). Worker tries session first, falls back to
+    // password. This page used to call getPassword()+checkPassword()
+    // which broke when admins logged in via session only (no password
+    // in sessionStorage) — the gate bounced them back to /admin and
+    // looked like a refresh when clicking "+ Nouvel article".
+    const me = await adminMe();
+    if (!me || !me.ok || !me.isAdmin) {
       window.location.replace('/admin');
       return;
     }
