@@ -5,13 +5,14 @@ const WORKER_URL = 'https://cold-cloud-895a.dadios-fragrances.workers.dev';
  * through to the Cloudflare Worker. Keeps the browser same-origin so
  * we avoid CORS preflight issues on Pages preview hostnames.
  *
- * Two notable choices vs. the original version (commit 43d1e50):
- *
- *   - Read the body with `request.text()` instead of `arrayBuffer()`.
- *     The proxy only ever fronts JSON endpoints, so a string body is
- *     simpler, and the buffer path was occasionally returning 500 on
- *     POSTs (especially small payloads) — likely an interaction with
- *     how the Pages runtime hands back the buffer for re-sending.
+ *   - Body read switches on Content-Type :
+ *       - text/* or application/json  → request.text()  (preserves the
+ *         409e842 fix that resolved sporadic 500s on JSON POSTs)
+ *       - anything else (image/*, application/octet-stream…) →
+ *         request.arrayBuffer()  (binary safety for /api/upload — the
+ *         old version used text() for everything which UTF-8-decoded
+ *         the PNG/JPG body and corrupted every byte >= 0x80 into U+FFFD,
+ *         producing irrecoverable files on R2)
  *
  *   - Drop `redirect: 'manual'`. The Worker never 30x's, so the flag
  *     adds nothing and was suspected of confusing the runtime when
@@ -19,8 +20,7 @@ const WORKER_URL = 'https://cold-cloud-895a.dadios-fragrances.workers.dev';
  *
  *   - Strip every `cf-*` header (loop), plus `host`, `content-length`,
  *     `x-forwarded-*`. content-length is recomputed by fetch from the
- *     new body; sending the original (read-from-the-arrayBuffer) one
- *     was a likely culprit for the 500s.
+ *     new body; sending the original was a likely culprit for the 500s.
  */
 export async function onRequest(context) {
   const { request } = context;
@@ -47,7 +47,14 @@ export async function onRequest(context) {
   };
 
   if (request.method !== 'GET' && request.method !== 'HEAD') {
-    init.body = await request.text();
+    // CRITICAL : pour les bodies binaires (/api/upload), il FAUT lire
+    // en arrayBuffer. text() décode en UTF-8 et remplace chaque byte
+    // >= 0x80 par U+FFFD (3 bytes EF BF BD) — c'était la cause des
+    // PNG corrompus sur R2 servis "200 OK image/png" mais ne pouvant
+    // pas être décodés par les navigateurs.
+    const ct = (request.headers.get('content-type') || '').toLowerCase();
+    const isText = ct.startsWith('application/json') || ct.startsWith('text/');
+    init.body = isText ? await request.text() : await request.arrayBuffer();
   }
 
   try {
