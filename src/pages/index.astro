@@ -35,24 +35,15 @@ const sizes = data.sizes;
 
     <div class="hero-visual">
       <div class="hero-bottle">
-        <svg viewBox="0 0 280 380" xmlns="http://www.w3.org/2000/svg">
-          <ellipse cx="140" cy="368" rx="100" ry="6" fill="rgba(0,0,0,0.12)"/>
-          <rect x="80" y="60" width="120" height="300" rx="6" fill="#0E3A1F"/>
-          <rect x="80" y="60" width="120" height="300" rx="6" fill="none" stroke="#D4AF37" stroke-width="1.2"/>
-          <rect x="100" y="150" width="80" height="130" fill="#0E3A1F"/>
-          <rect x="100" y="150" width="80" height="130" fill="none" stroke="#D4AF37" stroke-width="0.8"/>
-          <text x="92" y="166" font-family="Cormorant Garamond, serif" font-size="9" fill="#D4AF37" opacity="0.85">❦</text>
-          <text x="174" y="166" font-family="Cormorant Garamond, serif" font-size="9" fill="#D4AF37" opacity="0.85">❦</text>
-          <text x="92" y="272" font-family="Cormorant Garamond, serif" font-size="9" fill="#D4AF37" opacity="0.85">❦</text>
-          <text x="174" y="272" font-family="Cormorant Garamond, serif" font-size="9" fill="#D4AF37" opacity="0.85">❦</text>
-          <text x="140" y="200" text-anchor="middle" font-family="Allura, cursive" font-size="44" fill="#D4AF37">Dadios</text>
-          <text x="140" y="232" text-anchor="middle" font-family="Cormorant Garamond, serif" font-size="14" letter-spacing="7" fill="#D4AF37">FRAGRANCE</text>
-          <line x1="115" y1="244" x2="165" y2="244" stroke="#D4AF37" stroke-width="0.6"/>
-          <text x="140" y="262" text-anchor="middle" font-family="Cormorant Garamond, serif" font-style="italic" font-size="9" fill="#D4AF37">Essence of Timeless Elegance</text>
-          <rect x="108" y="20" width="64" height="42" rx="4" fill="#A87C45"/>
-          <rect x="116" y="8" width="48" height="18" rx="3" fill="#A87C45"/>
-          <ellipse cx="140" cy="60" rx="60" ry="4" fill="rgba(0,0,0,0.18)"/>
-        </svg>
+        <img
+          src="/images/hero-couple.jpg"
+          alt="Couple dans un décor mauresque tenant un flacon Dadios"
+          width="900"
+          height="1200"
+          loading="eager"
+          fetchpriority="high"
+          class="hero-bottle-image"
+        />
       </div>
       <div class="hero-caption">
         <span class="script" style="font-size:22px">Notre signature</span><br />
@@ -194,7 +185,8 @@ const sizes = data.sizes;
     border: 1px solid var(--border);
     max-width: 380px;
   }
-  .hero-bottle svg { width: 100%; height: auto; }
+  .hero-bottle svg,
+  .hero-bottle img { width: 100%; height: auto; display: block; border-radius: 8px; }
   .hero-caption {
     margin-top: 16px;
     text-align: center;
