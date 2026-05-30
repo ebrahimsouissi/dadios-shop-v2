@@ -721,7 +721,11 @@ async function adminUploadImage(request, env) {
     return json({ ok: false, error: 'Unauthorized' }, 401);
   }
 
-  // === Reste du code inchangé : validation contentType, taille, R2 upload ===
+  // === Reste du code : validation contentType, taille, R2 upload ===
+  // LIMIT : 2 MB. Au-delà, Cloudflare Workers a tendance à tronquer le
+  // body sans erreur (le PUT R2 réussit avec une image corrompue). Le
+  // front-end doit compresser AVANT l'upload (cf. compressImage() dans
+  // src/scripts/imageProcessor.js).
   if (!env.IMAGES) {
     return json({ ok: false, error: 'R2 bucket IMAGES not bound' }, 500);
   }
@@ -731,9 +735,37 @@ async function adminUploadImage(request, env) {
     return json({ ok: false, error: 'Invalid image type. JPG/PNG/WebP only.' }, 400);
   }
 
+  const MAX_BYTES = 2 * 1024 * 1024;
   const contentLength = parseInt(request.headers.get('content-length') || '0');
-  if (contentLength > 5 * 1024 * 1024) {
-    return json({ ok: false, error: 'Image too large (max 5MB)' }, 400);
+  if (contentLength > MAX_BYTES) {
+    return json({
+      ok: false,
+      error: `Image trop volumineuse (${(contentLength / 1024 / 1024).toFixed(2)} MB), max 2 MB. Compressez l'image avant l'upload.`,
+    }, 413);
+  }
+
+  // Lire le body APRÈS le check du header, puis vérifier la taille
+  // réelle reçue. Si le header content-length mentait (ou si Workers a
+  // tronqué), on rejette explicitement plutôt que d'écrire un fichier
+  // corrompu sur R2 et renvoyer un faux 200.
+  const arrayBuffer = await request.arrayBuffer();
+  const receivedBytes = arrayBuffer.byteLength;
+  if (receivedBytes > MAX_BYTES) {
+    console.warn(`[upload] body too large : received=${receivedBytes} header=${contentLength}`);
+    return json({
+      ok: false,
+      error: `Image trop volumineuse (${(receivedBytes / 1024 / 1024).toFixed(2)} MB), max 2 MB.`,
+    }, 413);
+  }
+  if (contentLength > 0 && Math.abs(receivedBytes - contentLength) > 1024) {
+    // Mismatch significatif (> 1 KB) entre header et body — corruption
+    // probable côté transport. On préfère refuser que persister une
+    // image cassée sur R2.
+    console.error(`[upload] size mismatch : received=${receivedBytes} header=${contentLength}`);
+    return json({
+      ok: false,
+      error: 'Upload incomplet (mismatch taille). Réessayez ou compressez davantage.',
+    }, 400);
   }
 
   const slugHint = slugify(request.headers.get('x-slug-hint') || 'image');
@@ -741,15 +773,15 @@ async function adminUploadImage(request, env) {
               contentType === 'image/webp' ? 'webp' : 'jpg';
 
   const filename = `products/${slugHint}-${Date.now()}.${ext}`;
-  const arrayBuffer = await request.arrayBuffer();
   await env.IMAGES.put(filename, arrayBuffer, {
     httpMetadata: { contentType },
   });
+  console.log(`[upload] wrote ${filename} : ${receivedBytes} bytes (${contentType})`);
 
   const base = env.PUBLIC_IMAGES_BASE_URL || '';
   const url = base ? `${base.replace(/\/$/, '')}/${filename}` : `/${filename}`;
 
-  return json({ ok: true, url, filename });
+  return json({ ok: true, url, filename, bytes: receivedBytes });
 }
 
 // ============================================================

@@ -15,6 +15,48 @@ import Placeholder from '@tiptap/extension-placeholder';
 
 import { adminUpsertArticle, adminListArticles, frenchRelativeDate } from './articlesApi.js';
 import { uploadImage } from './adminApi.js';
+import { compressImage } from './imageProcessor.js';
+
+// Limite serveur. Doit rester synchronisée avec MAX_BYTES dans
+// worker-v2.js adminUploadImage().
+const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
+
+/**
+ * Prépare un File pour l'upload : compresse via canvas si nécessaire,
+ * et retourne soit un Blob/File prêt, soit { tooLarge: true, ... } si
+ * même après compression on dépasse la limite. Évite de gaspiller un
+ * round-trip réseau sur un fichier qui sera rejeté.
+ */
+async function prepareUpload(file) {
+  // Sous 1 MB : on envoie tel quel, pas la peine de re-compresser.
+  if (file.size <= 1 * 1024 * 1024) {
+    return { blob: file, originalMB: file.size / 1024 / 1024 };
+  }
+  // Au-dessus de 1 MB : compresse vers JPEG 1600px q=0.85. Si la
+  // compression jette (HEIC non décodable, etc.) on retombe sur
+  // l'original et on laissera le check de taille trancher.
+  let compressed;
+  try {
+    compressed = await compressImage(file, 1600, 0.85);
+  } catch {
+    compressed = file;
+  }
+  if (compressed.size <= MAX_UPLOAD_BYTES) {
+    return { blob: compressed, originalMB: file.size / 1024 / 1024, compressedMB: compressed.size / 1024 / 1024 };
+  }
+  return {
+    tooLarge: true,
+    originalMB: file.size / 1024 / 1024,
+    compressedMB: compressed.size / 1024 / 1024,
+  };
+}
+
+function tooLargeMessage(originalMB, compressedMB) {
+  const compressedNote = compressedMB && compressedMB < originalMB
+    ? ` (compressée à ${compressedMB.toFixed(2)} MB, encore trop)`
+    : '';
+  return `Image trop lourde (${originalMB.toFixed(2)} MB${compressedNote}), max 2 MB. <a href="https://tinypng.com" target="_blank" rel="noopener" style="text-decoration:underline">Compressez sur tinypng.com</a> puis réessayez.`;
+}
 
 function escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
@@ -169,16 +211,29 @@ export function initArticleEditor({ initial = {}, isEdit = false } = {}) {
   heroFile.addEventListener('change', async () => {
     const f = heroFile.files?.[0];
     if (!f) return;
-    heroStatus.textContent = 'Téléversement de l’image…';
+    heroStatus.textContent = 'Préparation de l’image…';
     heroStatus.className = 'art-hero-status';
+
+    // Compresse si nécessaire AVANT le réseau. Si même compressée
+    // l'image dépasse 2 MB, on n'envoie rien et on guide l'utilisateur.
+    const prep = await prepareUpload(f);
+    if (prep.tooLarge) {
+      heroStatus.innerHTML = tooLargeMessage(prep.originalMB, prep.compressedMB);
+      heroStatus.className = 'art-hero-status error';
+      heroFile.value = '';
+      return;
+    }
+    const sizeNote = prep.compressedMB
+      ? ` (compressée ${prep.originalMB.toFixed(2)}→${prep.compressedMB.toFixed(2)} MB)`
+      : '';
+    heroStatus.textContent = `Téléversement de l’image${sizeNote}…`;
+
     const slugHint = `articles/${slugEl.value || 'cover'}`;
-    // try/catch garantit que toute exception (réseau, JSON parse, 401
-    // qui throw côté fetch) bascule le status sur erreur — sinon le
-    // message restait à "Téléversement…" pour toujours et l'utilisateur
-    // ne savait pas pourquoi l'image n'apparaissait pas.
+    // try/catch garantit qu'aucune exception (réseau, JSON parse, etc.)
+    // ne laisse le status bloqué sur "Téléversement…".
     let res;
     try {
-      res = await uploadImage(f, slugHint);
+      res = await uploadImage(prep.blob, slugHint);
     } catch (err) {
       heroStatus.textContent = (err && err.message) ? `Erreur : ${err.message}` : 'Échec du téléversement.';
       heroStatus.className = 'art-hero-status error';
@@ -242,12 +297,25 @@ export function initArticleEditor({ initial = {}, isEdit = false } = {}) {
   inlineImgFile.addEventListener('change', async () => {
     const f = inlineImgFile.files?.[0];
     if (!f) return;
-    heroStatus.textContent = 'Téléversement de l’image…';
+    heroStatus.textContent = 'Préparation de l’image…';
     heroStatus.className = 'art-hero-status';
+
+    const prep = await prepareUpload(f);
+    if (prep.tooLarge) {
+      heroStatus.innerHTML = tooLargeMessage(prep.originalMB, prep.compressedMB);
+      heroStatus.className = 'art-hero-status error';
+      inlineImgFile.value = '';
+      return;
+    }
+    const sizeNote = prep.compressedMB
+      ? ` (compressée ${prep.originalMB.toFixed(2)}→${prep.compressedMB.toFixed(2)} MB)`
+      : '';
+    heroStatus.textContent = `Téléversement de l’image${sizeNote}…`;
+
     const slugHint = `articles/${slugEl.value || 'inline'}`;
     let res;
     try {
-      res = await uploadImage(f, slugHint);
+      res = await uploadImage(prep.blob, slugHint);
     } catch (err) {
       inlineImgFile.value = '';
       heroStatus.textContent = (err && err.message) ? `Erreur : ${err.message}` : 'Échec du téléversement.';
